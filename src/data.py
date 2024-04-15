@@ -16,7 +16,7 @@ import matplotlib as plt
 
 # %%
 
-data_paths = dataCollect.dCollect(size=20)
+data_paths_tif, data_paths_geojson = dataCollect.dCollect(size=20)
 
     # Create raster stack in 
 
