@@ -12,7 +12,7 @@ def read_in(file):
             shutil.copyfileobj(f_in,f_out)
 
 if __name__ == "__main__":
-    data_list = dataCollect.dCollect(size = 316)
+    data_list = dataCollect.dCollect_Init(size = 316)
 
     for i in range(len(data_list)):
          read_in(data_list[i][1])

@@ -1,10 +1,17 @@
 # %%
 import dataCollect
 
-import geopandas
-import rasterio
+import glob
+
+import geopandas as gpd
+import rasterio as rio
 from rasterio.plot import show
-import matplotlib.pylab as plt
+from osgeo import ogr, gdal, gdalconst
+
+
+import matplotlib as plt
+
+
 
 
 # %%
@@ -19,15 +26,21 @@ data_paths = dataCollect.dCollect(size=20)
     # Open filelist and stack within erf
     # so that
 
-ds = rasterio.open(data_paths[0][0])
+ds = rio.open(data_paths[0][0])
 
 # For the geojsons, need to look whether unzipped folder
 #   Only works for jsons
-c = geopandas.read_file(data_paths[0][1])
+c = gdp.read_file(data_paths[0][1])
 
 
+# %%
 # To read in data as raster stacks
 # https://zia207.github.io/geospatial-python.io/lesson_06_working-with-raster-data.html#Working-with-Multi-Band-Raster
+
+data = []
+
+
+
 
 
 
