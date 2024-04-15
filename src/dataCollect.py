@@ -1,4 +1,3 @@
-# %%
 import os
 import random
 from glob import glob
@@ -38,7 +37,3 @@ def dCollect(size, file_type):
     os.chdir("..")
 
     return path_holder
-
-# %%
-# unzip folders
-a = dCollect(size = 20, file_type = "gz")

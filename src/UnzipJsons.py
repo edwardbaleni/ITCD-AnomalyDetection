@@ -1,5 +1,3 @@
-# %%
-
 import gzip
 import shutil
 import dataCollect
@@ -12,7 +10,7 @@ def read_in(file):
             shutil.copyfileobj(f_in,f_out)
 
 if __name__ == "__main__":
-    data_list = dataCollect.dCollect(size = 316)
+    data_list = dataCollect.dCollect(size = 316, file_type="gz")
 
     for i in range(len(data_list)):
          read_in(data_list[i])

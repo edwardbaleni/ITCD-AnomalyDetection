@@ -1,7 +1,8 @@
 # %%
 import dataCollect
 
-import glob
+# glob is already in data collect
+#import glob
 
 import geopandas as gpd
 import rasterio as rio
