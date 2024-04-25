@@ -4,7 +4,9 @@ import dataCollect # contains os, glob, random
 import geopandas as gpd
 import rasterio as rio
 from rasterio.plot import show
-#from osgeo import ogr, gdal, gdalconst
+    # Have to work in Conda for gdal to work
+from osgeo import ogr, gdal
+from osgeo import gdalconst
 from rasterio.mask import mask
 
 import earthpy.spatial as es
@@ -41,6 +43,7 @@ CO_BD.plot(ax=ax, facecolor='none', edgecolor='blue')
 
 # %%
 # To read in data as raster stacks
+# cant use gdal unless we use conda
 # https://zia207.github.io/geospatial-python.io/lesson_06_working-with-raster-data.html#Working-with-Multi-Band-Raster
 
 data = []
