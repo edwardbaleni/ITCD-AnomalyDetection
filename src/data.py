@@ -1,5 +1,12 @@
 # %%
+
     # https://zia207.github.io/geospatial-python.io/lesson_06_working-with-raster-data.html
+    # To read in data as raster stacks
+    # cant use gdal unless we use conda
+    # https://zia207.github.io/geospatial-python.io/lesson_06_working-with-raster-data.html#Working-with-Multi-Band-Raster
+
+
+# %%
 import dataCollect # contains os, glob, random
 
 import geopandas as gpd
@@ -9,8 +16,6 @@ from rasterio.plot import show
 from osgeo import ogr, gdal
 from osgeo import gdalconst
 from rasterio.mask import mask
-
-import pycrs
 
 import earthpy.spatial as es
 import earthpy.plot as ep
@@ -47,21 +52,6 @@ for i in range(sampleSize):
     RGBs.append(rio.open(data_paths_tif[i][4]))
     Points.append(gpd.GeoDataFrame.from_file(data_paths_geojson[i]))
 
-
-# ds = rio.open(data_paths_tif[1][4])
-
-# # For the geojsons, need to look whether unzipped folder
-# #   Only works for jsons
-# c = gpd.read_file(data_paths_geojson[1])
-
-
-# CO_BD= gpd.GeoDataFrame.from_file(data_paths_geojson[1])
-# # Plot them
-# fig, ax = plt.subplots(figsize=(5, 15))
-# rio.plot.show(ds, ax=ax)
-# CO_BD.plot(ax=ax, facecolor='none', edgecolor='blue')
-
-
 # %%
 
 def getFeatures(gdf):
@@ -71,19 +61,7 @@ def getFeatures(gdf):
 
 
 # %%
-
-# from matplotlib import pyplot as plt
-# import geopandas as gpd
-# from shapely.geometry import Polygon
-
-# poly1 = Polygon([(0,0), (2,0), (2,2), (0,2)])
-# poly2 = Polygon([(2,2), (4,2), (4,4), (2,4)])
-# poly3 = Polygon([(1,1), (3,1), (3,3), (1,3)])
-# poly4 = Polygon([(3,3), (5,3), (5,5), (3,5)])
-# polys = [poly1, poly2, poly3, poly4] 
-
-# gpd.GeoSeries(polys).boundary.plot()
-# plt.show()
+    # https://stackoverflow.com/questions/40385782/make-a-union-of-polygons-in-geopandas-or-shapely-into-a-single-geometry
 
 from shapely.ops import unary_union
 from shapely import LineString, Point, Polygon, BufferCapStyle, BufferJoinStyle
@@ -91,32 +69,59 @@ from shapely import buffer
 from shapely import normalize, Polygon
 import shapely
 
-# mergedPolys = unary_union(polys)
 
-# gpd.GeoSeries([mergedPolys]).boundary.plot()
-# plt.show()
-a = gpd.GeoDataFrame.from_file(data_paths_geojson[0])
+# enclose this in a function
+
+    # Obtain example file
+a = gpd.GeoDataFrame.from_file(data_paths_geojson[1])
 point = list(a.iloc[:,1])
 
-# for i in range(len(point)):
-#     point[i] = buffer(geometry = point[i], distance=5)
-#     point[i]
-
+    # Combine all intersecting polygons
 point = unary_union(point)
+    # Combine all non-intersecting polygons
 boundary = shapely.coverage_union_all(point)
-boundary = shapely.convex_hull(boundary)
-#boundary = gpd.GeoSeries(shapely.coverage_union_all(list(point)))
-#boundary = gpd.GeoSeries(unary_union(point))
-boundary
-boundary.boundary
+    # Get the convex hull of the entire area (different from concave hull)
+    # concave hull will get all the indents
+    # will get more specific boundary with concave
+    # maybe go with concave
+    # Concave actually doesn't work well at all
+    # However, convex is not perfect.
+    # Concave works when you change the ratio
+boundary_periph = shapely.concave_hull(boundary, ratio=0.15)#shapely.convex_hull(boundary)
+#poly = gpd.GeoSeries(boundary_periph, crs=RGBs[0].crs.data)
+poly = gpd.GeoDataFrame(geometry=gpd.GeoSeries(boundary_periph), crs=RGBs[0].crs.data)
 
+#boundary = gpd.GeoSeries(unary_union(point))
+boundary_periph
+boundary_periph.boundary
+
+
+# in a try - except, try mask , except create mask, and apply mask. 
 
 # %%
-# To read in data as raster stacks
-# cant use gdal unless we use conda
-# https://zia207.github.io/geospatial-python.io/lesson_06_working-with-raster-data.html#Working-with-Multi-Band-Raster
-a["hold"] = 0
-nepal_zone = a[['hold', 'geometry']]
+def getFeatures(gdf):
+    """Function to parse features from GeoDataFrame in such a manner that rasterio wants them"""
+    import json
+    return [json.loads(gdf.to_json())['features'][0]['geometry']]
+# %%
 
-zones = nepal_zone.dissolve(by='hold')
-zones.boundary.plot()
+coords = getFeatures(poly)#shapely.to_geojson(boundary_periph, indent=1)#getFeatures(shapely.to_json(boundary_periph))
+out_img, out_transform = mask(RGBs[1], shapes=coords, crop=True, all_touched=True, pad = True)
+out_meta = RGBs[1].meta.copy()
+print(out_meta)
+epsg_code = int(RGBs[1].crs.data['init'][5:])
+print(epsg_code)
+
+out_meta.update({"driver": "GTiff",
+                 "height": out_img.shape[1],
+                 "width": out_img.shape[2],
+                 "transform": out_transform,
+                 "crs": epsg_code})
+
+out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out.tif"
+with rio.open(out_tif, "w", **out_meta) as dest:
+   dest.write(out_img)
+
+# %%
+clipped = rio.open(out_tif)
+show((clipped), cmap='terrain')
