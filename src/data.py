@@ -1,4 +1,5 @@
 # %%
+    # https://zia207.github.io/geospatial-python.io/lesson_06_working-with-raster-data.html
 import dataCollect # contains os, glob, random
 
 import geopandas as gpd
@@ -28,14 +29,14 @@ data_paths_geojson = dataCollect.dCollect(size=20, file_type="geojson")
     # Open filelist and stack within erf
     # so that
 
-ds = rio.open(data_paths_tif[2][4])
+ds = rio.open(data_paths_tif[1][4])
 
 # For the geojsons, need to look whether unzipped folder
 #   Only works for jsons
-c = gpd.read_file(data_paths_geojson[2])
+c = gpd.read_file(data_paths_geojson[1])
 
 
-CO_BD= gpd.GeoDataFrame.from_file(data_paths_geojson[2])
+CO_BD= gpd.GeoDataFrame.from_file(data_paths_geojson[1])
 # Plot them
 fig, ax = plt.subplots(figsize=(5, 15))
 rio.plot.show(ds, ax=ax)
