@@ -5,6 +5,8 @@
     # cant use gdal unless we use conda
     # https://zia207.github.io/geospatial-python.io/lesson_06_working-with-raster-data.html#Working-with-Multi-Band-Raster
 
+    # https://automating-gis-processes.github.io/CSC18/index.html 
+    # https://autogis-site.readthedocs.io/en/latest/ 
 
 # %%
 import dataCollect # contains os, glob, random
@@ -22,6 +24,8 @@ import earthpy.plot as ep
 import earthpy as et
 
 import matplotlib.pyplot as plt
+
+import numpy as np
 
 # %%
     # Collect file paths
@@ -43,14 +47,37 @@ Regs = []
 RGBs = []
 Points = []
 
+Greens = []
+Blues = []
+    # To check description of raster
+    # raster.descriptions
     # range is the sample size
 for i in range(sampleSize):
-    DEMs.append(rio.open(data_paths_tif[i][0]))
-    NIRs.append(rio.open(data_paths_tif[i][1]))
-    Reds.append(rio.open(data_paths_tif[i][2]))
-    Regs.append(rio.open(data_paths_tif[i][3]))
-    RGBs.append(rio.open(data_paths_tif[i][4]))
+    NIRs.append(rio.open([j for j in data_paths_tif[0] if "nir_native" in j][0]).read())
+    Reds.append(rio.open([j for j in data_paths_tif[0] if "red_native" in j][0]))
+    Regs.append(rio.open([j for j in data_paths_tif[0] if "reg_native" in j][0]))
+    RGBs.append(rio.open([j for j in data_paths_tif[0] if "visible_5cm" in j][0], "w"))
+    # Here we read in the DEM and RGB, change the meta data and save
+    # new instance to memory, and close original file
+     
+    DEMs.append(rio.open([j for j in data_paths_tif[0] if "dem_native" in j][0]))
+    # Red, Green, Blue can be taken from RGB
+    # Red is the first, Green is second and Blue is third
+    # You can see this when you change around the plotting
+    # the colouring will change depending on how you order it
+    # this makes me believe that the correct order of RGB must be kept
+    # e.g. "show(RGBs[0].read([1,2,3]))"
+    # vs   "show(RGBs[0].read([2,1,3]))"
+    Greens.append(RGBs[i].read(2))
+    Blues.append(RGBs[i].read(3))
     Points.append(gpd.GeoDataFrame.from_file(data_paths_geojson[i]))
+
+    # es._stack_bands([Reds[0], NIRs[0]])
+
+# Make function to change transform to same as bands for everything
+
+
+
 
 # %%
 
@@ -61,6 +88,8 @@ def getFeatures(gdf):
 
 
 # %%
+
+def 
     # https://stackoverflow.com/questions/40385782/make-a-union-of-polygons-in-geopandas-or-shapely-into-a-single-geometry
 
 from shapely.ops import unary_union
@@ -125,3 +154,25 @@ with rio.open(out_tif, "w", **out_meta) as dest:
 # %%
 clipped = rio.open(out_tif)
 show((clipped), cmap='terrain')
+
+# %%
+    # We need a conventional way to save the data after reading it in so that 
+    # Algorithms can handle it, be it image based methods or 
+    # geometric methods
+# https://medium.com/abraia/hyperspectral-image-classification-with-python-7dce4ebcda0a
+# https://shreshai.blogspot.com/2014/11/converting-raster-dataset-to-xyz-in.html
+# https://towardsdatascience.com/neural-network-for-satellite-data-classification-using-tensorflow-in-python-a13bcf38f3e1
+# https://github.com/IamShubhamGupto/BandNet/tree/master/notebooks
+
+# %%
+    # For image manipulation
+# https://image-slicer.readthedocs.io/en/latest/functions.html
+# https://www.youtube.com/watch?v=hNFNVmh1Qfs
+# https://readthedocs.org/projects/image-slicer/downloads/pdf/latest/
+
+
+
+# %% 
+
+    # To save as np array is possible
+    # https://github.com/IamShubhamGupto/BandNet/blob/master/notebooks/1_image_to_numpy.ipynb
