@@ -116,7 +116,9 @@ def getMaskBounds(comp, shape):
 
     return (poly)
 
-# Masks data and gives all data the same transform
+    # Masks data and gives all data the same transform
+    # https://gis.stackexchange.com/questions/254766/update-geotiff-metadata-with-rasterio
+    # The website above shows how one can update the metadata of a raster file
 def getMask(rast, shape, placeHolder, out_tif="C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out.tif"):
     # Obtain masking, in terms of NIR file
     poly = getMaskBounds(comp=placeHolder, shape=shape)
