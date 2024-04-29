@@ -121,7 +121,7 @@ def getMaskBounds(comp, shape):
     # The website above shows how one can update the metadata of a raster file
 def getMask(rast, shape, placeHolder, out_tif="C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out.tif"):
     # Obtain masking, in terms of NIR file
-    poly = getMaskBounds(comp=placeHolder, shape=shape)
+    poly = getMaskBounds(comp=rast, shape=shape)
     # Get features for masking
     coords = getFeatures(poly)
     # Get information to output masking
@@ -130,7 +130,12 @@ def getMask(rast, shape, placeHolder, out_tif="C:\\Users\\balen\\OneDrive\\Deskt
     # The meta data has to be the same as 
     out_meta = placeHolder.meta.copy()
     # Change transform here
-    out_transform = placeHolder.transform
+        #
+        #  The idea is to change the transform to the same as the bands
+        #  But this means that the geojson file will be misaligned 
+        #  For now keep comp=rast on line 124 instead of placeHolder 
+        #
+    #out_transform = placeHolder.transform
     print(out_meta)
     epsg_code = int(rast.crs.data['init'][5:])
     print(epsg_code)
@@ -161,13 +166,24 @@ def getMask(rast, shape, placeHolder, out_tif="C:\\Users\\balen\\OneDrive\\Deskt
 
 # %%
 
-getMask(NIRs[0], Points[0], NIRs[0],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out1.tif")
-getMask(DEMs[0], Points[0], NIRs[0],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out2.tif")
+#getMask(NIRs[0], Points[0], NIRs[0],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out1.tif")
+#getMask(DEMs[0], Points[0], NIRs[0],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out2.tif")
+getMask(RGBs[19], Points[19], RGBs[19],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out3.tif")
 
 # %%
+out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out3.tif"
 clipped = rio.open(out_tif)
 show((clipped), cmap='terrain')
 #es._stack_bands([clipped, clipped1])
+
+# %%
+# Plot them
+fig, ax = plt.subplots(figsize=(15, 15))
+rio.plot.show(clipped, ax=ax)
+Points[19].plot(ax=ax, facecolor='none', edgecolor='blue')
+
+# fig, ax = plt.subplots(figsize=(15, 15))
+# rio.plot.show(RGBs[0], ax=ax)
 
 # %%
     # We need a conventional way to save the data after reading it in so that 

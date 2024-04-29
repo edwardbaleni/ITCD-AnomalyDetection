@@ -2,3 +2,5 @@ Data/
 data/
 *.tif
 *.geojson
+Examples/
+*.png
