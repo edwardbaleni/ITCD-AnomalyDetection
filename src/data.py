@@ -29,6 +29,9 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
+import h2o
+from h2o.estimators import H2OExtendedIsolationForestEstimator
+
 # %%
     # Collect file paths
 sampleSize = 20
@@ -137,15 +140,15 @@ def getMask(rast, shape, placeHolder, out_tif="C:\\Users\\balen\\OneDrive\\Deskt
         #
     #out_transform = placeHolder.transform
     print(out_meta)
-    epsg_code = int(rast.crs.data['init'][5:])
-    print(epsg_code)
+    #epsg_code = int(rast.crs.data['init'][5:])
+    #print(epsg_code)
 
     out_meta.update({"driver": "GTiff",
                     "count": rast.count,
                     "height": out_img.shape[1],
                     "width": out_img.shape[2],
-                    "transform": out_transform,
-                    "crs": epsg_code})
+                    "transform": out_transform })#,
+     #               "crs": epsg_code})
 
     #out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out2.tif"
     with rio.open(out_tif, "w", **out_meta) as dest:
@@ -211,36 +214,48 @@ Points[5].plot(ax=ax, facecolor='none', edgecolor='blue')
 # %%
 
 # Points maintains all polygons from 20 different geojson files
-Points[6].plot()
+Points[5].plot()
 
 # %%
-a = Points[1]
+a = Points[5]
 geom = a.iloc[:,1]
 
 a["centroid"] = shapely.centroid(a.iloc[:,1])
 a["crown_projection_area"] = shapely.area(a.iloc[:,1])
 a["crown_perimeter"] = shapely.length(a.iloc[:,1])
+
+    # When the latitude and longitude of the centroids are included
+    # we see that the anomaly scores aren't as high,
+    # and that the anomalies are not as clear.
+    # However, when these are included the false-positives are more apparent
+
+    # the exculsion of the latitude and longitude of the centroids, or spatial features
+    # identifies more anomalies both false-positives and a lot of segmentation issues
+    # albeit I can not determine the accuracy of this method
+a["latitude"] = a["centroid"].y
+a["longitude"] = a["centroid"].x
 # https://www.tutorialspoint.com/radius-of-gyration
 # above link is for radius of gyration
 
 
 # %%
 # try use an extended isolation forest
-import h2o
-from h2o.estimators import H2OExtendedIsolationForestEstimator
+
 h2o.init()
 
-# Import the prostate dataset
-h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
 
 # %%
 # Set the predictors
-predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+h2o_df = h2o.H2OFrame(a.loc[:,["confidence", "latitude", "longitude","crown_projection_area","crown_perimeter"]])
+predictors = ["confidence","latitude", "longitude", "crown_projection_area","crown_perimeter"]#list(a.columns)
+
+# Extended Isolation Forest is a great unsupervised method for anomaly detection
+# however, it does not allow for the use of spatial features
 
 # Define an Extended Isolation forest model
 eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
-                                          ntrees = 100,
-                                          sample_size = 256,
+                                          ntrees = 1000,
+                                          sample_size = int(len(a) * 0.2),
                                           extension_level = len(predictors) - 1)
 
 # Train Extended Isolation Forest
@@ -256,3 +271,17 @@ anomaly_score = eif_result["anomaly_score"]
 
 # Average path length  of the point in Isolation Trees from root to the leaf
 mean_length = eif_result["mean_length"]
+
+
+# %%
+b = eif_result.as_data_frame()
+anomaly = a[b["anomaly_score"] >= 0.35]
+nominal = a[b["anomaly_score"] < 0.35]
+
+# %%
+
+fig, ax = plt.subplots(figsize=(20, 20))
+rio.plot.show(clipped, ax=ax)
+anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
+nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
+# %%
