@@ -35,7 +35,7 @@ sampleSize = 20
 data_paths_tif = dataCollect.dCollect(size=sampleSize, file_type="tif")
 data_paths_geojson = dataCollect.dCollect(size=sampleSize, file_type="geojson")
 
-    # Create raster stack in 
+# Create raster stack in 
 
 
 # %%
@@ -168,10 +168,10 @@ def getMask(rast, shape, placeHolder, out_tif="C:\\Users\\balen\\OneDrive\\Deskt
 
 #getMask(NIRs[0], Points[0], NIRs[0],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out1.tif")
 #getMask(DEMs[0], Points[0], NIRs[0],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out2.tif")
-getMask(RGBs[19], Points[19], RGBs[19],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out3.tif")
+getMask(RGBs[5], Points[5], RGBs[5],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out.tif")
 
 # %%
-out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out3.tif"
+out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out.tif"
 clipped = rio.open(out_tif)
 show((clipped), cmap='terrain')
 #es._stack_bands([clipped, clipped1])
@@ -180,7 +180,7 @@ show((clipped), cmap='terrain')
 # Plot them
 fig, ax = plt.subplots(figsize=(15, 15))
 rio.plot.show(clipped, ax=ax)
-Points[19].plot(ax=ax, facecolor='none', edgecolor='blue')
+Points[5].plot(ax=ax, facecolor='none', edgecolor='blue')
 
 # fig, ax = plt.subplots(figsize=(15, 15))
 # rio.plot.show(RGBs[0], ax=ax)
@@ -206,3 +206,53 @@ Points[19].plot(ax=ax, facecolor='none', edgecolor='blue')
 
     # To save as np array is possible
     # https://github.com/IamShubhamGupto/BandNet/blob/master/notebooks/1_image_to_numpy.ipynb
+
+
+# %%
+
+# Points maintains all polygons from 20 different geojson files
+Points[6].plot()
+
+# %%
+a = Points[1]
+geom = a.iloc[:,1]
+
+a["centroid"] = shapely.centroid(a.iloc[:,1])
+a["crown_projection_area"] = shapely.area(a.iloc[:,1])
+a["crown_perimeter"] = shapely.length(a.iloc[:,1])
+# https://www.tutorialspoint.com/radius-of-gyration
+# above link is for radius of gyration
+
+
+# %%
+# try use an extended isolation forest
+import h2o
+from h2o.estimators import H2OExtendedIsolationForestEstimator
+h2o.init()
+
+# Import the prostate dataset
+h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+
+# %%
+# Set the predictors
+predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+
+# Define an Extended Isolation forest model
+eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
+                                          ntrees = 100,
+                                          sample_size = 256,
+                                          extension_level = len(predictors) - 1)
+
+# Train Extended Isolation Forest
+eif.train(x = predictors,
+          training_frame = h2o_df)
+
+# Calculate score
+eif_result = eif.predict(h2o_df)
+
+# Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
+# or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
+anomaly_score = eif_result["anomaly_score"]
+
+# Average path length  of the point in Isolation Trees from root to the leaf
+mean_length = eif_result["mean_length"]
