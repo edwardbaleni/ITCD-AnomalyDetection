@@ -171,7 +171,7 @@ def getMask(rast, shape, placeHolder, out_tif="C:\\Users\\balen\\OneDrive\\Deskt
 
 #getMask(NIRs[0], Points[0], NIRs[0],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out1.tif")
 #getMask(DEMs[0], Points[0], NIRs[0],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out2.tif")
-getMask(RGBs[5], Points[5], RGBs[5],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out.tif")
+getMask(RGBs[1], Points[1], RGBs[1],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out.tif")
 
 # %%
 out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out.tif"
@@ -183,7 +183,7 @@ show((clipped), cmap='terrain')
 # Plot them
 fig, ax = plt.subplots(figsize=(15, 15))
 rio.plot.show(clipped, ax=ax)
-Points[5].plot(ax=ax, facecolor='none', edgecolor='blue')
+Points[1].plot(ax=ax, facecolor='none', edgecolor='blue')
 
 # fig, ax = plt.subplots(figsize=(15, 15))
 # rio.plot.show(RGBs[0], ax=ax)
@@ -214,10 +214,10 @@ Points[5].plot(ax=ax, facecolor='none', edgecolor='blue')
 # %%
 
 # Points maintains all polygons from 20 different geojson files
-Points[5].plot()
+Points[1].plot()
 
 # %%
-a = Points[5]
+a = Points[1]
 geom = a.iloc[:,1]
 
 a["centroid"] = shapely.centroid(a.iloc[:,1])
@@ -272,11 +272,67 @@ anomaly_score = eif_result["anomaly_score"]
 # Average path length  of the point in Isolation Trees from root to the leaf
 mean_length = eif_result["mean_length"]
 
-
 # %%
 b = eif_result.as_data_frame()
 anomaly = a[b["anomaly_score"] >= 0.35]
 nominal = a[b["anomaly_score"] < 0.35]
+
+# %%
+
+fig, ax = plt.subplots(figsize=(20, 20))
+rio.plot.show(clipped, ax=ax)
+anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
+nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# %%
+# Set the predictors
+h2o_df = h2o.H2OFrame(a.loc[:,["confidence", "latitude", "longitude","crown_projection_area","crown_perimeter"]])
+predictors = ["confidence","latitude", "longitude", "crown_projection_area","crown_perimeter"]#list(a.columns)
+
+# Extended Isolation Forest is a great unsupervised method for anomaly detection
+# however, it does not allow for the use of spatial features
+
+# Define an Extended Isolation forest model
+eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
+                                          ntrees = 1000,
+                                          sample_size = int(len(a) * 0.2),
+                                          extension_level = len(predictors) - 1)
+
+# Train Extended Isolation Forest
+eif.train(x = predictors,
+          training_frame = h2o_df)
+
+# Calculate score
+eif_result = eif.predict(h2o_df)
+
+# Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
+# or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
+anomaly_score = eif_result["anomaly_score"]
+
+# Average path length  of the point in Isolation Trees from root to the leaf
+mean_length = eif_result["mean_length"]
+
+
+# %%
+b = eif_result.as_data_frame()
+anomaly = a[b["anomaly_score"] >= 0.6]
+nominal = a[b["anomaly_score"] < 0.6]
 
 # %%
 
