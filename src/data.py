@@ -9,6 +9,7 @@
     # https://autogis-site.readthedocs.io/en/latest/ 
 
 # %%
+import shapely.plotting
 import dataCollect # contains os, glob, random
 
 import shapely # Used for mask creation
@@ -237,6 +238,9 @@ a["longitude"] = a["centroid"].x
 # https://www.tutorialspoint.com/radius-of-gyration
 # above link is for radius of gyration
 
+    # Wrong behaviours may be being learnt including absolute locations
+    # they may not be a good idea to include.
+    # Explanatory varaibles are more useful than absolute locations
 
 # %%
 # try use an extended isolation forest
@@ -300,44 +304,96 @@ nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
 
 
 
+# # %%
+# # Set the predictors
+# h2o_df = h2o.H2OFrame(a.loc[:,["confidence", "latitude", "longitude","crown_projection_area","crown_perimeter"]])
+# predictors = ["confidence","latitude", "longitude", "crown_projection_area","crown_perimeter"]#list(a.columns)
+
+# # Extended Isolation Forest is a great unsupervised method for anomaly detection
+# # however, it does not allow for the use of spatial features
+
+# # Define an Extended Isolation forest model
+# eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
+#                                           ntrees = 1000,
+#                                           sample_size = int(len(a) * 0.2),
+#                                           extension_level = len(predictors) - 1)
+
+# # Train Extended Isolation Forest
+# eif.train(x = predictors,
+#           training_frame = h2o_df)
+
+# # Calculate score
+# eif_result = eif.predict(h2o_df)
+
+# # Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
+# # or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
+# anomaly_score = eif_result["anomaly_score"]
+
+# # Average path length  of the point in Isolation Trees from root to the leaf
+# mean_length = eif_result["mean_length"]
+
+
+# # %%
+# b = eif_result.as_data_frame()
+# anomaly = a[b["anomaly_score"] >= 0.6]
+# nominal = a[b["anomaly_score"] < 0.6]
+
+# # %%
+
+# fig, ax = plt.subplots(figsize=(20, 20))
+# rio.plot.show(clipped, ax=ax)
+# anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
+# nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
 # %%
-# Set the predictors
-h2o_df = h2o.H2OFrame(a.loc[:,["confidence", "latitude", "longitude","crown_projection_area","crown_perimeter"]])
-predictors = ["confidence","latitude", "longitude", "crown_projection_area","crown_perimeter"]#list(a.columns)
 
-# Extended Isolation Forest is a great unsupervised method for anomaly detection
-# however, it does not allow for the use of spatial features
+# https://gis.stackexchange.com/questions/459091/definition-of-multipolygon-distance-in-shapely
+import shapely.plotting
 
-# Define an Extended Isolation forest model
-eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
-                                          ntrees = 1000,
-                                          sample_size = int(len(a) * 0.2),
-                                          extension_level = len(predictors) - 1)
+shapely.plotting.plot_polygon(a.iloc[0,1], color = "red")
+shapely.plotting.plot_polygon(a.iloc[4,1], color = "blue")
+plt.show()
 
-# Train Extended Isolation Forest
-eif.train(x = predictors,
-          training_frame = h2o_df)
+# this distance outputs the distance from the nearest vertex to the nearest vertex of the
+# polygons not from the centroid to the centroid
+print("distance: ", {a.iloc[0,1].distance(a.iloc[4,1])})
 
-# Calculate score
-eif_result = eif.predict(h2o_df)
+# (-8.28502 - -8.28497) = 0.00005       # From closrset vertex to closest vertex
+# (-8.28506 - -8.28495) = 0.00011       # From centroid to centroid\
 
-# Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
-# or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
-anomaly_score = eif_result["anomaly_score"]
+# don't have to do polygons to polygons can do centroid to centtroid.
 
-# Average path length  of the point in Isolation Trees from root to the leaf
-mean_length = eif_result["mean_length"]
+# %% 
+from scipy.spatial import Delaunay
+points = a.iloc[0:50,5:7].to_numpy()
+tri = Delaunay(points)
 
 
 # %%
-b = eif_result.as_data_frame()
-anomaly = a[b["anomaly_score"] >= 0.6]
-nominal = a[b["anomaly_score"] < 0.6]
+plt.triplot(points[:,0], points[:,1], tri.simplices)
+plt.plot(points[:,0], points[:,1], 'o')
+plt.show()
+
+# try both delauney triangulation method and a nearest neighbour or could use a sort
 
 # %%
 
-fig, ax = plt.subplots(figsize=(20, 20))
-rio.plot.show(clipped, ax=ax)
-anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
-nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
+# fig, ax = plt.subplots(figsize=(20, 20))
+# rio.plot.show(clipped, ax=ax)
+# plt.triplot(points[:,0], points[:,1], tri.simplices)
+# plt.plot(points[:,0], points[:,1], 'o')
+# plt.show()
+          
+
+
+# %%
+
+# because distances aren't already worked out from Delauney, we can
+# do this manually from polygon to polygon instead of from vertex to vertex
+
+# Simplices are the indices of the vertices that make up the triangle in
+# points. If we match this to the centroid in main dataframe then we could 
+# find distances between polygons.
+
+
+
 # %%
