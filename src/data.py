@@ -292,58 +292,10 @@ nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-# # %%
-# # Set the predictors
-# h2o_df = h2o.H2OFrame(a.loc[:,["confidence", "latitude", "longitude","crown_projection_area","crown_perimeter"]])
-# predictors = ["confidence","latitude", "longitude", "crown_projection_area","crown_perimeter"]#list(a.columns)
-
-# # Extended Isolation Forest is a great unsupervised method for anomaly detection
-# # however, it does not allow for the use of spatial features
-
-# # Define an Extended Isolation forest model
-# eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
-#                                           ntrees = 1000,
-#                                           sample_size = int(len(a) * 0.2),
-#                                           extension_level = len(predictors) - 1)
-
-# # Train Extended Isolation Forest
-# eif.train(x = predictors,
-#           training_frame = h2o_df)
-
-# # Calculate score
-# eif_result = eif.predict(h2o_df)
-
-# # Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
-# # or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
-# anomaly_score = eif_result["anomaly_score"]
-
-# # Average path length  of the point in Isolation Trees from root to the leaf
-# mean_length = eif_result["mean_length"]
-
-
-# # %%
-# b = eif_result.as_data_frame()
-# anomaly = a[b["anomaly_score"] >= 0.6]
-# nominal = a[b["anomaly_score"] < 0.6]
-
-# # %%
-
-# fig, ax = plt.subplots(figsize=(20, 20))
-# rio.plot.show(clipped, ax=ax)
-# anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
-# nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
+            # do not do delauney triangulation with EFI use, nearest neighbour instead to get closest points 
+            # otherwise the number of variables won't be contained at each vairable
+            # Only use delauney triangulation for second method
+            # Use distatnces to centres not to vertices
 # %%
 
 # https://gis.stackexchange.com/questions/459091/definition-of-multipolygon-distance-in-shapely
