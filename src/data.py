@@ -246,48 +246,48 @@ a["longitude"] = a["centroid"].x
 # try use an extended isolation forest
 # https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/eif.html#examples
 # https://github.com/sahandha/eif/blob/master/Notebooks/TreeVisualization.ipynb 
-h2o.init()
+# h2o.init()
 
 
-# %%
-# Set the predictors
-h2o_df = h2o.H2OFrame(a.loc[:,["confidence", "latitude", "longitude","crown_projection_area","crown_perimeter"]])
-predictors = ["confidence","latitude", "longitude", "crown_projection_area","crown_perimeter"]#list(a.columns)
+# # %%
+# # Set the predictors
+# h2o_df = h2o.H2OFrame(a.loc[:,["confidence", "latitude", "longitude","crown_projection_area","crown_perimeter"]])
+# predictors = ["confidence","latitude", "longitude", "crown_projection_area","crown_perimeter"]#list(a.columns)
 
-# Extended Isolation Forest is a great unsupervised method for anomaly detection
-# however, it does not allow for the use of spatial features
+# # Extended Isolation Forest is a great unsupervised method for anomaly detection
+# # however, it does not allow for the use of spatial features
 
-# Define an Extended Isolation forest model
-eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
-                                          ntrees = 1000,
-                                          sample_size = int(len(a) * 0.2),
-                                          extension_level = len(predictors) - 1)
+# # Define an Extended Isolation forest model
+# eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
+#                                           ntrees = 1000,
+#                                           sample_size = int(len(a) * 0.2),
+#                                           extension_level = len(predictors) - 1)
 
-# Train Extended Isolation Forest
-eif.train(x = predictors,
-          training_frame = h2o_df)
+# # Train Extended Isolation Forest
+# eif.train(x = predictors,
+#           training_frame = h2o_df)
 
-# Calculate score
-eif_result = eif.predict(h2o_df)
+# # Calculate score
+# eif_result = eif.predict(h2o_df)
 
-# Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
-# or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
-anomaly_score = eif_result["anomaly_score"]
+# # Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
+# # or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
+# anomaly_score = eif_result["anomaly_score"]
 
-# Average path length  of the point in Isolation Trees from root to the leaf
-mean_length = eif_result["mean_length"]
+# # Average path length  of the point in Isolation Trees from root to the leaf
+# mean_length = eif_result["mean_length"]
 
-# %%
-b = eif_result.as_data_frame()
-anomaly = a[b["anomaly_score"] >= 0.35]
-nominal = a[b["anomaly_score"] < 0.35]
+# # %%
+# b = eif_result.as_data_frame()
+# anomaly = a[b["anomaly_score"] >= 0.35]
+# nominal = a[b["anomaly_score"] < 0.35]
 
-# %%
+# # %%
 
-fig, ax = plt.subplots(figsize=(20, 20))
-rio.plot.show(clipped, ax=ax)
-anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
-nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
+# fig, ax = plt.subplots(figsize=(20, 20))
+# rio.plot.show(clipped, ax=ax)
+# anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
+# nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
 
 
 
@@ -361,9 +361,57 @@ xx_centre = a.iloc[1,1].centroid.xy
 
 
 # %%
-from sklearn.neighbors import KNeighborsClassifier as KNN
+from sklearn.neighbors import NearestNeighbors as KNN
+# number of neighbours to find,
+# the reason that it is k + 1 is because the first neighbour is the point itself
+k = 4
+neigh = KNN(n_neighbors= k + 1)
+neigh.fit( a[["latitude","longitude"]])
+distances, positions = neigh.kneighbors(a[["latitude","longitude"]], return_distance=True)
+a[["dist1", "dist2", "dist3", "dist4"]] = distances[:,1:]
 
-neigh = KNN(n_neighbors=5)
-neigh.fit(a.loc["latitude"], a.loc["longitude"])
+# %%
+
+# %%
+# Set the predictors
+h2o.init()
+h2o_df = h2o.H2OFrame(a.loc[:,['confidence', 'geometry', 'centroid', 'crown_projection_area', 'crown_perimeter', 'dist1', 'dist2', 'dist3', 'dist4']])
+predictors = ['confidence','geometry', 'centroid', 'crown_projection_area', 'crown_perimeter', 'dist1', 'dist2', 'dist3', 'dist4']#list(a.columns)
+
+# %%
+# Extended Isolation Forest is a great unsupervised method for anomaly detection
+# however, it does not allow for the use of spatial features
+
+# Define an Extended Isolation forest model
+eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
+                                          ntrees = 1000,
+                                          sample_size = int(len(a) * 0.2),
+                                          extension_level = 6)#len(predictors) - 1)
+
+# Train Extended Isolation Forest
+eif.train(x = predictors,
+          training_frame = h2o_df)
+
+# Calculate score
+eif_result = eif.predict(h2o_df)
+
+# Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
+# or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
+anomaly_score = eif_result["anomaly_score"]
+
+# Average path length  of the point in Isolation Trees from root to the leaf
+mean_length = eif_result["mean_length"]
+
+# %%
+b = eif_result.as_data_frame()
+anomaly = a[b["anomaly_score"] >= 0.7]
+nominal = a[b["anomaly_score"] < 0.7]
+
+# %%
+
+fig, ax = plt.subplots(figsize=(20, 20))
+rio.plot.show(clipped, ax=ax)
+anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
+nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
 
 # %%
