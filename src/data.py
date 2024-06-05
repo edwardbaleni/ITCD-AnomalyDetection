@@ -365,3 +365,5 @@ from sklearn.neighbors import KNeighborsClassifier as KNN
 
 neigh = KNN(n_neighbors=5)
 neigh.fit(a.loc["latitude"], a.loc["longitude"])
+
+# %%
