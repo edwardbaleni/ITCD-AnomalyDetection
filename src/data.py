@@ -244,7 +244,8 @@ a["longitude"] = a["centroid"].x
 
 # %%
 # try use an extended isolation forest
-
+# https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/eif.html#examples
+# https://github.com/sahandha/eif/blob/master/Notebooks/TreeVisualization.ipynb 
 h2o.init()
 
 
@@ -349,3 +350,18 @@ plt.show()
 
 
 # %%
+# for i in a.loc[1,1].:
+# a.loc[1,1].
+
+# Maybe to calculate radius of gyration we can use the coordinates of the vertices
+# with the coordinates of the centroid to calculate the distance
+xx , yy = a.iloc[1,1].exterior.coords.xy
+xx = a.iloc[1,1].exterior.coords.xy
+xx_centre = a.iloc[1,1].centroid.xy
+
+
+# %%
+from sklearn.neighbors import KNeighborsClassifier as KNN
+
+neigh = KNN(n_neighbors=5)
+neigh.fit(a.loc["latitude"], a.loc["longitude"])
