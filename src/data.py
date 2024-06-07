@@ -8,6 +8,16 @@
     # https://automating-gis-processes.github.io/CSC18/index.html 
     # https://autogis-site.readthedocs.io/en/latest/ 
 
+
+
+
+# How about we make this a whole file a class
+# that works on one file at a time
+# then we use another python file to loop over all images or folders
+# and in this way this part can be parellizable
+# since the algorhtims are each rely solely on the one image alone.
+
+
 # %%
 import shapely.plotting
 import dataCollect # contains os, glob, random
@@ -29,6 +39,10 @@ import earthpy as et
 import matplotlib.pyplot as plt
 
 import numpy as np
+import pandas as pd
+import math
+
+from sklearn.neighbors import NearestNeighbors as KNN
 
 import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator
@@ -80,7 +94,53 @@ for i in range(sampleSize):
 
     # es._stack_bands([Reds[0], NIRs[0]]) # to stack bands
 
+
+
+# %%
+# merge dataframes
 # Make function to change transform to same as bands for everything
+
+import rioxarray as rxr
+import xarray
+from rasterio.enums import Resampling
+
+xds = xarray.open_dataarray(data_paths_tif[0][4])
+xds_match = xarray.open_dataarray(data_paths_tif[0][0])
+
+fig, axes = plt.subplots(ncols=2, figsize=(12,4))
+xds.plot(ax=axes[0])
+xds_match.plot(ax=axes[1])
+plt.draw()
+
+# %%
+xds_repr_match = xds.rio.reproject_match(xds_match, resampling = Resampling.bilinear)
+
+xds_repr_match = xds_repr_match.assign_coords({
+    "x": xds_match.x,
+    "y": xds_match.y,
+})
+
+# %%
+# we can perform calculations between the two rasters now they are in the same
+# will be helpful when calculating NDVI and others.
+diff = xds_repr_match - xds_match
+# %%
+
+# get data within geometry
+# https://gis.stackexchange.com/questions/328128/extracting-data-within-geometry-shape/328320#328320
+touch = xds_match.rio.clip([Points[0].iloc[0,1]], xds_match.rio.crs)
+touch.plot()
+# this is the mean of the raster within the polygon for one polygon. Weighted average will be a bit dificult to collect.
+# we could also just obtain the max or the median instead or the mode instead of the mean or weighted average
+print(touch.mean()) 
+# %%
+
+# now we are able to perform calculations between the two rasters now they are in the same
+#  projection, resolution, and extents
+
+
+
+
 
 
 
@@ -166,8 +226,6 @@ def getMask(rast, shape, placeHolder, out_tif="C:\\Users\\balen\\OneDrive\\Deskt
 # Everything except the width and height is good. Now we need to fix this
 # Output all results to data2
 
-
-
 # %%
 
 #getMask(NIRs[0], Points[0], NIRs[0],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out1.tif")
@@ -189,14 +247,7 @@ Points[1].plot(ax=ax, facecolor='none', edgecolor='blue')
 # fig, ax = plt.subplots(figsize=(15, 15))
 # rio.plot.show(RGBs[0], ax=ax)
 
-# %%
-    # We need a conventional way to save the data after reading it in so that 
-    # Algorithms can handle it, be it image based methods or 
-    # geometric methods
-# https://medium.com/abraia/hyperspectral-image-classification-with-python-7dce4ebcda0a
-# https://shreshai.blogspot.com/2014/11/converting-raster-dataset-to-xyz-in.html
-# https://towardsdatascience.com/neural-network-for-satellite-data-classification-using-tensorflow-in-python-a13bcf38f3e1
-# https://github.com/IamShubhamGupto/BandNet/tree/master/notebooks
+
 
 # %%
     # For image manipulation
@@ -206,16 +257,25 @@ Points[1].plot(ax=ax, facecolor='none', edgecolor='blue')
 
 
 
-# %% 
 
-    # To save as np array is possible
-    # https://github.com/IamShubhamGupto/BandNet/blob/master/notebooks/1_image_to_numpy.ipynb
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # %%
 
-# Points maintains all polygons from 20 different geojson files
-Points[1].plot()
+                    # Feature Engineering
 
 # %%
 a = Points[1]
@@ -244,32 +304,37 @@ a["longitude"] = a["centroid"].x
 
 
 # %%
-# Radius of gyration
-import math
- # https://www.tutorialspoint.com/radius-of-gyration
-# for now we will use the straight line distance from the centroid to the vertices
+# Radius of gyration - https://www.tutorialspoint.com/radius-of-gyration
+# For now we will use the straight line distance from the centroid to the vertices
 # However, in future this line should be robust, say in the case of a concave polygon
 # the line should not exit the polygon.
-# I want to calculate the distance between two points within a concave shape, and the distance line between these points cannot exit the polygon.
+# I want to calculate the distance between two points within a concave shape, 
+# and the distance line between these points cannot exit the polygon.
 
-# Maybe to calculate radius of gyration we can use the coordinates of the vertices
-# with the coordinates of the centroid to calculate the distance
-xx , yy = a.iloc[1,1].exterior.coords.xy
-#xx = a.iloc[1,1].exterior.coords.xy
-xx_centre = a.iloc[1,1].centroid
+# still need to find the sd for the radius of gyration
+# https://www.researchgate.net/publication/6764643_Experimental_characterization_of_vibrated_granular_rings 
 
-rad = 0
-def gyration(xx_centre, xx, yy):
+def radius(xx_centre, xx, yy):
     rad = 0
-    
+    short = 1000
+    long = -1000
     # also save short and long radius to have cross-section
-
+    # instead of lookinoutg at longest and shortest radius
+    # it may be more helpful to look at the major and minor axis
+    # http://www.cyto.purdue.edu/cdroms/micro2/content/education/wirth10.pdf
     for i in range(len(xx)):
-        rad += xx_centre.distance(shapely.Point(xx[i], yy[i]))**2
-    
-    return math.sqrt(rad) / len(xx)
+        dist = xx_centre.distance(shapely.Point(xx[i], yy[i]))
+        if dist < short:
+            short = dist
+        if dist > long:
+            long = dist
+        rad += dist**2
+    # return radius of gyration, short radius, long radius
+    # still need to output the standard deviation of the radius of gyration
+    return pd.Series([math.sqrt(rad) / len(xx), short, long])
 
-a["radius_of_gyration"] = rad_gyration
+
+a[["radius_of_gyration", "short","long"]] = a[["centroid", "geometry"]].apply(lambda x: radius(x[0], x[1].exterior.coords.xy[0], x[1].exterior.coords.xy[1]), axis=1)
 
 
 # %%
@@ -277,7 +342,6 @@ a["radius_of_gyration"] = rad_gyration
 # https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/eif.html#examples
 # https://github.com/sahandha/eif/blob/master/Notebooks/TreeVisualization.ipynb 
 # %%
-from sklearn.neighbors import NearestNeighbors as KNN
 # number of neighbours to find,
 # the reason that it is k + 1 is because the first neighbour is the point itself
 k = 4
@@ -286,13 +350,21 @@ neigh.fit( a[["latitude","longitude"]])
 distances, positions = neigh.kneighbors(a[["latitude","longitude"]], return_distance=True)
 a[["dist1", "dist2", "dist3", "dist4"]] = distances[:,1:]
 
+
+
 # %%
+                    # Extended Isolation Forest
 
 # %%
 # Set the predictors
 h2o.init()
-h2o_df = h2o.H2OFrame(a.loc[:,['confidence', 'geometry', 'centroid', 'crown_projection_area', 'crown_perimeter', 'dist1', 'dist2', 'dist3', 'dist4']])
-predictors = ['confidence','geometry', 'centroid', 'crown_projection_area', 'crown_perimeter', 'dist1', 'dist2', 'dist3', 'dist4']#list(a.columns)
+# %%
+h2o_df = h2o.H2OFrame(a.loc[:,['confidence', 'crown_projection_area', 'crown_perimeter', 'dist1', 'dist2', 'dist3', 'dist4', 'radius_of_gyration',
+ 'short',
+ 'long']])
+predictors = ['confidence', 'crown_projection_area', 'crown_perimeter', 'dist1', 'dist2', 'dist3', 'dist4', 'radius_of_gyration',
+ 'short',
+ 'long']#list(a.columns)
 
 # %%
 # Extended Isolation Forest is a great unsupervised method for anomaly detection
@@ -320,8 +392,13 @@ mean_length = eif_result["mean_length"]
 
 # %%
 b = eif_result.as_data_frame()
-anomaly = a[b["anomaly_score"] >= 0.7]
-nominal = a[b["anomaly_score"] < 0.7]
+# when the confidence variable is included then use a thresholf of 0.65
+# when it is not included then use a threshold of 0.5, however, this picks out a lot more anomalies
+# that may in fact be normal.
+# It is likely that most papers will not include the confidence variable
+
+anomaly = a[b["anomaly_score"] >= 0.65]
+nominal = a[b["anomaly_score"] < 0.65]
 
 # %%
 
@@ -340,6 +417,9 @@ nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
             # otherwise the number of variables won't be contained at each vairable
             # Only use delauney triangulation for second method
             # Use distatnces to centres not to vertices
+
+# %%
+                    # Delauney Paper
 # %%
 
 # https://gis.stackexchange.com/questions/459091/definition-of-multipolygon-distance-in-shapely
