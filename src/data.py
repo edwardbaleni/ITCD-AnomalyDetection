@@ -311,7 +311,7 @@ a["NDRE_meidan"] = a["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x
 a["NDRE_max"] = a["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).max()))
 a["NDVI_meidan"] = a["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()))
 a["NDVI_max"] = a["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).max()))
-
+a["DEM"] = a["geometry"].apply(lambda x: float(data["DEM"].rio.clip( [x], data["DEM"].rio.crs).max()))
 
 
 # %%
@@ -416,14 +416,16 @@ h2o_df = h2o.H2OFrame(a.loc[:,['confidence', 'crown_projection_area', 'crown_per
  'NDRE_meidan',
  'NDRE_max',
  'NDVI_meidan',
- 'NDVI_max']])
+ 'NDVI_max',
+ 'DEM']])
 predictors = ['confidence', 'crown_projection_area', 'crown_perimeter', 'dist1', 'dist2', 'dist3', 'dist4', 'radius_of_gyration',
  'short',
  'long',
  'NDRE_meidan',
  'NDRE_max',
  'NDVI_meidan',
- 'NDVI_max']#list(a.columns)
+ 'NDVI_max',
+ 'DEM']#list(a.columns)
 
 # %%
 # Extended Isolation Forest is a great unsupervised method for anomaly detection
