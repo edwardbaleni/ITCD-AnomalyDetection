@@ -104,45 +104,58 @@ import rioxarray as rxr
 import xarray
 from rasterio.enums import Resampling
 
-xds = xarray.open_dataarray(data_paths_tif[0][4])
-xds_match = xarray.open_dataarray(data_paths_tif[0][0])
+num = 1
+
+xds_DEM = xarray.open_dataarray(data_paths_tif[ num ][0])
+xds_NIR = xds_match = xarray.open_dataarray(data_paths_tif[ num ][1])
+xds_Red = xarray.open_dataarray(data_paths_tif[ num ][2])
+xds_Reg = xarray.open_dataarray(data_paths_tif[ num ][3])
+xds_RGB = xarray.open_dataarray(data_paths_tif[ num ][4])
+
+xds_dictionary = {"DEM": xds_DEM, 
+                  "NIR": xds_NIR, 
+                  "Red": xds_Red, 
+                  "Reg": xds_Reg, 
+                  "RGB": xds_RGB}
 
 fig, axes = plt.subplots(ncols=2, figsize=(12,4))
-xds.plot(ax=axes[0])
-xds_match.plot(ax=axes[1])
+xds_dictionary["DEM"].plot(ax=axes[0])
+xds_dictionary["RGB"].plot(ax=axes[1])
 plt.draw()
 
 # %%
-xds_repr_match = xds.rio.reproject_match(xds_match, resampling = Resampling.bilinear)
+data = {}
+# xds_DEM_match = xds_DEM.rio.reproject_match(xds_match, resampling = Resampling.bilinear)
+# xds_Red_match = xds_Red.rio.reproject_match(xds_match, resampling = Resampling.bilinear)
+# xds_Reg_match = xds_Reg.rio.reproject_match(xds_match, resampling = Resampling.bilinear)
+# xds_RGB_match = xds_RGB.rio.reproject_match(xds_match, resampling = Resampling.bilinear)
 
-xds_repr_match = xds_repr_match.assign_coords({
-    "x": xds_match.x,
-    "y": xds_match.y,
-})
+for key in xds_dictionary:
+    data[key] = xds_dictionary[key].rio.reproject_match(xds_match, resampling = Resampling.bilinear)
+    data[key] = data[key].assign_coords({
+        "x": xds_match.x,
+        "y": xds_match.y,
+    })
+
+
+# xds_repr_match = xds_repr_match.assign_coords({
+#     "x": xds_match.x,
+#     "y": xds_match.y,
+# })
+
+
 
 # %%
-# we can perform calculations between the two rasters now they are in the same
-# will be helpful when calculating NDVI and others.
-diff = xds_repr_match - xds_match
-# %%
-
-# get data within geometry
-# https://gis.stackexchange.com/questions/328128/extracting-data-within-geometry-shape/328320#328320
-touch = xds_match.rio.clip([Points[0].iloc[0,1]], xds_match.rio.crs)
-touch.plot()
-# this is the mean of the raster within the polygon for one polygon. Weighted average will be a bit dificult to collect.
-# we could also just obtain the max or the median instead or the mode instead of the mean or weighted average
-print(touch.mean()) 
-# %%
-
 # now we are able to perform calculations between the two rasters now they are in the same
 #  projection, resolution, and extents
+# we can perform calculations between the two rasters now they are in the same
+# will be helpful when calculating NDVI and others.
+# Find other vegetation indices to calculate
+#diff = xds_repr_match - xds_match
 
-
-
-
-
-
+data["NDVI"] = (data["NIR"] - data["Red"]) / (data["NIR"] + data["Red"])
+# reg stands for red edge
+data["NDRE"] = (data["NIR"] - data["Reg"]) / (data["NIR"] + data["Reg"])
 
 
 # %%
@@ -230,7 +243,7 @@ def getMask(rast, shape, placeHolder, out_tif="C:\\Users\\balen\\OneDrive\\Deskt
 
 #getMask(NIRs[0], Points[0], NIRs[0],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out1.tif")
 #getMask(DEMs[0], Points[0], NIRs[0],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out2.tif")
-getMask(RGBs[1], Points[1], RGBs[1],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out.tif")
+getMask(RGBs[ num ], Points[ num ], RGBs[ num ],out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out.tif")
 
 # %%
 out_tif = "C:\\Users\\balen\\OneDrive\\Desktop\\Git\\Dissertation-AnomalyDetection\\Dissertation-AnomalyDetection\\src\\out.tif"
@@ -242,7 +255,7 @@ show((clipped), cmap='terrain')
 # Plot them
 fig, ax = plt.subplots(figsize=(15, 15))
 rio.plot.show(clipped, ax=ax)
-Points[1].plot(ax=ax, facecolor='none', edgecolor='blue')
+Points[ num ].plot(ax=ax, facecolor='none', edgecolor='blue')
 
 # fig, ax = plt.subplots(figsize=(15, 15))
 # rio.plot.show(RGBs[0], ax=ax)
@@ -278,12 +291,34 @@ Points[1].plot(ax=ax, facecolor='none', edgecolor='blue')
                     # Feature Engineering
 
 # %%
-a = Points[1]
+a = Points[ num ]
 geom = a.iloc[:,1]
 
-a["centroid"] = shapely.centroid(a.iloc[:,1])
-a["crown_projection_area"] = shapely.area(a.iloc[:,1])
-a["crown_perimeter"] = shapely.length(a.iloc[:,1])
+# %%
+                    # Vegetative Indices
+
+# get data within geometry
+# https://gis.stackexchange.com/questions/328128/extracting-data-within-geometry-shape/328320#328320
+touch = xds_match.rio.clip([Points[ num ].iloc[0,1]], xds_match.rio.crs)
+touch.plot()
+# this is the mean of the raster within the polygon for one polygon. Weighted average will be a bit dificult to collect.
+# we could also just obtain the max or the median instead or the mode instead of the mean or weighted average
+print(touch.mean()) 
+
+ # obtain median and max of the raster within the polygon
+    # this process takes too long!!!!!!!!
+a["NDRE_meidan"] = a["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()))
+a["NDRE_max"] = a["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).max()))
+a["NDVI_meidan"] = a["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()))
+a["NDVI_max"] = a["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).max()))
+
+
+
+# %%
+
+a["centroid"] = shapely.centroid(a.loc[:,"geometry"])
+a["crown_projection_area"] = shapely.area(a.loc[:,"geometry"])
+a["crown_perimeter"] = shapely.length(a.loc[:,"geometry"])
 
     # When the latitude and longitude of the centroids are included
     # we see that the anomaly scores aren't as high,
@@ -302,7 +337,7 @@ a["longitude"] = a["centroid"].x
     # they may not be a good idea to include.
     # Explanatory varaibles are more useful than absolute locations
 
-
+  
 # %%
 # Radius of gyration - https://www.tutorialspoint.com/radius-of-gyration
 # For now we will use the straight line distance from the centroid to the vertices
@@ -337,6 +372,12 @@ def radius(xx_centre, xx, yy):
 a[["radius_of_gyration", "short","long"]] = a[["centroid", "geometry"]].apply(lambda x: radius(x[0], x[1].exterior.coords.xy[0], x[1].exterior.coords.xy[1]), axis=1)
 
 
+
+
+# %%
+
+                    # Distance Based Features
+
 # %%
 # try use an extended isolation forest
 # https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/eif.html#examples
@@ -352,6 +393,16 @@ a[["dist1", "dist2", "dist3", "dist4"]] = distances[:,1:]
 
 
 
+
+
+
+# %%
+
+                    # Feature Scaling
+
+# %%    
+                    # Feature Selection (if too many features)
+
 # %%
                     # Extended Isolation Forest
 
@@ -361,10 +412,18 @@ h2o.init()
 # %%
 h2o_df = h2o.H2OFrame(a.loc[:,['confidence', 'crown_projection_area', 'crown_perimeter', 'dist1', 'dist2', 'dist3', 'dist4', 'radius_of_gyration',
  'short',
- 'long']])
+ 'long',
+ 'NDRE_meidan',
+ 'NDRE_max',
+ 'NDVI_meidan',
+ 'NDVI_max']])
 predictors = ['confidence', 'crown_projection_area', 'crown_perimeter', 'dist1', 'dist2', 'dist3', 'dist4', 'radius_of_gyration',
  'short',
- 'long']#list(a.columns)
+ 'long',
+ 'NDRE_meidan',
+ 'NDRE_max',
+ 'NDVI_meidan',
+ 'NDVI_max']#list(a.columns)
 
 # %%
 # Extended Isolation Forest is a great unsupervised method for anomaly detection
@@ -392,6 +451,7 @@ mean_length = eif_result["mean_length"]
 
 # %%
 b = eif_result.as_data_frame()
+# for Points[1]
 # when the confidence variable is included then use a thresholf of 0.65
 # when it is not included then use a threshold of 0.5, however, this picks out a lot more anomalies
 # that may in fact be normal.
