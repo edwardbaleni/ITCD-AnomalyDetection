@@ -276,16 +276,6 @@ Points[ num ].plot(ax=ax, facecolor='none', edgecolor='blue')
 
 
 
-
-
-
-
-
-
-
-
-
-
 # %%
 
                     # Feature Engineering
@@ -293,6 +283,26 @@ Points[ num ].plot(ax=ax, facecolor='none', edgecolor='blue')
 # %%
 a = Points[ num ]
 geom = a.iloc[:,1]
+
+
+# %%
+
+a["centroid"] = shapely.centroid(a.loc[:,"geometry"])
+
+    # When the latitude and longitude of the centroids are included
+    # we see that the anomaly scores aren't as high,
+    # and that the anomalies are not as clear.
+    # However, when these are included the false-positives are more apparent
+
+    # the exculsion of the latitude and longitude of the centroids, or spatial features
+    # identifies more anomalies both false-positives and a lot of segmentation issues
+    # albeit I can not determine the accuracy of this method
+a["latitude"] = a["centroid"].y
+a["longitude"] = a["centroid"].x
+
+# put the spatial features first
+a = a.loc[:, ['geometry', 'centroid', 'latitude', 'longitude', 'confidence']]
+
 
 # %%
                     # Vegetative Indices
@@ -307,36 +317,25 @@ print(touch.mean())
 
  # obtain median and max of the raster within the polygon
     # this process takes too long!!!!!!!!
-a["NDRE_meidan"] = a["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()))
+a["NDRE_median"] = a["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()))
 a["NDRE_max"] = a["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).max()))
-a["NDVI_meidan"] = a["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()))
+a["NDVI_median"] = a["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()))
 a["NDVI_max"] = a["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).max()))
 a["DEM"] = a["geometry"].apply(lambda x: float(data["DEM"].rio.clip( [x], data["DEM"].rio.crs).max()))
 
 
 # %%
-
-a["centroid"] = shapely.centroid(a.loc[:,"geometry"])
+                    # Shape Descriptors Not Robust
+# %%
 a["crown_projection_area"] = shapely.area(a.loc[:,"geometry"])
 a["crown_perimeter"] = shapely.length(a.loc[:,"geometry"])
 
-    # When the latitude and longitude of the centroids are included
-    # we see that the anomaly scores aren't as high,
-    # and that the anomalies are not as clear.
-    # However, when these are included the false-positives are more apparent
-
-    # the exculsion of the latitude and longitude of the centroids, or spatial features
-    # identifies more anomalies both false-positives and a lot of segmentation issues
-    # albeit I can not determine the accuracy of this method
-a["latitude"] = a["centroid"].y
-a["longitude"] = a["centroid"].x
 # https://www.tutorialspoint.com/radius-of-gyration
 # above link is for radius of gyration
 
     # Wrong behaviours may be being learnt including absolute locations
     # they may not be a good idea to include.
     # Explanatory varaibles are more useful than absolute locations
-
   
 # %%
 # Radius of gyration - https://www.tutorialspoint.com/radius-of-gyration
@@ -373,6 +372,15 @@ a[["radius_of_gyration", "short","long"]] = a[["centroid", "geometry"]].apply(la
 
 
 
+# %%
+                    # Robust Shape Descriptors
+
+
+
+
+
+# %%
+
 
 # %%
 
@@ -395,11 +403,16 @@ a[["dist1", "dist2", "dist3", "dist4"]] = distances[:,1:]
 
 
 
-
 # %%
 
                     # Feature Scaling
 
+# %%
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+#a.loc[:,['confidence', 'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM', 'crown_projection_area', 'crown_perimeter', 'radius_of_gyration', 'short', 'long']] = StandardScaler().fit_transform(a.loc[:,['confidence', 'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM', 'crown_projection_area', 'crown_perimeter', 'radius_of_gyration', 'short', 'long']])
+#a.loc[:, "confidence":]
+a.loc[:, "confidence":] = scaler.fit_transform(a.loc[:,'confidence':])
 # %%    
                     # Feature Selection (if too many features)
 
@@ -459,8 +472,11 @@ b = eif_result.as_data_frame()
 # that may in fact be normal.
 # It is likely that most papers will not include the confidence variable
 
-anomaly = a[b["anomaly_score"] >= 0.65]
-nominal = a[b["anomaly_score"] < 0.65]
+# when scaled and no confidence then 0.5 is a good threshold, most of the anomalies are captured
+# the same anomalies are captured with or withour using confidence anyway. So we may be able to get away with
+# not using confidence
+anomaly = a[b["anomaly_score"] >= 0.5]
+nominal = a[b["anomaly_score"] < 0.5]
 
 # %%
 
