@@ -317,11 +317,19 @@ print(touch.mean())
 
  # obtain median and max of the raster within the polygon
     # this process takes too long!!!!!!!!
-a["NDRE_median"] = a["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()))
-a["NDRE_max"] = a["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).max()))
-a["NDVI_median"] = a["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()))
-a["NDVI_max"] = a["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).max()))
-a["DEM"] = a["geometry"].apply(lambda x: float(data["DEM"].rio.clip( [x], data["DEM"].rio.crs).max()))
+from tqdm import tqdm
+# from tqdm.auto import tqdm  # for notebooks
+
+# Create new `pandas` methods which use `tqdm` progress
+# (can use tqdm_gui, optional kwargs, etc.)
+tqdm.pandas()
+
+# switched out apply for progress_apply to show progress
+a["NDRE_median"] = a["geometry"].progress_apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()))
+a["NDRE_max"] = a["geometry"].progress_apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).max()))
+a["NDVI_median"] = a["geometry"].progress_apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()))
+a["NDVI_max"] = a["geometry"].progress_apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).max()))
+a["DEM"] = a["geometry"].progress_apply(lambda x: float(data["DEM"].rio.clip( [x], data["DEM"].rio.crs).max()))
 
 
 # %%
