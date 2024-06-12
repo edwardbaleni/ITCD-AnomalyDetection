@@ -375,10 +375,6 @@ a[["radius_of_gyration", "short","long"]] = a[["centroid", "geometry"]].apply(la
 # %%
                     # Robust Shape Descriptors
 
-
-
-
-
 # %%
 
 
@@ -386,10 +382,6 @@ a[["radius_of_gyration", "short","long"]] = a[["centroid", "geometry"]].apply(la
 
                     # Distance Based Features
 
-# %%
-# try use an extended isolation forest
-# https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/eif.html#examples
-# https://github.com/sahandha/eif/blob/master/Notebooks/TreeVisualization.ipynb 
 # %%
 # number of neighbours to find,
 # the reason that it is k + 1 is because the first neighbour is the point itself
@@ -417,9 +409,12 @@ a.loc[:, "confidence":] = scaler.fit_transform(a.loc[:,'confidence':])
                     # Feature Selection (if too many features)
 
 # %%
+
                     # Extended Isolation Forest
 
 # %%
+# https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/eif.html#examples
+# https://github.com/sahandha/eif/blob/master/Notebooks/TreeVisualization.ipynb 
 # Set the predictors
 h2o.init()
 # %%
