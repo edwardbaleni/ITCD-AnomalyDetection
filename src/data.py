@@ -317,6 +317,7 @@ print(touch.mean())
 
  # obtain median and max of the raster within the polygon
     # this process takes too long!!!!!!!!
+    # https://stackoverflow.com/questions/18603270/progress-indicator-during-pandas-operations
 from tqdm import tqdm
 # from tqdm.auto import tqdm  # for notebooks
 
