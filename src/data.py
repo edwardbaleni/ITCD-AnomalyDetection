@@ -104,7 +104,7 @@ import rioxarray as rxr
 import xarray
 from rasterio.enums import Resampling
 
-num = 1
+num = 4
 
 xds_DEM = xarray.open_dataarray(data_paths_tif[ num ][0])
 xds_NIR = xds_match = xarray.open_dataarray(data_paths_tif[ num ][1])
@@ -427,22 +427,14 @@ a.loc[:, "confidence":] = scaler.fit_transform(a.loc[:,'confidence':])
 # Set the predictors
 h2o.init()
 # %%
-h2o_df = h2o.H2OFrame(a.loc[:,['confidence', 'crown_projection_area', 'crown_perimeter', 'dist1', 'dist2', 'dist3', 'dist4', 'radius_of_gyration',
- 'short',
- 'long',
- 'NDRE_meidan',
- 'NDRE_max',
- 'NDVI_meidan',
- 'NDVI_max',
- 'DEM']])
-predictors = ['confidence', 'crown_projection_area', 'crown_perimeter', 'dist1', 'dist2', 'dist3', 'dist4', 'radius_of_gyration',
- 'short',
- 'long',
- 'NDRE_meidan',
- 'NDRE_max',
- 'NDVI_meidan',
- 'NDVI_max',
- 'DEM']#list(a.columns)
+h2o_df = h2o.H2OFrame(a.loc[:,['confidence',
+       'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM',
+       'crown_projection_area', 'crown_perimeter', 'radius_of_gyration',
+       'short', 'long', 'dist1', 'dist2', 'dist3', 'dist4']])
+predictors = ['confidence',
+       'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM',
+       'crown_projection_area', 'crown_perimeter', 'radius_of_gyration',
+       'short', 'long', 'dist1', 'dist2', 'dist3', 'dist4']#list(a.columns)
 
 # %%
 # Extended Isolation Forest is a great unsupervised method for anomaly detection
@@ -479,8 +471,8 @@ b = eif_result.as_data_frame()
 # when scaled and no confidence then 0.5 is a good threshold, most of the anomalies are captured
 # the same anomalies are captured with or withour using confidence anyway. So we may be able to get away with
 # not using confidence
-anomaly = a[b["anomaly_score"] >= 0.5]
-nominal = a[b["anomaly_score"] < 0.5]
+anomaly = a[b["anomaly_score"] > 0.5]
+nominal = a[b["anomaly_score"] <= 0.5]
 
 # %%
 
