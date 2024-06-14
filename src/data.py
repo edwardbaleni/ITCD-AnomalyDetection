@@ -104,7 +104,7 @@ import rioxarray as rxr
 import xarray
 from rasterio.enums import Resampling
 
-num = 4
+num = 0
 
 xds_DEM = xarray.open_dataarray(data_paths_tif[ num ][0])
 xds_NIR = xds_match = xarray.open_dataarray(data_paths_tif[ num ][1])
@@ -386,6 +386,28 @@ a[["radius_of_gyration", "short","long"]] = a[["centroid", "geometry"]].apply(la
 
 # %%
 
+# major and minor axis
+# https://stackoverflow.com/questions/13536209/efficient-way-to-measure-region-properties-using-shapely
+def major_minor(xx):
+    mbr_points = list(zip(*xx.minimum_rotated_rectangle.exterior.xy))
+    mbr_lengths = [shapely.LineString([mbr_points[i], mbr_points[i + 1]]).length for i in range(len(mbr_points) - 1)]
+    minor_axis = min(mbr_lengths)
+    major_axis = max(mbr_lengths)
+    return pd.Series([minor_axis, major_axis])
+
+a[["minor_axis", "major_axis"]] = a["geometry"].apply(lambda x: major_minor(x))
+
+# %%
+# Descriptors
+    # compactness ratios
+a["isoperimetric"] = (4 * math.pi * a["crown_projection_area"]) / (a["crown_perimeter"]**2)
+a["shape_index"] = (a["crown_perimeter"]**2) / a["crown_projection_area"]
+a["form_factor"] = a["crown_projection_area"] / (a["crown_perimeter"]**2)
+a["circularity"] = (a["crown_perimeter"]**2) / (4 * math.pi * a["crown_projection_area"])
+a["convexity"] = a["crown_perimeter"] / a["geometry"].convex_hull.length
+a["solidity"] = a["crown_projection_area"] / a["geometry"].convex_hull.area # convex hull score
+a["elongation"] = a["major_axis"] / a["minor_axis"]
+a["roundness"] = (4 * a["crown_projection_area"]) / (math.pi * a["major_axis"]**2)
 
 # %%
 
@@ -414,6 +436,7 @@ scaler = StandardScaler()
 #a.loc[:,['confidence', 'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM', 'crown_projection_area', 'crown_perimeter', 'radius_of_gyration', 'short', 'long']] = StandardScaler().fit_transform(a.loc[:,['confidence', 'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM', 'crown_projection_area', 'crown_perimeter', 'radius_of_gyration', 'short', 'long']])
 #a.loc[:, "confidence":]
 a.loc[:, "confidence":] = scaler.fit_transform(a.loc[:,'confidence':])
+
 # %%    
                     # Feature Selection (if too many features)
 
@@ -427,14 +450,18 @@ a.loc[:, "confidence":] = scaler.fit_transform(a.loc[:,'confidence':])
 # Set the predictors
 h2o.init()
 # %%
-h2o_df = h2o.H2OFrame(a.loc[:,['confidence',
+h2o_df = h2o.H2OFrame(a.loc[:,[ 'confidence',
        'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM',
        'crown_projection_area', 'crown_perimeter', 'radius_of_gyration',
-       'short', 'long', 'dist1', 'dist2', 'dist3', 'dist4']])
-predictors = ['confidence',
+       'short', 'long', 'minor_axis', 'major_axis', 'isoperimetric',
+       'shape_index', 'form_factor', 'circularity', 'convexity', 'solidity',
+       'elongation', 'roundness', 'dist1', 'dist2', 'dist3', 'dist4']])
+predictors = [ 'confidence',
        'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM',
        'crown_projection_area', 'crown_perimeter', 'radius_of_gyration',
-       'short', 'long', 'dist1', 'dist2', 'dist3', 'dist4']#list(a.columns)
+       'short', 'long', 'minor_axis', 'major_axis', 'isoperimetric',
+       'shape_index', 'form_factor', 'circularity', 'convexity', 'solidity',
+       'elongation', 'roundness', 'dist1', 'dist2', 'dist3', 'dist4']#list(a.columns)
 
 # %%
 # Extended Isolation Forest is a great unsupervised method for anomaly detection

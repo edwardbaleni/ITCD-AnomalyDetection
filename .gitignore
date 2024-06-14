@@ -4,3 +4,8 @@ data/
 *.geojson
 Examples/
 *.png
+*.jpg
+*.jpeg
+
+*.svg
+*.zip
