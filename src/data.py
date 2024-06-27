@@ -90,7 +90,7 @@ for i in range(sampleSize):
     # vs   "show(RGBs[0].read([2,1,3]))"
     Greens.append(RGBs[i].read(2))
     Blues.append(RGBs[i].read(3))
-    Points.append(gpd.GeoDataFrame.from_file(data_paths_geojson[i]))
+    Points.append(gpd.read_file(data_paths_geojson[i]))#GeoDataFrame.from_file(data_paths_geojson[i]))
 
     # es._stack_bands([Reds[0], NIRs[0]]) # to stack bands
 
@@ -143,7 +143,8 @@ for key in xds_dictionary:
 #     "y": xds_match.y,
 # })
 
-
+data["Green"] = data["RGB"][1]
+data["Blue"] = data["RGB"][2]
 
 # %%
 # now we are able to perform calculations between the two rasters now they are in the same
@@ -156,7 +157,8 @@ for key in xds_dictionary:
 data["NDVI"] = (data["NIR"] - data["Red"]) / (data["NIR"] + data["Red"])
 # reg stands for red edge
 data["NDRE"] = (data["NIR"] - data["Reg"]) / (data["NIR"] + data["Reg"])
-
+data["GNDVI"] = (data["NIR"] - data["Green"]) / (data["NIR"] + data["Green"])
+data["ENDVI"] = ((data["NIR"]+ data["Green"] - 2 * data["Blue"]) / (data["NIR"] + data["Green"] + 2 * data["Blue"]))
 
 # %%
 
@@ -304,34 +306,6 @@ a["longitude"] = a["centroid"].x
 a = a.loc[:, ['geometry', 'centroid', 'latitude', 'longitude', 'confidence']]
 
 
-# %%
-                    # Vegetative Indices
-
-# get data within geometry
-# https://gis.stackexchange.com/questions/328128/extracting-data-within-geometry-shape/328320#328320
-touch = xds_match.rio.clip([Points[ num ].iloc[0,1]], xds_match.rio.crs)
-touch.plot()
-# this is the mean of the raster within the polygon for one polygon. Weighted average will be a bit dificult to collect.
-# we could also just obtain the max or the median instead or the mode instead of the mean or weighted average
-print(touch.mean()) 
-
- # obtain median and max of the raster within the polygon
-    # this process takes too long!!!!!!!!
-    # https://stackoverflow.com/questions/18603270/progress-indicator-during-pandas-operations
-from tqdm import tqdm
-# from tqdm.auto import tqdm  # for notebooks
-
-# Create new `pandas` methods which use `tqdm` progress
-# (can use tqdm_gui, optional kwargs, etc.)
-tqdm.pandas()
-
-# switched out apply for progress_apply to show progress
-a["NDRE_median"] = a["geometry"].progress_apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()))
-a["NDRE_max"] = a["geometry"].progress_apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).max()))
-a["NDVI_median"] = a["geometry"].progress_apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()))
-a["NDVI_max"] = a["geometry"].progress_apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).max()))
-a["DEM"] = a["geometry"].progress_apply(lambda x: float(data["DEM"].rio.clip( [x], data["DEM"].rio.crs).max()))
-
 
 # %%
                     # Shape Descriptors Not Robust
@@ -409,6 +383,82 @@ a["solidity"] = a["crown_projection_area"] / a["geometry"].convex_hull.area # co
 a["elongation"] = a["major_axis"] / a["minor_axis"]
 a["roundness"] = (4 * a["crown_projection_area"]) / (math.pi * a["major_axis"]**2)
 
+
+
+
+# %%
+
+    # Need to remove radius, major and minor axis, crown projection area, crown perimeter,
+    # radius of gyration, short, long
+    # as they are not robust features
+    # Small trees are still trees and should be identified as such
+
+    # can remove confidence but don't necessarily have to as it is a feature
+    # that we can expext most datasets to have. Aerobotics provides this feature
+    # with every dataset.
+
+
+# %%
+                    # Vegetative Indices
+
+# get data within geometry
+# https://gis.stackexchange.com/questions/328128/extracting-data-within-geometry-shape/328320#328320
+touch = xds_match.rio.clip([Points[ num ].iloc[0,1]], xds_match.rio.crs)
+touch.plot()
+# this is the mean of the raster within the polygon for one polygon. Weighted average will be a bit dificult to collect.
+# we could also just obtain the max or the median instead or the mode instead of the mean or weighted average
+print(touch.mean()) 
+
+# %%
+ # obtain median and max of the raster within the polygon
+    # this process takes too long!!!!!!!!
+    # https://stackoverflow.com/questions/18603270/progress-indicator-during-pandas-operations
+# from tqdm import tqdm
+# tqdm.pandas()
+
+# switched out apply for progress_apply to show progress
+    # problem area
+# a["NDRE_median"] = a["geometry"].progress_apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()))
+# a["NDRE_max"] = a["geometry"].progress_apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).max()))
+# a["NDVI_median"] = a["geometry"].progress_apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()))
+# a["NDVI_max"] = a["geometry"].progress_apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).max()))
+# a["GNVDI_median"] = a["geometry"].progress_apply(lambda x: float(data["GNDVI"].rio.clip( [x], data["GNDVI"].rio.crs).median()))
+# a["GNDVI_max"] = a["geometry"].progress_apply(lambda x: float(data["GNDVI"].rio.clip( [x], data["GNDVI"].rio.crs).max()))
+# a["ENDVI_median"] = a["geometry"].progress_apply(lambda x: float(data["ENDVI"].rio.clip( [x], data["ENDVI"].rio.crs).median()))
+# a["ENDVI_max"] = a["geometry"].progress_apply(lambda x: float(data["ENDVI"].rio.clip( [x], data["ENDVI"].rio.crs).max()))
+# a["DEM"] = a["geometry"].progress_apply(lambda x: float(data["DEM"].rio.clip( [x], data["DEM"].rio.crs).max()))
+
+# run these in parallel for now. But in future change this to avoid clashes
+# in cores
+# Problem with swifter is that it literally takes all the cores on the machine
+# this is not helpful as it takes forever to collect cores
+# after this, nothing else on my machine works.
+
+
+# %%
+
+import dask.dataframe as dd
+from dask.diagnostics import ProgressBar
+ddf = dd.from_pandas(a, npartitions=5)
+ProgressBar().register()
+
+# The following cuts the run time in half
+# it is also faster than using the swifter library
+a["DEM"] = ddf["geometry"].apply(lambda x: float(data["DEM"].rio.clip( [x], data["DEM"].rio.crs).max()), meta=pd.Series(dtype="float64")).compute()
+a["NDRE_max"] = ddf["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).max()), meta=pd.Series(dtype="float64")).compute()
+a["NDVI_max"] = ddf["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).max()), meta=pd.Series(dtype="float64")).compute()
+a["GNVDI_max"] = ddf["geometry"].apply(lambda x: float(data["GNDVI"].rio.clip( [x], data["GNDVI"].rio.crs).max()), meta=pd.Series(dtype="float64")).compute()
+a["ENDVI_max"] = ddf["geometry"].apply(lambda x: float(data["ENDVI"].rio.clip( [x], data["ENDVI"].rio.crs).max()), meta=pd.Series(dtype="float64")).compute()
+a["NDRE_median"] = ddf["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()), meta=pd.Series(dtype="float64")).compute()
+a["NDVI_median"] = ddf["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()), meta=pd.Series(dtype="float64")).compute()
+a["GNVDI_median"] = ddf["geometry"].apply(lambda x: float(data["GNDVI"].rio.clip( [x], data["GNDVI"].rio.crs).median()), meta=pd.Series(dtype="float64")).compute()
+a["ENDVI_median"] = ddf["geometry"].apply(lambda x: float(data["ENDVI"].rio.clip( [x], data["ENDVI"].rio.crs).median()), meta=pd.Series(dtype="float64")).compute()
+
+
+ddf = dd.from_pandas(a, npartitions=5)
+#a["NDRE_median"] = a["geometry"].swifter
+ddf["NDRE_median"] = ddf["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()), meta=pd.Series(dtype="float64")).compute()
+
 # %%
 
                     # Distance Based Features
@@ -452,8 +502,9 @@ h2o.init()
 # %%
 h2o_df = h2o.H2OFrame(a.loc[:,[ 'confidence',
        'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM',
-       'crown_projection_area', 'crown_perimeter', 'radius_of_gyration',
-       'short', 'long', 'minor_axis', 'major_axis', 'isoperimetric',
+       #'crown_projection_area', 'crown_perimeter', 'radius_of_gyration',
+       #'short', 'long', 'minor_axis', 'major_axis', 
+       'isoperimetric',
        'shape_index', 'form_factor', 'circularity', 'convexity', 'solidity',
        'elongation', 'roundness', 'dist1', 'dist2', 'dist3', 'dist4']])
 predictors = [ 'confidence',
