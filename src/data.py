@@ -439,25 +439,23 @@ print(touch.mean())
 
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
-ddf = dd.from_pandas(a, npartitions=5)
-ProgressBar().register()
+ddf = dd.from_pandas(a, npartitions=6)
 
 # The following cuts the run time in half
 # it is also faster than using the swifter library
-a["DEM"] = ddf["geometry"].apply(lambda x: float(data["DEM"].rio.clip( [x], data["DEM"].rio.crs).max()), meta=pd.Series(dtype="float64")).compute()
-a["NDRE_max"] = ddf["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).max()), meta=pd.Series(dtype="float64")).compute()
-a["NDVI_max"] = ddf["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).max()), meta=pd.Series(dtype="float64")).compute()
-a["GNVDI_max"] = ddf["geometry"].apply(lambda x: float(data["GNDVI"].rio.clip( [x], data["GNDVI"].rio.crs).max()), meta=pd.Series(dtype="float64")).compute()
-a["ENDVI_max"] = ddf["geometry"].apply(lambda x: float(data["ENDVI"].rio.clip( [x], data["ENDVI"].rio.crs).max()), meta=pd.Series(dtype="float64")).compute()
-a["NDRE_median"] = ddf["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()), meta=pd.Series(dtype="float64")).compute()
-a["NDVI_median"] = ddf["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()), meta=pd.Series(dtype="float64")).compute()
-a["GNVDI_median"] = ddf["geometry"].apply(lambda x: float(data["GNDVI"].rio.clip( [x], data["GNDVI"].rio.crs).median()), meta=pd.Series(dtype="float64")).compute()
-a["ENDVI_median"] = ddf["geometry"].apply(lambda x: float(data["ENDVI"].rio.clip( [x], data["ENDVI"].rio.crs).median()), meta=pd.Series(dtype="float64")).compute()
+# downwcasting from float64 to float16 is also helpful in increasing processing speed
+# so use a dynaimc float to accomodate the largest number in the column
+with ProgressBar():
+    a["DEM"] = ddf["geometry"].apply(lambda x: float(data["DEM"].rio.clip( [x], data["DEM"].rio.crs).max()), meta=pd.Series(dtype="float")).compute()
+    a["NDRE_max"] = ddf["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).max()), meta=pd.Series(dtype="float")).compute()
+    a["NDVI_max"] = ddf["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).max()), meta=pd.Series(dtype="float")).compute()
+    a["GNVDI_max"] = ddf["geometry"].apply(lambda x: float(data["GNDVI"].rio.clip( [x], data["GNDVI"].rio.crs).max()), meta=pd.Series(dtype="float")).compute()
+    a["ENDVI_max"] = ddf["geometry"].apply(lambda x: float(data["ENDVI"].rio.clip( [x], data["ENDVI"].rio.crs).max()), meta=pd.Series(dtype="float")).compute()
+    a["NDRE_median"] = ddf["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()), meta=pd.Series(dtype="float")).compute()
+    a["NDVI_median"] = ddf["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()), meta=pd.Series(dtype="float")).compute()
+    a["GNVDI_median"] = ddf["geometry"].apply(lambda x: float(data["GNDVI"].rio.clip( [x], data["GNDVI"].rio.crs).median()), meta=pd.Series(dtype="float")).compute()
+    a["ENDVI_median"] = ddf["geometry"].apply(lambda x: float(data["ENDVI"].rio.clip( [x], data["ENDVI"].rio.crs).median()), meta=pd.Series(dtype="float")).compute()
 
-
-ddf = dd.from_pandas(a, npartitions=5)
-#a["NDRE_median"] = a["geometry"].swifter
-ddf["NDRE_median"] = ddf["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()), meta=pd.Series(dtype="float64")).compute()
 
 # %%
 
@@ -501,18 +499,23 @@ a.loc[:, "confidence":] = scaler.fit_transform(a.loc[:,'confidence':])
 h2o.init()
 # %%
 h2o_df = h2o.H2OFrame(a.loc[:,[ 'confidence',
-       'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM',
-       #'crown_projection_area', 'crown_perimeter', 'radius_of_gyration',
-       #'short', 'long', 'minor_axis', 'major_axis', 
-       'isoperimetric',
-       'shape_index', 'form_factor', 'circularity', 'convexity', 'solidity',
-       'elongation', 'roundness', 'dist1', 'dist2', 'dist3', 'dist4']])
-predictors = [ 'confidence',
-       'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM',
        'crown_projection_area', 'crown_perimeter', 'radius_of_gyration',
-       'short', 'long', 'minor_axis', 'major_axis', 'isoperimetric',
-       'shape_index', 'form_factor', 'circularity', 'convexity', 'solidity',
-       'elongation', 'roundness', 'dist1', 'dist2', 'dist3', 'dist4']#list(a.columns)
+       #'short', 'long', 
+       'minor_axis', 'major_axis', 
+       'isoperimetric', 'shape_index', 'form_factor', 'circularity',
+       'convexity', 'solidity', 'elongation', 'roundness', 'DEM', 'NDRE_max',
+       'NDVI_max', 'GNVDI_max', 'ENDVI_max', 'NDRE_median', 'NDVI_median',
+       'GNVDI_median', 'ENDVI_median', 
+       'dist1', 'dist2', 'dist3', 'dist4']])
+predictors = [ 'confidence',
+       'crown_projection_area', 'crown_perimeter', 'radius_of_gyration',
+       #'short', 'long', 
+       'minor_axis', 'major_axis', 
+       'isoperimetric', 'shape_index', 'form_factor', 'circularity',
+       'convexity', 'solidity', 'elongation', 'roundness', 'DEM', 'NDRE_max',
+       'NDVI_max', 'GNVDI_max', 'ENDVI_max', 'NDRE_median', 'NDVI_median',
+       'GNVDI_median', 'ENDVI_median', 
+       'dist1', 'dist2', 'dist3', 'dist4']#list(a.columns)
 
 # %%
 # Extended Isolation Forest is a great unsupervised method for anomaly detection
@@ -520,7 +523,7 @@ predictors = [ 'confidence',
 
 # Define an Extended Isolation forest model
 eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
-                                          ntrees = 1000,
+                                          ntrees = 10000,
                                           sample_size = int(len(a) * 0.2),
                                           extension_level = 6)#len(predictors) - 1)
 
