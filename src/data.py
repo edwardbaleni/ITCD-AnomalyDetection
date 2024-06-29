@@ -439,6 +439,7 @@ print(touch.mean())
 
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
+# https://docs.dask.org/en/latest/diagnostics-local.html#progress-bar
 ddf = dd.from_pandas(a, npartitions=6)
 
 # The following cuts the run time in half
@@ -487,6 +488,25 @@ a.loc[:, "confidence":] = scaler.fit_transform(a.loc[:,'confidence':])
 
 # %%    
                     # Feature Selection (if too many features)
+
+# TODO: Feature selection
+
+# %%
+# from heatmap import corrplot
+
+# plt.figure(figsize=(20, 20))
+# corrplot(a.corr())
+
+import seaborn as sns
+# ax = sns.heatmap(a.corr(), annot=True)
+g = sns.PairGrid(a.loc[:, "confidence":])
+g.map_diag(sns.histplot)
+g.map_offdiag(sns.scatterplot)
+g.add_legend()
+
+
+# %%
+sns.heatmap(a.loc[:, "confidence":].corr(), annot=False, cmap="crest")
 
 # %%
 
