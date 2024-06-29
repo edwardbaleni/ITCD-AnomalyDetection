@@ -499,10 +499,10 @@ a.loc[:, "confidence":] = scaler.fit_transform(a.loc[:,'confidence':])
 
 import seaborn as sns
 # ax = sns.heatmap(a.corr(), annot=True)
-g = sns.PairGrid(a.loc[:, "confidence":])
-g.map_diag(sns.histplot)
-g.map_offdiag(sns.scatterplot)
-g.add_legend()
+# g = sns.PairGrid(a.loc[:, "confidence":])
+# g.map_diag(sns.histplot)
+# g.map_offdiag(sns.scatterplot)
+# g.add_legend()
 
 
 # %%
