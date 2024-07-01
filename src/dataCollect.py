@@ -27,8 +27,11 @@ def dCollect(size, file_type):
         path = glob(os.getcwd() + "/*." + file_type )
         if file_type == "tif":
             path_holder.append(path)
-        else:
+        elif file_type == "geojson":
             # Don't need a list of lists for this
+            path_holder.append(path)
+        else:
+            # for our zipped files
             path_holder.append(path[0])    
         # Move back to Data Directory
         os.chdir("..")    
