@@ -13,8 +13,8 @@ def dCollect(size, file_type):
     # for now obtain a small subset of data from list of 316 files to test
     # Try 20 folders
     if size < 316:
-        random.seed(2024)
         # obtain a random sample
+        random.seed(2024)
         sample_erf = random.sample(pop_erf, size)
     else:
         sample_erf = pop_erf
@@ -25,14 +25,7 @@ def dCollect(size, file_type):
         os.chdir(files + "\\")
         # Read in files
         path = glob(os.getcwd() + "/*." + file_type )
-        if file_type == "tif":
-            path_holder.append(path)
-        elif file_type == "geojson":
-            # Don't need a list of lists for this
-            path_holder.append(path)
-        else:
-            # for our zipped files
-            path_holder.append(path[0])    
+        path_holder.append(path)    
         # Move back to Data Directory
         os.chdir("..")    
     

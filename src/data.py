@@ -47,18 +47,33 @@ from sklearn.neighbors import NearestNeighbors as KNN
 import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator
 
+import random
+
+import rioxarray as rxr
+import xarray
+from rasterio.enums import Resampling
+
+import gzip
+
+
 # %%
     # Collect file paths
+# for trial implementation
+# for final implementation, need to ask user to input file paths of 
+# interest
+# TODO: https://www.youtube.com/watch?v=YTOUBGHEgZg
+# TODO: https://www.merge.dev/blog/get-folders-google-drive-api 
 sampleSize = 20
 data_paths_tif = dataCollect.dCollect(size=sampleSize, file_type="tif")
 data_paths_geojson = dataCollect.dCollect(size=sampleSize, file_type="geojson")
-
+data_paths_geojson_zipped = dataCollect.dCollect(size=sampleSize, file_type="gz")
+random.seed(2024)
 # Create raster stack in 
 # this is a safe way to open zipped files without extracting them
-import gzip
-file = "C:/Users/balen/OneDrive/Desktop/Git/Dissertation-AnomalyDetection/Dissertation-AnomalyDetection/src/Data/93001/orchard_validation.geojson.gz"
-with gzip.open(file, 'rb') as f:
-    trys = gpd.read_file(f)
+# import gzip
+# file = "C:/Users/balen/OneDrive/Desktop/Git/Dissertation-AnomalyDetection/Dissertation-AnomalyDetection/src/Data/93001/orchard_validation.geojson.gz"
+# with gzip.open(file, 'rb') as f:
+#     trys = gpd.read_file(f)
 
 
 # %%
@@ -71,21 +86,23 @@ Reds = []
 Regs = []
 RGBs = []
 Points = []
-
 Greens = []
 Blues = []
+masks = []
+Ref_Data = []
+
     # To check description of raster
     # raster.descriptions
     # range is the sample size
 for i in range(sampleSize):
-    NIRs.append(rio.open([j for j in data_paths_tif[i] if "nir_native" in j][0]))
-    Reds.append(rio.open([j for j in data_paths_tif[i] if "red_native" in j][0]))
-    Regs.append(rio.open([j for j in data_paths_tif[i] if "reg_native" in j][0]))
-    RGBs.append(rio.open([j for j in data_paths_tif[i] if "visible_5cm" in j][0]))
+    NIRs.append(xarray.open_dataarray([j for j in data_paths_tif[i] if "nir_native" in j][0]))
+    Reds.append(xarray.open_dataarray([j for j in data_paths_tif[i] if "red_native" in j][0]))
+    Regs.append(xarray.open_dataarray([j for j in data_paths_tif[i] if "reg_native" in j][0]))
+    RGBs.append(xarray.open_dataarray([j for j in data_paths_tif[i] if "visible_5cm" in j][0]))
     # Here we read in the DEM and RGB, change the meta data and save
     # new instance to memory, and close original file
      
-    DEMs.append(rio.open([j for j in data_paths_tif[i] if "dem_native" in j][0]))
+    DEMs.append(xarray.open_dataarray([j for j in data_paths_tif[i] if "dem_native" in j][0]))
     # Red, Green, Blue can be taken from RGB
     # Red is the first, Green is second and Blue is third
     # You can see this when you change around the plotting
@@ -93,29 +110,32 @@ for i in range(sampleSize):
     # this makes me believe that the correct order of RGB must be kept
     # e.g. "show(RGBs[0].read([1,2,3]))"
     # vs   "show(RGBs[0].read([2,1,3]))"
-    Greens.append(RGBs[i].read(2))
-    Blues.append(RGBs[i].read(3))
-    Points.append(gpd.read_file(data_paths_geojson[i]))#GeoDataFrame.from_file(data_paths_geojson[i]))
+    #Greens.append(RGBs[i].read(2))
+    #Blues.append(RGBs[i].read(3))
+    masks.append(gpd.read_file([j for j in data_paths_geojson[i] if "survey_polygon" in j][0]))
+    with gzip.open([j for j in data_paths_geojson_zipped[i] if "mask_rcnn.geojson" in j][0], 'rb') as f:
+        Points.append(gpd.read_file(f))
+    with gzip.open([j for j in data_paths_geojson_zipped[i] if "orchard_validation.geojson" in j][0], 'rb') as k:
+        Ref_Data.append(gpd.read_file(k))
+#    Points.append(gpd.read_file(data_paths_geojson[i]))#GeoDataFrame.from_file(data_paths_geojson[i]))
 
     # es._stack_bands([Reds[0], NIRs[0]]) # to stack bands
 
 
+# %%
+# TODO: remove all points that touch the mask
 
 # %%
 # merge dataframes
 # Make function to change transform to same as bands for everything
 
-import rioxarray as rxr
-import xarray
-from rasterio.enums import Resampling
+num = 17
 
-num = 0
-
-xds_DEM = xarray.open_dataarray(data_paths_tif[ num ][0])
-xds_NIR = xds_match = xarray.open_dataarray(data_paths_tif[ num ][1])
-xds_Red = xarray.open_dataarray(data_paths_tif[ num ][2])
-xds_Reg = xarray.open_dataarray(data_paths_tif[ num ][3])
-xds_RGB = xarray.open_dataarray(data_paths_tif[ num ][4])
+xds_DEM = DEMs[num] #xarray.open_dataarray(data_paths_tif[ num ][0])
+xds_NIR = xds_match = NIRs[num] #xds_match = xarray.open_dataarray(data_paths_tif[ num ][1])
+xds_Red = Reds[num] #xarray.open_dataarray(data_paths_tif[ num ][2])
+xds_Reg = Regs[num] #xarray.open_dataarray(data_paths_tif[ num ][3])
+xds_RGB = RGBs[num] #xarray.open_dataarray(data_paths_tif[ num ][4])
 
 xds_dictionary = {"DEM": xds_DEM, 
                   "NIR": xds_NIR, 
@@ -123,12 +143,11 @@ xds_dictionary = {"DEM": xds_DEM,
                   "Reg": xds_Reg, 
                   "RGB": xds_RGB}
 
-fig, axes = plt.subplots(ncols=2, figsize=(12,4))
-xds_dictionary["DEM"].plot(ax=axes[0])
-xds_dictionary["RGB"].plot(ax=axes[1])
-plt.draw()
+# fig, axes = plt.subplots(ncols=2, figsize=(12,4))
+# xds_dictionary["DEM"].plot(ax=axes[0])
+# xds_dictionary["RGB"].plot(ax=axes[1])
+# plt.draw()
 
-# %%
 data = {}
 # xds_DEM_match = xds_DEM.rio.reproject_match(xds_match, resampling = Resampling.bilinear)
 # xds_Red_match = xds_Red.rio.reproject_match(xds_match, resampling = Resampling.bilinear)
@@ -151,7 +170,6 @@ for key in xds_dictionary:
 data["Green"] = data["RGB"][1]
 data["Blue"] = data["RGB"][2]
 
-# %%
 # now we are able to perform calculations between the two rasters now they are in the same
 #  projection, resolution, and extents
 # we can perform calculations between the two rasters now they are in the same
@@ -159,11 +177,18 @@ data["Blue"] = data["RGB"][2]
 # Find other vegetation indices to calculate
 #diff = xds_repr_match - xds_match
 
-data["NDVI"] = (data["NIR"] - data["Red"]) / (data["NIR"] + data["Red"])
 # reg stands for red edge
+data["NDVI"] = (data["NIR"] - data["Red"]) / (data["NIR"] + data["Red"])
 data["NDRE"] = (data["NIR"] - data["Reg"]) / (data["NIR"] + data["Reg"])
 data["GNDVI"] = (data["NIR"] - data["Green"]) / (data["NIR"] + data["Green"])
 data["ENDVI"] = ((data["NIR"]+ data["Green"] - 2 * data["Blue"]) / (data["NIR"] + data["Green"] + 2 * data["Blue"]))
+
+# TODO: select better vegetative indices 
+#       as only NDVI seems to distinguish ground pixels from trees well
+data["NDVI"].plot()
+#data["NDRE"].plot()
+#data["GNDVI"].plot()
+#data["ENDVI"].plot()
 
 # %%
     # For image manipulation
@@ -184,12 +209,12 @@ data["ENDVI"] = ((data["NIR"]+ data["Green"] - 2 * data["Blue"]) / (data["NIR"] 
     # save the masked file.
 
 # tryout
-mask = gpd.read_file("C:/Users/balen/OneDrive/Desktop/Git/Dissertation-AnomalyDetection/Dissertation-AnomalyDetection/src/Data/122075/survey_polygon.geojson")
-tryout = xds_RGB.rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
+mask = masks[num]#gpd.read_file("C:/Users/balen/OneDrive/Desktop/Git/Dissertation-AnomalyDetection/Dissertation-AnomalyDetection/src/Data/122075/survey_polygon.geojson")
+tryout = xds_RGB[0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
 tryout = tryout/255
 fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
-Points[ num ].plot(ax=ax, facecolor = 'none',edgecolor='yellow') 
+Points[ num ].plot(ax=ax, facecolor = 'none',edgecolor='red') 
 
 # fig, ax = plt.subplots(figsize=(15, 15))
 # rio.plot.show(clipped, ax=ax)
@@ -326,53 +351,36 @@ touch.plot()
 # we could also just obtain the max or the median instead or the mode instead of the mean or weighted average
 print(touch.mean()) 
 
-# %%
- # obtain median and max of the raster within the polygon
-    # this process takes too long!!!!!!!!
-    # https://stackoverflow.com/questions/18603270/progress-indicator-during-pandas-operations
-# from tqdm import tqdm
-# tqdm.pandas()
-
-# switched out apply for progress_apply to show progress
-    # problem area
-# a["NDRE_median"] = a["geometry"].progress_apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()))
-# a["NDRE_max"] = a["geometry"].progress_apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).max()))
-# a["NDVI_median"] = a["geometry"].progress_apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()))
-# a["NDVI_max"] = a["geometry"].progress_apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).max()))
-# a["GNVDI_median"] = a["geometry"].progress_apply(lambda x: float(data["GNDVI"].rio.clip( [x], data["GNDVI"].rio.crs).median()))
-# a["GNDVI_max"] = a["geometry"].progress_apply(lambda x: float(data["GNDVI"].rio.clip( [x], data["GNDVI"].rio.crs).max()))
-# a["ENDVI_median"] = a["geometry"].progress_apply(lambda x: float(data["ENDVI"].rio.clip( [x], data["ENDVI"].rio.crs).median()))
-# a["ENDVI_max"] = a["geometry"].progress_apply(lambda x: float(data["ENDVI"].rio.clip( [x], data["ENDVI"].rio.crs).max()))
-# a["DEM"] = a["geometry"].progress_apply(lambda x: float(data["DEM"].rio.clip( [x], data["DEM"].rio.crs).max()))
-
-# run these in parallel for now. But in future change this to avoid clashes
-# in cores
-# Problem with swifter is that it literally takes all the cores on the machine
-# this is not helpful as it takes forever to collect cores
-# after this, nothing else on my machine works.
-
 
 # %%
+from rasterstats import zonal_stats
+# https://gis.stackexchange.com/questions/297076/how-to-calculate-mean-value-of-a-raster-for-each-polygon-in-a-shapefile
+# Code down from 30 minutes to 30 seconds
+# Need to make sure that I am reprojecting correctly !!!
+def CoV(x):
+    # Coefficient of Determination
+    return np.ma.std(x) / np.ma.mean(x) * 100
 
-import dask.dataframe as dd
-from dask.diagnostics import ProgressBar
-# https://docs.dask.org/en/latest/diagnostics-local.html#progress-bar
-ddf = dd.from_pandas(a, npartitions=6)
+def detStats(data):
+    affine = data.rio.transform()#
+    array = data.to_numpy()[0]
+    return pd.DataFrame(zonal_stats(a["geometry"], array, 
+                affine=affine, 
+                stats="max majority mean",
+                add_stats={"CoV":CoV}))
 
-# The following cuts the run time in half
-# it is also faster than using the swifter library
-# downwcasting from float64 to float16 is also helpful in increasing processing speed
-# so use a dynaimc float to accomodate the largest number in the column
-with ProgressBar():
-    a["DEM"] = ddf["geometry"].apply(lambda x: float(data["DEM"].rio.clip( [x], data["DEM"].rio.crs).max()), meta=pd.Series(dtype="float")).compute()
-    a["NDRE_max"] = ddf["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).max()), meta=pd.Series(dtype="float")).compute()
-    a["NDVI_max"] = ddf["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).max()), meta=pd.Series(dtype="float")).compute()
-    a["GNVDI_max"] = ddf["geometry"].apply(lambda x: float(data["GNDVI"].rio.clip( [x], data["GNDVI"].rio.crs).max()), meta=pd.Series(dtype="float")).compute()
-    a["ENDVI_max"] = ddf["geometry"].apply(lambda x: float(data["ENDVI"].rio.clip( [x], data["ENDVI"].rio.crs).max()), meta=pd.Series(dtype="float")).compute()
-    a["NDRE_median"] = ddf["geometry"].apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()), meta=pd.Series(dtype="float")).compute()
-    a["NDVI_median"] = ddf["geometry"].apply(lambda x: float(data["NDVI"].rio.clip( [x], data["NDVI"].rio.crs).median()), meta=pd.Series(dtype="float")).compute()
-    a["GNVDI_median"] = ddf["geometry"].apply(lambda x: float(data["GNDVI"].rio.clip( [x], data["GNDVI"].rio.crs).median()), meta=pd.Series(dtype="float")).compute()
-    a["ENDVI_median"] = ddf["geometry"].apply(lambda x: float(data["ENDVI"].rio.clip( [x], data["ENDVI"].rio.crs).median()), meta=pd.Series(dtype="float")).compute()
+a[["DEM_max", "DEM_majority", "DEM_mean", "DEM_CV"]] = detStats(data["DEM"])
+a[["NDRE_max", "NDRE_majority", "NDRE_mean", "NDRE_CV"]] = detStats(data["NDRE"])
+a[["NDVI_max", "NDVI_majority", "NDVI_mean", "NDVI_CV"]] = detStats(data["NDVI"])
+a[["GNVDI_max", "GNVDI_majority", "GNVDI_mean", "GNVDI_CV"]] = detStats(data["GNDVI"])
+a[["ENDVI_max", "ENDVI_majority", "ENDVI_mean", "ENDVI_CV"]] = detStats(data["ENDVI"])
+
+#affine = data["DEM"].rio.transform()#
+#array1 = data["DEM"].to_numpy()[0]
+#zonal_stats(a["geometry"], array1, 
+#            affine=affine, 
+#            stats="max majority",
+#            add_stats={"mean":mymean})#, "max":mymax, "median":mymedian})
 
 
 # %%
@@ -399,8 +407,6 @@ a[["dist1", "dist2", "dist3", "dist4"]] = distances[:,1:]
 # %%
 from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
-#a.loc[:,['confidence', 'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM', 'crown_projection_area', 'crown_perimeter', 'radius_of_gyration', 'short', 'long']] = StandardScaler().fit_transform(a.loc[:,['confidence', 'NDRE_median', 'NDRE_max', 'NDVI_median', 'NDVI_max', 'DEM', 'crown_projection_area', 'crown_perimeter', 'radius_of_gyration', 'short', 'long']])
-#a.loc[:, "confidence":]
 a.loc[:, "confidence":] = scaler.fit_transform(a.loc[:,'confidence':])
 
 # %%    
@@ -421,8 +427,6 @@ import seaborn as sns
 # g.map_offdiag(sns.scatterplot)
 # g.add_legend()
 
-
-# %%
 sns.heatmap(a.loc[:, "confidence":].corr(), annot=False, cmap="crest")
 
 # %%
@@ -440,18 +444,20 @@ h2o_df = h2o.H2OFrame(a.loc[:,[ 'confidence',
        #'short', 'long', 
        'minor_axis', 'major_axis', 
        'isoperimetric', 'shape_index', 'form_factor', 'circularity',
-       'convexity', 'solidity', 'elongation', 'roundness', 'DEM', 'NDRE_max',
-       'NDVI_max', 'GNVDI_max', 'ENDVI_max', 'NDRE_median', 'NDVI_median',
-       'GNVDI_median', 'ENDVI_median', 
+       'convexity', 'solidity', 'elongation', 'roundness', 'DEM_max', 'NDRE_max',
+       'NDVI_max', 'GNVDI_max', 'ENDVI_max', #'NDRE_median', 
+       #'NDVI_median',
+       #'GNVDI_median', 'ENDVI_median', 
        'dist1', 'dist2', 'dist3', 'dist4']])
 predictors = [ 'confidence',
        'crown_projection_area', 'crown_perimeter', 'radius_of_gyration',
        #'short', 'long', 
        'minor_axis', 'major_axis', 
        'isoperimetric', 'shape_index', 'form_factor', 'circularity',
-       'convexity', 'solidity', 'elongation', 'roundness', 'DEM', 'NDRE_max',
-       'NDVI_max', 'GNVDI_max', 'ENDVI_max', 'NDRE_median', 'NDVI_median',
-       'GNVDI_median', 'ENDVI_median', 
+       'convexity', 'solidity', 'elongation', 'roundness', 'DEM_max', 'NDRE_max',
+       'NDVI_max', 'GNVDI_max', 'ENDVI_max', #'NDRE_median', 
+       #'NDVI_median',
+       #'GNVDI_median', 'ENDVI_median', 
        'dist1', 'dist2', 'dist3', 'dist4']#list(a.columns)
 
 # %%
@@ -460,7 +466,7 @@ predictors = [ 'confidence',
 
 # Define an Extended Isolation forest model
 eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
-                                          ntrees = 10000,
+                                          ntrees = 1000,
                                           sample_size = int(len(a) * 0.2),
                                           extension_level = 6)#len(predictors) - 1)
 
@@ -494,13 +500,41 @@ nominal = a[b["anomaly_score"] <= 0.5]
 
 # %%
 
-fig, ax = plt.subplots(figsize=(20, 20))
-rio.plot.show(clipped, ax=ax)
+# fig, ax = plt.subplots(figsize=(20, 20))
+# rio.plot.show(clipped, ax=ax)
+# anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
+# nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
+
+#mask = gpd.read_file("C:/Users/balen/OneDrive/Desktop/Git/Dissertation-AnomalyDetection/Dissertation-AnomalyDetection/src/Data/122075/survey_polygon.geojson")
+#tryout = xds_RGB[0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
+#tryout = tryout/255
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
 anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
 nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
 
 
 
+
+
+# %%
+from sklearn.neighbors import LocalOutlierFactor
+# TODO: this is not the correct way to do this,
+#       look into https://scikit-learn.org/stable/auto_examples/neighbors/plot_lof_novelty_detection.html#sphx-glr-auto-examples-neighbors-plot-lof-novelty-detection-py
+
+clf = LocalOutlierFactor(n_neighbors=20, contamination=0.087)
+y_pred = clf.fit_predict( a.loc[:, 'confidence':])
+#n_errors = (y_pred != ground_truth).sum()
+#X_scores = clf.negative_outlier_factor_
+anomaly_1 = a[y_pred < 0]
+nominal_1 = a[y_pred > 0]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='red')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+
+# %%
 
 
 
