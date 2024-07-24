@@ -182,6 +182,9 @@ data["NDVI"] = (data["NIR"] - data["Red"]) / (data["NIR"] + data["Red"])
 data["NDRE"] = (data["NIR"] - data["Reg"]) / (data["NIR"] + data["Reg"])
 data["GNDVI"] = (data["NIR"] - data["Green"]) / (data["NIR"] + data["Green"])
 data["ENDVI"] = ((data["NIR"]+ data["Green"] - 2 * data["Blue"]) / (data["NIR"] + data["Green"] + 2 * data["Blue"]))
+# TODO: add these to data table in background
+data["Intensity"] = data["NIR"] + data["Green"] + data["Blue"]
+data["Saturation"] = (data["Intensity"] -3 * data["Blue"]) / data["Intensity"]
 
 # TODO: select better vegetative indices 
 #       as only NDVI seems to distinguish ground pixels from trees well
@@ -374,6 +377,7 @@ a[["NDRE_max", "NDRE_majority", "NDRE_mean", "NDRE_CV"]] = detStats(data["NDRE"]
 a[["NDVI_max", "NDVI_majority", "NDVI_mean", "NDVI_CV"]] = detStats(data["NDVI"])
 a[["GNVDI_max", "GNVDI_majority", "GNVDI_mean", "GNVDI_CV"]] = detStats(data["GNDVI"])
 a[["ENDVI_max", "ENDVI_majority", "ENDVI_mean", "ENDVI_CV"]] = detStats(data["ENDVI"])
+a[["Intensity_max", "Intensity_majority", "Intensity_mean", "Intensity_CV"]] = detStats(data["Intensity"])
 
 #affine = data["DEM"].rio.transform()#
 #array1 = data["DEM"].to_numpy()[0]
