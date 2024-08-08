@@ -129,7 +129,7 @@ for i in range(sampleSize):
 # merge dataframes
 # Make function to change transform to same as bands for everything
 
-num = 17
+num = 19
 
 xds_DEM = DEMs[num] #xarray.open_dataarray(data_paths_tif[ num ][0])
 xds_NIR = xds_match = NIRs[num] #xds_match = xarray.open_dataarray(data_paths_tif[ num ][1])
@@ -433,6 +433,24 @@ import seaborn as sns
 
 sns.heatmap(a.loc[:, "confidence":].corr(), annot=False, cmap="crest")
 
+
+
+
+# %%
+
+                    # Histogram Method
+# %%
+    # Can simply look into outliers in the data here
+fig = plt.figure(figsize =(10, 10))
+# Creating axes instance
+ax = fig.add_axes([0, 0, 1, 1])
+# Creating plot
+bp = ax.boxplot(a.loc[:,"confidence":])
+# show plot
+plt.show()
+
+
+
 # %%
 
                     # Extended Isolation Forest
@@ -471,7 +489,7 @@ predictors = [ 'confidence',
 # Define an Extended Isolation forest model
 eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
                                           ntrees = 1000,
-                                          sample_size = int(len(a) * 0.2),
+                                          sample_size = int(len(a) * 0.8),
                                           extension_level = 6)#len(predictors) - 1)
 
 # Train Extended Isolation Forest
@@ -526,7 +544,7 @@ from sklearn.neighbors import LocalOutlierFactor
 # TODO: this is not the correct way to do this,
 #       look into https://scikit-learn.org/stable/auto_examples/neighbors/plot_lof_novelty_detection.html#sphx-glr-auto-examples-neighbors-plot-lof-novelty-detection-py
 
-clf = LocalOutlierFactor(n_neighbors=20, contamination=0.087)
+clf = LocalOutlierFactor(n_neighbors=20, novelty=True,contamination=0.087)
 y_pred = clf.fit_predict( a.loc[:, 'confidence':])
 #n_errors = (y_pred != ground_truth).sum()
 #X_scores = clf.negative_outlier_factor_
