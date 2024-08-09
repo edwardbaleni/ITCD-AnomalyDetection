@@ -193,6 +193,14 @@ data["NDVI"].plot()
 #data["GNDVI"].plot()
 #data["ENDVI"].plot()
 
+# data["NDVI"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/NDVI.tif")
+# data["NDRE"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/NDRE.tif")
+# data["GNDVI"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/GNDVI.tif")
+# data["ENDVI"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/ENDVI.tif")
+# data["Intensity"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/Intensity.tif")
+# data["Satuartion"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/Saturation.tif")
+
+
 # %%
     # For image manipulation
 # https://image-slicer.readthedocs.io/en/latest/functions.html
@@ -533,7 +541,9 @@ nominal = a[b["anomaly_score"] <= 0.5]
 fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
 anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
-nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal.iloc.plot(ax=ax, facecolor='none', edgecolor='blue')
+# nominal.iloc[1:].plot(ax=ax, facecolor='none', edgecolor='blue')
+# nominal.iloc[0:1].plot(ax=ax, facecolor='none', edgecolor='orange')
 
 
 
