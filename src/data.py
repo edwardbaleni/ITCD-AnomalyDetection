@@ -129,7 +129,7 @@ for i in range(sampleSize):
 # merge dataframes
 # Make function to change transform to same as bands for everything
 
-num = 19
+num = 0
 
 xds_DEM = DEMs[num] #xarray.open_dataarray(data_paths_tif[ num ][0])
 xds_NIR = xds_match = NIRs[num] #xds_match = xarray.open_dataarray(data_paths_tif[ num ][1])
@@ -541,12 +541,51 @@ nominal = a[b["anomaly_score"] <= 0.5]
 fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
 anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
-nominal.iloc.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
 # nominal.iloc[1:].plot(ax=ax, facecolor='none', edgecolor='blue')
 # nominal.iloc[0:1].plot(ax=ax, facecolor='none', edgecolor='orange')
 
 
 
+
+
+
+# %%
+# https://www.geeksforgeeks.org/ml-fuzzy-clustering/
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
+
+X = np.array(a.loc[:, "confidence":])  # Number of clusters
+
+# Define the number of clusters
+n_clusters = 3
+ 
+# Apply fuzzy c-means clustering
+cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
+    X.T, n_clusters, 2, error=0.005, maxiter=1000, init=None
+)
+ 
+# Predict cluster membership for each data point
+cluster_membership = np.argmax(u, axis=0)
+ 
+# # Print the cluster centers
+# print('Cluster Centers:', cntr)
+ 
+# # Print the cluster membership for each data point
+# print('Cluster Membership:', cluster_membership)
+
+n1 = a[cluster_membership == 0]
+n2 = a[cluster_membership == 1] 
+n3 = a[cluster_membership == 2]
+# n4 = a[cluster_membership == 3]
+# n5 = a[cluster_membership == 4]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+n1.plot(ax=ax, facecolor='none', edgecolor='red')
+n2.plot(ax=ax, facecolor='none', edgecolor='blue')
+n3.plot(ax=ax, facecolor='none', edgecolor='purple')
+# n4.plot(ax=ax, facecolor='none', edgecolor='green')
 
 
 # %%
