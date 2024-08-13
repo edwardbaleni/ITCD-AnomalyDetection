@@ -208,7 +208,24 @@ data["NDVI"].plot()
 # https://readthedocs.org/projects/image-slicer/downloads/pdf/latest/
 
 
+# %%
+#     # remove points that aren't in mask
+# Can only run this blcok once
 
+def removePoints(geom, mask):
+    # remove points that touch the mask
+    return mask.contains(geom)
+
+def recursivePointRemoval(geoms, mask):
+    # remove points that touch the mask
+    hold = []
+    for i in range(0, len(geoms)):
+        if removePoints(geoms.iloc[i,1], masks[num])[0]:
+            hold.append(i)
+    return hold
+
+index_mask_intersect = recursivePointRemoval(Points[num], masks[num])
+delineations = Points[num].iloc[index_mask_intersect]
 
 # %%
 # mask in gdal and plot
@@ -225,7 +242,7 @@ tryout = xds_RGB[0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert
 tryout = tryout/255
 fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
-Points[ num ].plot(ax=ax, facecolor = 'none',edgecolor='red') 
+delineations.plot(ax=ax, facecolor = 'none',edgecolor='red') 
 
 # fig, ax = plt.subplots(figsize=(15, 15))
 # rio.plot.show(clipped, ax=ax)
@@ -236,7 +253,7 @@ Points[ num ].plot(ax=ax, facecolor = 'none',edgecolor='red')
                     # Feature Engineering
 
 # %%
-a = Points[ num ]
+a = delineations
 geom = a.iloc[:,1]
 
 
@@ -356,7 +373,7 @@ a["roundness"] = (4 * a["crown_projection_area"]) / (math.pi * a["major_axis"]**
 
 # get data within geometry
 # https://gis.stackexchange.com/questions/328128/extracting-data-within-geometry-shape/328320#328320
-touch = xds_match.rio.clip([Points[ num ].iloc[0,1]], xds_match.rio.crs)
+touch = xds_match.rio.clip([delineations.iloc[0,1]], xds_match.rio.crs)
 touch.plot()
 # this is the mean of the raster within the polygon for one polygon. Weighted average will be a bit dificult to collect.
 # we could also just obtain the max or the median instead or the mode instead of the mean or weighted average
@@ -516,7 +533,7 @@ mean_length = eif_result["mean_length"]
 
 # %%
 b = eif_result.as_data_frame()
-# for Points[1]
+# for delineations[1]
 # when the confidence variable is included then use a thresholf of 0.65
 # when it is not included then use a threshold of 0.5, however, this picks out a lot more anomalies
 # that may in fact be normal.
@@ -552,6 +569,7 @@ nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
 
 # %%
 # https://www.geeksforgeeks.org/ml-fuzzy-clustering/
+    # fuzzy means does not work
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 
@@ -589,24 +607,63 @@ n3.plot(ax=ax, facecolor='none', edgecolor='purple')
 
 
 # %%
+# https://www.geeksforgeeks.org/novelty-detection-with-local-outlier-factor-lof-in-scikit-learn/
 from sklearn.neighbors import LocalOutlierFactor
 # TODO: this is not the correct way to do this,
 #       look into https://scikit-learn.org/stable/auto_examples/neighbors/plot_lof_novelty_detection.html#sphx-glr-auto-examples-neighbors-plot-lof-novelty-detection-py
 
-clf = LocalOutlierFactor(n_neighbors=20, novelty=True,contamination=0.087)
-y_pred = clf.fit_predict( a.loc[:, 'confidence':])
-#n_errors = (y_pred != ground_truth).sum()
-#X_scores = clf.negative_outlier_factor_
-anomaly_1 = a[y_pred < 0]
-nominal_1 = a[y_pred > 0]
+lof_outlier  = LocalOutlierFactor(n_neighbors=20)
+outlier_scores  = lof_outlier.fit_predict( a.loc[:, 'confidence':])
+
+anomaly_1 = a[outlier_scores == -1]
+nominal_1 = a[outlier_scores != -1]
 
 fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
 anomaly_1.plot(ax=ax, facecolor='none', edgecolor='red')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 
+# # %%
+#     # Robust covariance
+#             # https://scikit-learn.org/stable/auto_examples/covariance/plot_mahalanobis_distances.html#sphx-glr-auto-examples-covariance-plot-mahalanobis-distances-py
+# from sklearn.covariance import EmpiricalCovariance, MinCovDet
+# X = a.loc[:, 'confidence':]
+# # fit a MCD robust estimator to data
+# robust_cov = MinCovDet().fit(X)
+# # fit a MLE estimator to data
+# emp_cov = EmpiricalCovariance().fit(X)
+# print(
+#     "Estimated covariance matrix:\nMCD (Robust):\n{}\nMLE:\n{}".format(
+#         robust_cov.covariance_, emp_cov.covariance_
+#     )
+# )
+
+
+# %%
+    # Unsupervised SVM
+    # https://scikit-learn.org/stable/modules/generated/sklearn.svm.OneClassSVM.html
+from sklearn.svm import OneClassSVM
+X = a.loc[:, 'confidence':]
+clf = OneClassSVM(gamma='auto').fit(X)
+scores = clf.predict(X)
+#clf.score_samples(X)
+anomaly_1 = a[scores == -1]
+nominal_1 = a[scores != -1]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='red')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+
+
 # %%
 
+# Above methods are in line with: https://ieeexplore-ieee-org.ezproxy.uct.ac.za/document/9297055
+# Paper says that isolation forests are the best option for AD
+
+
+
+# %%
 
 
 
