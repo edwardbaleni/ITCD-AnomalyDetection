@@ -100,6 +100,7 @@ def repprojectData(data, xds_match):
         return data
 
 # TODO: should be sped up from 20 seconds to less than 2 seconds
+# TODO: Something is wrong with blue and green bands, don't come out the same as others
 def fixData(tif, geojson, zipped):
     # Resamples data and removes irrelevant points
     dem, nir, red, reg, rgb, points, mask, ref_data = retrieveData(tif, geojson, zipped)
@@ -149,12 +150,12 @@ def vegIndices(data):
     
     data["ndvi"] = (data["nir"] - data["red"]) / (data["nir"] + data["red"])
     data["ndre"] = (data["nir"] - data["reg"]) / (data["nir"] + data["reg"])
-    data["gndvi"] = (data["nir"] - data["Green"]) / (data["nir"] + data["Green"])
-    data["endvi"] = ((data["nir"]+ data["Green"] - 2 * data["blue"]) / (data["nir"] + data["Green"] + 2 * data["blue"]))
-    data["intensity"] = data["nir"] + data["Green"] + data["blue"]
-    data["saturation"] = (data["Intensity"] -3 * data["blue"]) / data["Intensity"]
+    data["gndvi"] = (data["nir"] - data["green"]) / (data["nir"] + data["green"])
+    data["endvi"] = ((data["nir"]+ data["green"] - 2 * data["blue"]) / (data["nir"] + data["green"] + 2 * data["blue"]))
+    data["intensity"] = data["nir"] + data["green"] + data["blue"]
+    data["saturation"] = (data["intensity"] -3 * data["blue"]) / data["intensity"]
     #       as only NDVI seems to distinguish ground pixels from trees well
-    data["NDVI"].plot()
+    #data["NDVI"].plot()
     #data["NDRE"].plot()
     #data["GNDVI"].plot()
     #data["ENDVI"].plot()
@@ -166,27 +167,3 @@ def vegIndices(data):
     # data["Intensity"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/Intensity.tif")
     # data["Satuartion"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/Saturation.tif")
     return data
-
-# %%
-from timeit import default_timer as timer
-import matplotlib.pyplot as plt
-if __name__ == "__main__":
-    # working directory is that where the file is placed
-    #os.chdir("..")
-    sampleSize = 20
-    data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = collectFiles(sampleSize)
-
-    num = 0
-    start = timer()
-    data, delineations, mask, ref_data = fixData(data_paths_tif[num], data_paths_geojson[num], data_paths_geojson_zipped[num])
-    data = vegIndices(data)
-    end = timer()
-    print(end - start)
-
-    # Plotting
-    mask = mask
-    tryout = data["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
-    tryout = tryout/255
-    fig, ax = plt.subplots(figsize=(15, 15))
-    tryout.plot.imshow(ax=ax)
-    delineations.plot(ax=ax, facecolor = 'none',edgecolor='red') 
