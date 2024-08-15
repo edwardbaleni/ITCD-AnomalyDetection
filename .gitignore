@@ -1,5 +1,6 @@
 Data/
 data/
+documentation/
 *.tif
 *.geojson
 Examples/

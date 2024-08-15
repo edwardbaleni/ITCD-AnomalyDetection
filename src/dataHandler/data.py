@@ -1,16 +1,5 @@
 # %%
 
-    # https://zia207.github.io/geospatial-python.io/lesson_06_working-with-raster-data.html
-    # To read in data as raster stacks
-    # cant use gdal unless we use conda
-    # https://zia207.github.io/geospatial-python.io/lesson_06_working-with-raster-data.html#Working-with-Multi-Band-Raster
-
-    # https://automating-gis-processes.github.io/CSC18/index.html 
-    # https://autogis-site.readthedocs.io/en/latest/ 
-
-
-
-
 # How about we make this a whole file a class
 # that works on one file at a time
 # then we use another python file to loop over all images or folders
@@ -20,24 +9,17 @@
 
 # %%
 import shapely.plotting
-import dataCollect # contains os, glob, random
-
-import shapely # Used for mask creation
-
+import shapely
 import geopandas as gpd
 import rasterio as rio
 from rasterio.plot import show
-    # Have to work in Conda for gdal to work
 from osgeo import ogr, gdal
 from osgeo import gdalconst
 from rasterio.mask import mask
-
 import earthpy.spatial as es
 import earthpy.plot as ep
 import earthpy as et
-
 import matplotlib.pyplot as plt
-
 import numpy as np
 import pandas as pd
 import math
@@ -47,206 +29,12 @@ from sklearn.neighbors import NearestNeighbors as KNN
 import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator
 
-import random
-
-import rioxarray as rxr
-import xarray
-from rasterio.enums import Resampling
-
-import gzip
-
-
-# %%
-    # Collect file paths
-# for trial implementation
-# for final implementation, need to ask user to input file paths of 
-# interest
-# TODO: https://www.youtube.com/watch?v=YTOUBGHEgZg
-# TODO: https://www.merge.dev/blog/get-folders-google-drive-api 
-sampleSize = 20
-data_paths_tif = dataCollect.dCollect(size=sampleSize, file_type="tif")
-data_paths_geojson = dataCollect.dCollect(size=sampleSize, file_type="geojson")
-data_paths_geojson_zipped = dataCollect.dCollect(size=sampleSize, file_type="gz")
-random.seed(2024)
-# Create raster stack in 
-# this is a safe way to open zipped files without extracting them
-# import gzip
-# file = "C:/Users/balen/OneDrive/Desktop/Git/Dissertation-AnomalyDetection/Dissertation-AnomalyDetection/src/Data/93001/orchard_validation.geojson.gz"
-# with gzip.open(file, 'rb') as f:
-#     trys = gpd.read_file(f)
-
-
-# %%
-
-    # Open filelist and stack within erf
-    # so that
-DEMs = []
-NIRs = []
-Reds = []
-Regs = []
-RGBs = []
-Points = []
-Greens = []
-Blues = []
-masks = []
-Ref_Data = []
-
-    # To check description of raster
-    # raster.descriptions
-    # range is the sample size
-for i in range(sampleSize):
-    NIRs.append(xarray.open_dataarray([j for j in data_paths_tif[i] if "nir_native" in j][0]))
-    Reds.append(xarray.open_dataarray([j for j in data_paths_tif[i] if "red_native" in j][0]))
-    Regs.append(xarray.open_dataarray([j for j in data_paths_tif[i] if "reg_native" in j][0]))
-    RGBs.append(xarray.open_dataarray([j for j in data_paths_tif[i] if "visible_5cm" in j][0]))
-    # Here we read in the DEM and RGB, change the meta data and save
-    # new instance to memory, and close original file
-     
-    DEMs.append(xarray.open_dataarray([j for j in data_paths_tif[i] if "dem_native" in j][0]))
-    # Red, Green, Blue can be taken from RGB
-    # Red is the first, Green is second and Blue is third
-    # You can see this when you change around the plotting
-    # the colouring will change depending on how you order it
-    # this makes me believe that the correct order of RGB must be kept
-    # e.g. "show(RGBs[0].read([1,2,3]))"
-    # vs   "show(RGBs[0].read([2,1,3]))"
-    #Greens.append(RGBs[i].read(2))
-    #Blues.append(RGBs[i].read(3))
-    masks.append(gpd.read_file([j for j in data_paths_geojson[i] if "survey_polygon" in j][0]))
-    with gzip.open([j for j in data_paths_geojson_zipped[i] if "mask_rcnn.geojson" in j][0], 'rb') as f:
-        Points.append(gpd.read_file(f))
-    with gzip.open([j for j in data_paths_geojson_zipped[i] if "orchard_validation.geojson" in j][0], 'rb') as k:
-        Ref_Data.append(gpd.read_file(k))
-#    Points.append(gpd.read_file(data_paths_geojson[i]))#GeoDataFrame.from_file(data_paths_geojson[i]))
-
-    # es._stack_bands([Reds[0], NIRs[0]]) # to stack bands
-
-
-# %%
-# TODO: remove all points that touch the mask
-
-# %%
-# merge dataframes
-# Make function to change transform to same as bands for everything
-
-num = 0
-
-xds_DEM = DEMs[num] #xarray.open_dataarray(data_paths_tif[ num ][0])
-xds_NIR = xds_match = NIRs[num] #xds_match = xarray.open_dataarray(data_paths_tif[ num ][1])
-xds_Red = Reds[num] #xarray.open_dataarray(data_paths_tif[ num ][2])
-xds_Reg = Regs[num] #xarray.open_dataarray(data_paths_tif[ num ][3])
-xds_RGB = RGBs[num] #xarray.open_dataarray(data_paths_tif[ num ][4])
-
-xds_dictionary = {"DEM": xds_DEM, 
-                  "NIR": xds_NIR, 
-                  "Red": xds_Red, 
-                  "Reg": xds_Reg, 
-                  "RGB": xds_RGB}
-
-# fig, axes = plt.subplots(ncols=2, figsize=(12,4))
-# xds_dictionary["DEM"].plot(ax=axes[0])
-# xds_dictionary["RGB"].plot(ax=axes[1])
-# plt.draw()
-
-data = {}
-# xds_DEM_match = xds_DEM.rio.reproject_match(xds_match, resampling = Resampling.bilinear)
-# xds_Red_match = xds_Red.rio.reproject_match(xds_match, resampling = Resampling.bilinear)
-# xds_Reg_match = xds_Reg.rio.reproject_match(xds_match, resampling = Resampling.bilinear)
-# xds_RGB_match = xds_RGB.rio.reproject_match(xds_match, resampling = Resampling.bilinear)
-
-for key in xds_dictionary:
-    data[key] = xds_dictionary[key].rio.reproject_match(xds_match, resampling = Resampling.bilinear)
-    data[key] = data[key].assign_coords({
-        "x": xds_match.x,
-        "y": xds_match.y,
-    })
-
-
-# xds_repr_match = xds_repr_match.assign_coords({
-#     "x": xds_match.x,
-#     "y": xds_match.y,
-# })
-
-data["Green"] = data["RGB"][1]
-data["Blue"] = data["RGB"][2]
-
-# now we are able to perform calculations between the two rasters now they are in the same
-#  projection, resolution, and extents
-# we can perform calculations between the two rasters now they are in the same
-# will be helpful when calculating NDVI and others.
-# Find other vegetation indices to calculate
-#diff = xds_repr_match - xds_match
-
-# reg stands for red edge
-data["NDVI"] = (data["NIR"] - data["Red"]) / (data["NIR"] + data["Red"])
-data["NDRE"] = (data["NIR"] - data["Reg"]) / (data["NIR"] + data["Reg"])
-data["GNDVI"] = (data["NIR"] - data["Green"]) / (data["NIR"] + data["Green"])
-data["ENDVI"] = ((data["NIR"]+ data["Green"] - 2 * data["Blue"]) / (data["NIR"] + data["Green"] + 2 * data["Blue"]))
-# TODO: add these to data table in background
-data["Intensity"] = data["NIR"] + data["Green"] + data["Blue"]
-data["Saturation"] = (data["Intensity"] -3 * data["Blue"]) / data["Intensity"]
-
-# TODO: select better vegetative indices 
-#       as only NDVI seems to distinguish ground pixels from trees well
-data["NDVI"].plot()
-#data["NDRE"].plot()
-#data["GNDVI"].plot()
-#data["ENDVI"].plot()
-
-# data["NDVI"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/NDVI.tif")
-# data["NDRE"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/NDRE.tif")
-# data["GNDVI"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/GNDVI.tif")
-# data["ENDVI"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/ENDVI.tif")
-# data["Intensity"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/Intensity.tif")
-# data["Satuartion"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/Saturation.tif")
-
-
 # %%
     # For image manipulation
 # https://image-slicer.readthedocs.io/en/latest/functions.html
 # https://www.youtube.com/watch?v=hNFNVmh1Qfs
 # https://readthedocs.org/projects/image-slicer/downloads/pdf/latest/
 
-
-# %%
-#     # remove points that aren't in mask
-# Can only run this blcok once
-
-def removePoints(geom, mask):
-    # remove points that touch the mask
-    return mask.contains(geom)
-
-def recursivePointRemoval(geoms, mask):
-    # remove points that touch the mask
-    hold = []
-    for i in range(0, len(geoms)):
-        if removePoints(geoms.iloc[i,1], masks[num])[0]:
-            hold.append(i)
-    return hold
-
-index_mask_intersect = recursivePointRemoval(Points[num], masks[num])
-delineations = Points[num].iloc[index_mask_intersect]
-
-# %%
-# mask in gdal and plot
-    # only need the masksing to illustrate anomalies. 
-    # So we can either call our own mask provided by 
-    # user or we can create our own mask using the algorithm made
-    # either way, need to use rioxaray instead of straight rasterio
-    # as we cannot assume user is willing to use disk space to
-    # save the masked file.
-
-# tryout
-mask = masks[num]#gpd.read_file("C:/Users/balen/OneDrive/Desktop/Git/Dissertation-AnomalyDetection/Dissertation-AnomalyDetection/src/Data/122075/survey_polygon.geojson")
-tryout = xds_RGB[0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
-tryout = tryout/255
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-delineations.plot(ax=ax, facecolor = 'none',edgecolor='red') 
-
-# fig, ax = plt.subplots(figsize=(15, 15))
-# rio.plot.show(clipped, ax=ax)
-# Points[ num ].plot(ax=ax, facecolor='none', edgecolor='blue')
 
 # %%
 
