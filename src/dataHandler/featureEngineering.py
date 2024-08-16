@@ -24,6 +24,9 @@ from h2o.estimators import H2OExtendedIsolationForestEstimator
 from dataHandler.dataCollect import collect
 from sklearn.preprocessing import StandardScaler
 
+import dask.dataframe as dd
+from dask.diagnostics import ProgressBar
+
 class engineer(collect):
 
     def __init__(self, num, tifs, geojsons, zips):
@@ -112,16 +115,33 @@ class engineer(collect):
         # Spectral Features
 
         geom = placeholder.loc[:,"geometry"]
-        placeholder[["DEM_mean", "DEM_CV"]] = engineer._detStats(spectral["dem"], geom)
-        placeholder[["NIR_mean", "NIR_CV"]] = engineer._detStats(spectral["nir"], geom)
-        placeholder[["Red_mean", "Red_CV"]] = engineer._detStats(spectral["red"], geom)
-        placeholder[["Reg_mean", "Reg_CV"]] = engineer._detStats(spectral["reg"], geom)
-        placeholder[["NDRE_mean", "NDRE_CV"]] = engineer._detStats(spectral["ndre"], geom)
-        placeholder[["NDVI_mean", "NDVI_CV"]] = engineer._detStats(spectral["ndvi"], geom)
-        placeholder[["GNVDI_mean", "GNVDI_CV"]] = engineer._detStats(spectral["gndvi"], geom)
-        placeholder[["ENDVI_mean", "ENDVI_CV"]] = engineer._detStats(spectral["endvi"], geom)
-        placeholder[["Intensity_mean", "Intensity_CV"]] = engineer._detStats(spectral["intensity"], geom)
-        placeholder[["Saturation_mean", "Saturation_CV"]] = engineer._detStats(spectral["saturation"], geom)
+        # placeholder[["DEM_mean", "DEM_CV"]] = engineer._detStats(spectral["dem"], geom)
+        # placeholder[["NIR_mean", "NIR_CV"]] = engineer._detStats(spectral["nir"], geom)
+        # placeholder[["Red_mean", "Red_CV"]] = engineer._detStats(spectral["red"], geom)
+        # placeholder[["Reg_mean", "Reg_CV"]] = engineer._detStats(spectral["reg"], geom)
+        # placeholder[["NDRE_mean", "NDRE_CV"]] = engineer._detStats(spectral["ndre"], geom)
+        # placeholder[["NDVI_mean", "NDVI_CV"]] = engineer._detStats(spectral["ndvi"], geom)
+        # placeholder[["GNVDI_mean", "GNVDI_CV"]] = engineer._detStats(spectral["gndvi"], geom)
+        # placeholder[["ENDVI_mean", "ENDVI_CV"]] = engineer._detStats(spectral["endvi"], geom)
+        # placeholder[["Intensity_mean", "Intensity_CV"]] = engineer._detStats(spectral["intensity"], geom)
+        # placeholder[["Saturation_mean", "Saturation_CV"]] = engineer._detStats(spectral["saturation"], geom)
+
+        # https://docs.dask.org/en/latest/diagnostics-local.html#progress-bar
+        ddf = dd.from_pandas(placeholder, npartitions=6)
+
+        # The following cuts the run time in half
+        # it is also faster than using the swifter library
+        # downwcasting from float64 to float16 is also helpful in increasing processing speed
+        # so use a dynaimc float to accomodate the largest number in the column
+        with ProgressBar():
+            placeholder["DEM"] = ddf["geometry"].apply(lambda x: float(spectral["dem"].rio.clip( [x], spectral["dem"].rio.crs).mean()), meta=pd.Series(dtype="float")).compute()
+            placeholder["NDRE_max"] = ddf["geometry"].apply(lambda x: float(spectral["ndre"].rio.clip( [x], spectral["ndre"].rio.crs).mean()), meta=pd.Series(dtype="float")).compute()
+            placeholder["NDVI_max"] = ddf["geometry"].apply(lambda x: float(spectral["ndvi"].rio.clip( [x], spectral["ndvi"].rio.crs).mean()), meta=pd.Series(dtype="float")).compute()
+            placeholder["GNVDI_max"] = ddf["geometry"].apply(lambda x: float(spectral["gndvi"].rio.clip( [x], spectral["gndvi"].rio.crs).mean()), meta=pd.Series(dtype="float")).compute()
+            placeholder["ENDVI_max"] = ddf["geometry"].apply(lambda x: float(spectral["endvi"].rio.clip( [x], spectral["endvi"].rio.crs).mean()), meta=pd.Series(dtype="float")).compute()
+
+
+
         # placeholder[["Green_mean", "Green_CV"]] = engineer._detStats(spectral["green"], geom)
         # placeholder[["Blue_mean", "Blue_CV"]] = engineer._detStats(spectral["blue"], geom)
         # placeholder[["DEM_max", "DEM_majority", "DEM_mean", "DEM_CV"]] = engineer._detStats(spectral["dem"], geom)
