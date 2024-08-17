@@ -4,9 +4,8 @@ from glob import glob
 import gzip
 import geopandas as gpd
 import xarray
-import rioxarray as rxr
 from rasterio.enums import Resampling
-import pyogrio
+#import pyogrio
 
 class collect:
     def __init__(self, num, tifs, geojsons, zips):

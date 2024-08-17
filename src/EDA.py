@@ -22,19 +22,17 @@ myData = dataHandler.engineer(num, data_paths_tif, data_paths_geojson, data_path
 # print(end - start)
 
 data = myData.data
-delineations = myData.delineations # = myData.data["geometry"]
+delineations = myData.delineations
 mask = myData.mask
 spectralData = myData.spectralData
 
-# Plotting
-mask = mask
-tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
-tryout = tryout/255
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-delineations.plot(ax=ax, facecolor = 'none',edgecolor='red') 
-
-# %%
+# # Plotting
+# mask = mask
+# tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
+# tryout = tryout/255
+# fig, ax = plt.subplots(figsize=(15, 15))
+# tryout.plot.imshow(ax=ax)
+# delineations.plot(ax=ax, facecolor = 'none',edgecolor='red') 
 
 
 # %%    
@@ -77,7 +75,6 @@ plt.show()
 
 # %%
 import shapely.plotting
-import shapely
 # import geopandas as gpd
 # import rasterio as rio
 # from rasterio.plot import show
@@ -89,8 +86,6 @@ import shapely
 # import earthpy as et
 # import matplotlib.pyplot as plt
 # import numpy as np
-import pandas as pd
-import math
 
 import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator
@@ -107,27 +102,8 @@ from h2o.estimators import H2OExtendedIsolationForestEstimator
 # https://github.com/sahandha/eif/blob/master/Notebooks/TreeVisualization.ipynb 
 # Set the predictors
 h2o.init()
-# %%
-h2o_df = h2o.H2OFrame(a.loc[:,[ 'confidence',
-       'crown_projection_area', 'crown_perimeter', 'radius_of_gyration',
-       #'short', 'long', 
-       'minor_axis', 'major_axis', 
-       'isoperimetric', 'shape_index', 'form_factor', 'circularity',
-       'convexity', 'solidity', 'elongation', 'roundness', 'DEM_max', 'NDRE_max',
-       'NDVI_max', 'GNVDI_max', 'ENDVI_max', #'NDRE_median', 
-       #'NDVI_median',
-       #'GNVDI_median', 'ENDVI_median', 
-       'dist1', 'dist2', 'dist3', 'dist4']])
-predictors = [ 'confidence',
-       'crown_projection_area', 'crown_perimeter', 'radius_of_gyration',
-       #'short', 'long', 
-       'minor_axis', 'major_axis', 
-       'isoperimetric', 'shape_index', 'form_factor', 'circularity',
-       'convexity', 'solidity', 'elongation', 'roundness', 'DEM_max', 'NDRE_max',
-       'NDVI_max', 'GNVDI_max', 'ENDVI_max', #'NDRE_median', 
-       #'NDVI_median',
-       #'GNVDI_median', 'ENDVI_median', 
-       'dist1', 'dist2', 'dist3', 'dist4']#list(a.columns)
+h2o_df = h2o.H2OFrame(data[list(data.columns)[4:]])
+predictors = list(data.columns)[4:]
 
 # %%
 # Extended Isolation Forest is a great unsupervised method for anomaly detection
@@ -136,7 +112,7 @@ predictors = [ 'confidence',
 # Define an Extended Isolation forest model
 eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
                                           ntrees = 1000,
-                                          sample_size = int(len(a) * 0.8),
+                                          sample_size = int(data.shape[0] * 0.8),
                                           extension_level = 6)#len(predictors) - 1)
 
 # Train Extended Isolation Forest
@@ -155,36 +131,23 @@ mean_length = eif_result["mean_length"]
 
 # %%
 b = eif_result.as_data_frame()
-# for delineations[1]
-# when the confidence variable is included then use a thresholf of 0.65
-# when it is not included then use a threshold of 0.5, however, this picks out a lot more anomalies
-# that may in fact be normal.
-# It is likely that most papers will not include the confidence variable
 
-# when scaled and no confidence then 0.5 is a good threshold, most of the anomalies are captured
-# the same anomalies are captured with or withour using confidence anyway. So we may be able to get away with
-# not using confidence
-anomaly = a[b["anomaly_score"] > 0.5]
-nominal = a[b["anomaly_score"] <= 0.5]
+    # 0.5 is a good threshold, for a weak one go <= 0.4
+    # for a tight one go >= 0.5 
+anomaly = data[b["anomaly_score"] > 0.5]
+nominal = data[b["anomaly_score"] <= 0.5]
 
 # %%
 
-# fig, ax = plt.subplots(figsize=(20, 20))
-# rio.plot.show(clipped, ax=ax)
-# anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
-# nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
 
-#mask = gpd.read_file("C:/Users/balen/OneDrive/Desktop/Git/Dissertation-AnomalyDetection/Dissertation-AnomalyDetection/src/Data/122075/survey_polygon.geojson")
-#tryout = xds_RGB[0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
-#tryout = tryout/255
+# Plotting
+mask = mask
+tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
+tryout = tryout/255
 fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
-anomaly.plot(ax=ax, facecolor='none', edgecolor='red')
-nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
-# nominal.iloc[1:].plot(ax=ax, facecolor='none', edgecolor='blue')
-# nominal.iloc[0:1].plot(ax=ax, facecolor='none', edgecolor='orange')
-
-
+nominal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
+anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
 
 
 
@@ -195,10 +158,10 @@ nominal.plot(ax=ax, facecolor='none', edgecolor='blue')
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 
-X = np.array(a.loc[:, "confidence":])  # Number of clusters
+X = np.array(data.loc[:, "confidence":])  # Number of clusters
 
 # Define the number of clusters
-n_clusters = 3
+n_clusters = 2
  
 # Apply fuzzy c-means clustering
 cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
@@ -214,19 +177,33 @@ cluster_membership = np.argmax(u, axis=0)
 # # Print the cluster membership for each data point
 # print('Cluster Membership:', cluster_membership)
 
-n1 = a[cluster_membership == 0]
-n2 = a[cluster_membership == 1] 
-n3 = a[cluster_membership == 2]
+n1 = data[cluster_membership == 0]
+n2 = data[cluster_membership == 1] 
+# n3 = data[cluster_membership == 2]
 # n4 = a[cluster_membership == 3]
 # n5 = a[cluster_membership == 4]
 
 fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
-n1.plot(ax=ax, facecolor='none', edgecolor='red')
-n2.plot(ax=ax, facecolor='none', edgecolor='blue')
-n3.plot(ax=ax, facecolor='none', edgecolor='purple')
-# n4.plot(ax=ax, facecolor='none', edgecolor='green')
+n1.plot(ax=ax, facecolor='none', edgecolor='blue')
+n2.plot(ax=ax, facecolor='none', edgecolor='red')
 
+# %%
+# DBSCAN
+
+from sklearn.cluster import HDBSCAN
+
+hdb = HDBSCAN(min_cluster_size=5)
+hdb.fit(X)
+hdb.labels_
+
+anomaly_1 = data[hdb.labels_ == -1]
+nominal_1 = data[hdb.labels_ != -1]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='red')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 
 # %%
 # https://www.geeksforgeeks.org/novelty-detection-with-local-outlier-factor-lof-in-scikit-learn/
