@@ -128,6 +128,8 @@ class engineer(collect):
         placeholder[["Intensity_mean", "Intensity_CV"]] = engineer._detStats(spectral["intensity"], geom)
         placeholder[["Saturation_mean", "Saturation_CV"]] = engineer._detStats(spectral["saturation"], geom)
 
+        # More options if Zonal Statistics stops working
+        # # https://github.com/shakasom/zonalstatistics/blob/master/Zonal_Statistics_Sentinel.ipynb
         # # https://corteva.github.io/geocube/html/examples/zonal_statistics.html
         # grouped_elevation = spectral["dem"].drop("spatial_ref").groupby(geom)
         # grid_mean = grouped_elevation.mean().rename({"dem": "elevation_mean"})
