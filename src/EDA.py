@@ -90,7 +90,7 @@ import shapely.plotting
 import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator
 
-
+from sklearn.cluster import HDBSCAN
 
 
 # %%
@@ -153,106 +153,39 @@ anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
 
 
 # %%
-# https://www.geeksforgeeks.org/ml-fuzzy-clustering/
-    # fuzzy means does not work
-import skfuzzy as fuzz
-from skfuzzy import control as ctrl
-
-X = np.array(data.loc[:, "confidence":])  # Number of clusters
-
-# Define the number of clusters
-n_clusters = 2
- 
-# Apply fuzzy c-means clustering
-cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
-    X.T, n_clusters, 2, error=0.005, maxiter=1000, init=None
-)
- 
-# Predict cluster membership for each data point
-cluster_membership = np.argmax(u, axis=0)
- 
-# # Print the cluster centers
-# print('Cluster Centers:', cntr)
- 
-# # Print the cluster membership for each data point
-# print('Cluster Membership:', cluster_membership)
-
-n1 = data[cluster_membership == 0]
-n2 = data[cluster_membership == 1] 
-# n3 = data[cluster_membership == 2]
-# n4 = a[cluster_membership == 3]
-# n5 = a[cluster_membership == 4]
-
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-n1.plot(ax=ax, facecolor='none', edgecolor='blue')
-n2.plot(ax=ax, facecolor='none', edgecolor='red')
-
-# %%
 # DBSCAN
-
-from sklearn.cluster import HDBSCAN
+X = np.array(data.loc[:, "confidence":])  # Number of clusters
 
 hdb = HDBSCAN(min_cluster_size=5)
 hdb.fit(X)
 hdb.labels_
 
-anomaly_1 = data[hdb.labels_ == -1]
-nominal_1 = data[hdb.labels_ != -1]
+anomaly_1 = data[hdb.labels_ <= 0] # data[hdb.labels_ == -1]
+nominal_1 = data[hdb.labels_ > 0] # data[hdb.labels_ != -1]
 
 fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='red')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 
 # %%
 # https://www.geeksforgeeks.org/novelty-detection-with-local-outlier-factor-lof-in-scikit-learn/
 from sklearn.neighbors import LocalOutlierFactor
-# TODO: this is not the correct way to do this,
-#       look into https://scikit-learn.org/stable/auto_examples/neighbors/plot_lof_novelty_detection.html#sphx-glr-auto-examples-neighbors-plot-lof-novelty-detection-py
+lof_outlier  = LocalOutlierFactor(n_neighbors=50)
+outlier_scores  = lof_outlier.fit_predict( data.loc[:, 'confidence':])
 
-lof_outlier  = LocalOutlierFactor(n_neighbors=20)
-outlier_scores  = lof_outlier.fit_predict( a.loc[:, 'confidence':])
-
-anomaly_1 = a[outlier_scores == -1]
-nominal_1 = a[outlier_scores != -1]
+anomaly_1 = data[outlier_scores == -1]
+nominal_1 = data[outlier_scores != -1]
 
 fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='red')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-
-# # %%
-#     # Robust covariance
-#             # https://scikit-learn.org/stable/auto_examples/covariance/plot_mahalanobis_distances.html#sphx-glr-auto-examples-covariance-plot-mahalanobis-distances-py
-# from sklearn.covariance import EmpiricalCovariance, MinCovDet
-# X = a.loc[:, 'confidence':]
-# # fit a MCD robust estimator to data
-# robust_cov = MinCovDet().fit(X)
-# # fit a MLE estimator to data
-# emp_cov = EmpiricalCovariance().fit(X)
-# print(
-#     "Estimated covariance matrix:\nMCD (Robust):\n{}\nMLE:\n{}".format(
-#         robust_cov.covariance_, emp_cov.covariance_
-#     )
-# )
-
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 
 # %%
-    # Unsupervised SVM
-    # https://scikit-learn.org/stable/modules/generated/sklearn.svm.OneClassSVM.html
-from sklearn.svm import OneClassSVM
-X = a.loc[:, 'confidence':]
-clf = OneClassSVM(gamma='auto').fit(X)
-scores = clf.predict(X)
-#clf.score_samples(X)
-anomaly_1 = a[scores == -1]
-nominal_1 = a[scores != -1]
+#     # Robust PCA
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='red')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+
 
 
 # %%
