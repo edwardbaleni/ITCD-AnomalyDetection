@@ -42,6 +42,7 @@ spectralData = myData.spectralData
 #      - tSNE
 #      - IsoMap
 #      - feature clustering
+#      - UMAP
 
 # %%
 # To help with feature selection
