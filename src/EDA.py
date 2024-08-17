@@ -39,6 +39,20 @@ spectralData = myData.spectralData
                     # Feature Selection (if too many features)
 
 # TODO: Feature selection
+#      - tSNE
+#      - IsoMap
+#      - feature clustering
+
+# %%
+# To help with feature selection
+from sklearn.manifold import TSNE
+X = np.array(data.loc[:, "confidence":])
+X_embedded = TSNE(n_components=2, learning_rate='auto',
+                  init='random', perplexity=3).fit_transform(X)
+X_embedded.shape
+
+
+
 
 # %%
 
@@ -150,10 +164,17 @@ nominal.plot(ax=ax, facecolor = 'none',edgecolor='red')
 anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
 
 
+# %%
+
+# Below methods are in line with: https://ieeexplore-ieee-org.ezproxy.uct.ac.za/document/9297055
+# Paper says that isolation forests are the best option for AD
+
 
 
 # %%
 # DBSCAN
+# https://scikit-learn.org/stable/modules/generated/sklearn.cluster.HDBSCAN.html
+# https://dinhanhthi.com/note/dbscan-hdbscan-clustering/
 X = np.array(data.loc[:, "confidence":])  # Number of clusters
 
 hdb = HDBSCAN(min_cluster_size=5)
@@ -167,6 +188,24 @@ fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
 anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+
+# %%
+from sklearn.cluster import DBSCAN
+
+import numpy as np
+
+clustering = DBSCAN(eps=3, min_samples=10).fit(X)
+
+clustering.labels_
+
+anomaly_1 = data[hdb.labels_ < 0] # data[hdb.labels_ == -1]
+nominal_1 = data[hdb.labels_ >= 0] # data[hdb.labels_ != -1]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+
 
 # %%
 # https://www.geeksforgeeks.org/novelty-detection-with-local-outlier-factor-lof-in-scikit-learn/
@@ -186,24 +225,6 @@ nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 #     # Robust PCA
 
 
-
-
-# %%
-
-# Above methods are in line with: https://ieeexplore-ieee-org.ezproxy.uct.ac.za/document/9297055
-# Paper says that isolation forests are the best option for AD
-
-
-
-# %%
-
-
-
-            # do not do delauney triangulation with EFI use, nearest neighbour instead to get closest points 
-            # otherwise the number of variables won't be contained at each vairable
-            # Only use delauney triangulation for second method
-            # Use distatnces to centres not to vertices
-
 # %%
                     # Delauney Paper
 # %%
@@ -211,8 +232,8 @@ nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 # https://gis.stackexchange.com/questions/459091/definition-of-multipolygon-distance-in-shapely
 import shapely.plotting
 
-shapely.plotting.plot_polygon(a.iloc[0,1], color = "red")
-shapely.plotting.plot_polygon(a.iloc[4,1], color = "blue")
+shapely.plotting.plot_polygon(data.iloc[0,1], color = "red")
+shapely.plotting.plot_polygon(data.iloc[4,1], color = "blue")
 plt.show()
 
 # this distance outputs the distance from the nearest vertex to the nearest vertex of the
@@ -226,7 +247,7 @@ print("distance: ", {a.iloc[0,1].distance(a.iloc[4,1])})
 
 # %% 
 from scipy.spatial import Delaunay
-points = a.iloc[0:50,5:7].to_numpy()
+points = data.iloc[0:50,5:7].to_numpy()
 tri = Delaunay(points)
 
 
@@ -255,3 +276,6 @@ plt.show()
 # Simplices are the indices of the vertices that make up the triangle in
 # points. If we match this to the centroid in main dataframe then we could 
 # find distances between polygons.
+
+# TODO: performance metrics for outlier detection
+#        https://scikit-learn.org/stable/auto_examples/miscellaneous/plot_outlier_detection_bench.html#sphx-glr-auto-examples-miscellaneous-plot-outlier-detection-bench-py
