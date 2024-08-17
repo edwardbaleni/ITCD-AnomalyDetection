@@ -6,12 +6,13 @@ import geopandas as gpd
 import xarray
 import rioxarray as rxr
 from rasterio.enums import Resampling
+import pyogrio
+
 class collect:
     def __init__(self, num, tifs, geojsons, zips):
         self._num = num
         self._tif, self._geojson, self._zipped = tifs[self._num], geojsons[self._num], zips[self._num]
-        self.spectralData, self.delineations, self.mask, self.ref_data = self.fixData(self._tif, self._geojson, self._zipped)
-        #self.spectralData = self.vegIndices(self.spectralData)      
+        self.spectralData, self.delineations, self.mask, self.ref_data = self.fixData(self._tif, self._geojson, self._zipped)      
         self._vegIndices(self.spectralData)  
 
     @staticmethod
@@ -21,11 +22,11 @@ class collect:
         reg = xarray.open_dataarray([j for j in data_paths_tif if "reg_native" in j][0])
         rgb = xarray.open_dataarray([j for j in data_paths_tif if "visible_5cm" in j][0])
         dem = xarray.open_dataarray([j for j in data_paths_tif if "dem_native" in j][0])
-        mask = gpd.read_file([j for j in data_paths_geojson if "survey_polygon" in j][0])
+        mask = gpd.read_file([j for j in data_paths_geojson if "survey_polygon" in j][0], engine='pyogrio',use_arrow=True)
         with gzip.open([j for j in data_paths_geojson_zipped if "mask_rcnn.geojson" in j][0], 'rb') as f:
-            points = gpd.read_file(f)
+            points = gpd.read_file(f, engine='pyogrio', use_arrow=True)
         with gzip.open([j for j in data_paths_geojson_zipped if "orchard_validation.geojson" in j][0], 'rb') as k:
-            ref_Data = gpd.read_file(k)
+            ref_Data = gpd.read_file(k, engine='pyogrio',use_arrow=True)
         
         return dem, nir, red, reg, rgb, points, mask, ref_Data
 
@@ -94,6 +95,7 @@ class collect:
 
         index_mask_intersect = collect._recursivePointRemoval(points, mask)
         delineations = points.iloc[index_mask_intersect]
+        delineations.reset_index(drop=True, inplace=True)
 
         return data, delineations, mask, ref_data
 

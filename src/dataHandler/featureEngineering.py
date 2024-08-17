@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import math
 
-from rasterstats import zonal_stats
+
 from sklearn.neighbors import NearestNeighbors as KNN
 import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator
@@ -24,8 +24,7 @@ from h2o.estimators import H2OExtendedIsolationForestEstimator
 from dataHandler.dataCollect import collect
 from sklearn.preprocessing import StandardScaler
 
-import dask.dataframe as dd
-from dask.diagnostics import ProgressBar
+from rasterstats import zonal_stats
 
 class engineer(collect):
 
@@ -98,49 +97,41 @@ class engineer(collect):
 
     @staticmethod
     def _detStats(x, geometry):
+        geometry = geometry.to_crs(x.rio.crs)
+        #nodata = x.rio.nodata
         affine = x.rio.transform()
         array = np.array(x)[0]
         # return pd.DataFrame(zonal_stats(geometry, array, 
         #             affine=affine, 
         #             stats="max majority mean",
         #             add_stats={"CoV":CoV}))
-        return pd.DataFrame(zonal_stats(geometry, array,
+        return pd.DataFrame(zonal_stats(geometry, array, nodata=np.nan,
                     affine=affine,
                     stats="mean",
-                    add_stats={"CoV":engineer._CoV}))
+                    add_stats={"CoV":engineer._CoV}))   
+        
 
     # TODO: Select a better statistic mean/median/mode/max/etc.
     # TODO: Speed up zonal statistics
     def zonalStatistics(self, placeholder, spectral):
         # Spectral Features
-
         geom = placeholder.loc[:,"geometry"]
-        # placeholder[["DEM_mean", "DEM_CV"]] = engineer._detStats(spectral["dem"], geom)
-        # placeholder[["NIR_mean", "NIR_CV"]] = engineer._detStats(spectral["nir"], geom)
-        # placeholder[["Red_mean", "Red_CV"]] = engineer._detStats(spectral["red"], geom)
-        # placeholder[["Reg_mean", "Reg_CV"]] = engineer._detStats(spectral["reg"], geom)
-        # placeholder[["NDRE_mean", "NDRE_CV"]] = engineer._detStats(spectral["ndre"], geom)
-        # placeholder[["NDVI_mean", "NDVI_CV"]] = engineer._detStats(spectral["ndvi"], geom)
-        # placeholder[["GNVDI_mean", "GNVDI_CV"]] = engineer._detStats(spectral["gndvi"], geom)
-        # placeholder[["ENDVI_mean", "ENDVI_CV"]] = engineer._detStats(spectral["endvi"], geom)
-        # placeholder[["Intensity_mean", "Intensity_CV"]] = engineer._detStats(spectral["intensity"], geom)
-        # placeholder[["Saturation_mean", "Saturation_CV"]] = engineer._detStats(spectral["saturation"], geom)
 
-        # https://docs.dask.org/en/latest/diagnostics-local.html#progress-bar
-        ddf = dd.from_pandas(placeholder, npartitions=6)
+        placeholder[["DEM_mean", "DEM_CV"]] = engineer._detStats(spectral["dem"], geom)
+        placeholder[["NIR_mean", "NIR_CV"]] = engineer._detStats(spectral["nir"], geom)
+        placeholder[["Red_mean", "Red_CV"]] = engineer._detStats(spectral["red"], geom)
+        placeholder[["Reg_mean", "Reg_CV"]] = engineer._detStats(spectral["reg"], geom)
+        placeholder[["NDRE_mean", "NDRE_CV"]] = engineer._detStats(spectral["ndre"], geom)
+        placeholder[["NDVI_mean", "NDVI_CV"]] = engineer._detStats(spectral["ndvi"], geom)
+        placeholder[["GNVDI_mean", "GNVDI_CV"]] = engineer._detStats(spectral["gndvi"], geom)
+        placeholder[["ENDVI_mean", "ENDVI_CV"]] = engineer._detStats(spectral["endvi"], geom)
+        placeholder[["Intensity_mean", "Intensity_CV"]] = engineer._detStats(spectral["intensity"], geom)
+        placeholder[["Saturation_mean", "Saturation_CV"]] = engineer._detStats(spectral["saturation"], geom)
 
-        # The following cuts the run time in half
-        # it is also faster than using the swifter library
-        # downwcasting from float64 to float16 is also helpful in increasing processing speed
-        # so use a dynaimc float to accomodate the largest number in the column
-        with ProgressBar():
-            placeholder["DEM"] = ddf["geometry"].apply(lambda x: float(spectral["dem"].rio.clip( [x], spectral["dem"].rio.crs).mean()), meta=pd.Series(dtype="float")).compute()
-            placeholder["NDRE_max"] = ddf["geometry"].apply(lambda x: float(spectral["ndre"].rio.clip( [x], spectral["ndre"].rio.crs).mean()), meta=pd.Series(dtype="float")).compute()
-            placeholder["NDVI_max"] = ddf["geometry"].apply(lambda x: float(spectral["ndvi"].rio.clip( [x], spectral["ndvi"].rio.crs).mean()), meta=pd.Series(dtype="float")).compute()
-            placeholder["GNVDI_max"] = ddf["geometry"].apply(lambda x: float(spectral["gndvi"].rio.clip( [x], spectral["gndvi"].rio.crs).mean()), meta=pd.Series(dtype="float")).compute()
-            placeholder["ENDVI_max"] = ddf["geometry"].apply(lambda x: float(spectral["endvi"].rio.clip( [x], spectral["endvi"].rio.crs).mean()), meta=pd.Series(dtype="float")).compute()
-
-
+        # # https://corteva.github.io/geocube/html/examples/zonal_statistics.html
+        # grouped_elevation = spectral["dem"].drop("spatial_ref").groupby(geom)
+        # grid_mean = grouped_elevation.mean().rename({"dem": "elevation_mean"})
+        # print(grid_mean)
 
         # placeholder[["Green_mean", "Green_CV"]] = engineer._detStats(spectral["green"], geom)
         # placeholder[["Blue_mean", "Blue_CV"]] = engineer._detStats(spectral["blue"], geom)
@@ -175,18 +166,13 @@ class engineer(collect):
         placeholder["centroid"] = shapely.centroid(placeholder.loc[:,"geometry"])
         placeholder["latitude"] = placeholder["centroid"].y
         placeholder["longitude"] = placeholder["centroid"].x
-
         # put the spatial features first
         placeholder = placeholder.loc[:, ['geometry', 'centroid', 'latitude', 'longitude', 'confidence']]
         placeholder = self.shapeDescriptors(placeholder)
         placeholder = self.distanceFeatures(placeholder)
         # zonal statistics have to come last as crs is 4326 
         # and above crs is converted to 3857 to work with the shape descriptors
-        # start = timer()
         placeholder = self.zonalStatistics(placeholder, spectral)
-        # end = timer()
-        # print(end - start)
-
         # Feature Scaling
         scaler = StandardScaler()
         placeholder.loc[:, "confidence":] = scaler.fit_transform(placeholder.loc[:,'confidence':])

@@ -17,8 +17,12 @@ if __name__ == "__main__":
     sampleSize = 20
     data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = dataHandler.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
     num = 0
-    myData = dataHandler.engineer(num, data_paths_tif, data_paths_geojson, data_paths_geojson_zipped)
     
+    # start = timer()
+    myData = dataHandler.engineer(num, data_paths_tif, data_paths_geojson, data_paths_geojson_zipped)
+    # end = timer()
+    # print(end - start)
+
     data = myData.data
     delineations = myData.delineations # = myData.data["geometry"]
     mask = myData.mask
@@ -31,5 +35,4 @@ if __name__ == "__main__":
     fig, ax = plt.subplots(figsize=(15, 15))
     tryout.plot.imshow(ax=ax)
     delineations.plot(ax=ax, facecolor = 'none',edgecolor='red') 
-
 # %%
