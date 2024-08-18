@@ -47,13 +47,59 @@ spectralData = myData.spectralData
 # %%
 # To help with feature selection
 from sklearn.manifold import TSNE
-X = np.array(data.loc[:, "confidence":])
-X_embedded = TSNE(n_components=2, learning_rate='auto',
-                  init='random', perplexity=3).fit_transform(X)
-X_embedded.shape
+import plotly.express as px
+
+df_dr = data.loc[:, "confidence":]
+df_dr = df_dr.T
+
+    # visualise
+TSNE_model = TSNE(n_components=2, perplexity=3)
+df_tsne = pd.DataFrame(TSNE_model.fit_transform(np.array(df_dr)))
+
+df_tsne['entity'] = df_dr.index
+df_tsne["theme"] = df_tsne["entity"].apply(lambda d : d[0:4])
+
+fig_tsne = px.scatter(data_frame=df_tsne, x=0, y=1, hover_name='entity', color = "theme",title='T-SNE With 2 Components',)
+fig_tsne.show()
+
+# %%
+
+import umap
+
+df_dr = data.loc[:, "confidence":]
+df_dr = df_dr.T
+
+#embedding = umap.UMAP(n_neighbors=5).fit_transform(np.array(df_dr))#X)
+df_umap = embedding = pd.DataFrame(umap.UMAP(n_neighbors=5).fit_transform(np.array(df_dr)))#X)
+df_umap['entity'] = df_dr.index
+df_umap["theme"] = df_umap["entity"].apply(lambda d : d[0:4])
+
+fig_umap = px.scatter(data_frame=df_umap, x=0, y=1, hover_name='entity', color = "theme",title='T-SNE With 2 Components',)
+fig_umap.show()
 
 
+# %%
+    #               Variable clustering
+    #               Can pick one variable from each cluster
+from varclushi import VarClusHi
+def varClust(X):
+    demo1_vc = VarClusHi(X,maxeigval2=1,maxclus=None)
+    demo1_vc.varclus()
+    demo1_vc.info
+    demo1_vc.rsquare
 
+    data = []
+    for i in demo1_vc.rsquare["Cluster"].unique():
+        check = demo1_vc.rsquare[demo1_vc.rsquare["Cluster"] == i ]
+        data.append(check.iloc[0,1])
+
+    X = X.loc[:,data]
+
+    return(list(X.columns), demo1_vc)
+
+variables, demo1 = varClust(data.loc[:, "confidence":])
+print(variables)
+print(demo1.rsquare)
 
 # %%
 
