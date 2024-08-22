@@ -23,6 +23,7 @@ from h2o.estimators import H2OExtendedIsolationForestEstimator
 # parent class
 from dataHandler.dataCollect import collect
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler
 
 from rasterstats import zonal_stats
 
@@ -176,7 +177,10 @@ class engineer(collect):
         # and above crs is converted to 3857 to work with the shape descriptors
         placeholder = self.zonalStatistics(placeholder, spectral)
         # Feature Scaling
-        scaler = StandardScaler()
+        # TODO: this paper says to use robust scaling: https://link.springer.com/article/10.1007/s00138-023-01450-x#Sec3
+        #       For some reason it does work better than standard scaling
+        scaler = RobustScaler()
+        # scaler = StandardScaler()
         placeholder.loc[:, "confidence":] = scaler.fit_transform(placeholder.loc[:,'confidence':])
         
         self.data = placeholder

@@ -154,6 +154,8 @@ from h2o.estimators import H2OExtendedIsolationForestEstimator
 from sklearn.cluster import HDBSCAN
 
 
+# remove non-robust features - Doesn't help yet
+# data = data[list(data.columns)[:5] + list(data.columns)[10:]]
 # %%
 
                     # Extended Isolation Forest
