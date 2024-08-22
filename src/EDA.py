@@ -270,6 +270,21 @@ tryout.plot.imshow(ax=ax)
 anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 
+
+# %%
+    # Elliptic Envelope
+from sklearn.covariance import EllipticEnvelope
+X = np.array(data.loc[:, "confidence":])  
+outlier_scores = EllipticEnvelope(random_state=0).fit_predict(X)
+
+anomaly_1 = data[outlier_scores == -1]
+nominal_1 = data[outlier_scores != -1]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+
 # %%
 #     # Robust PCA
 
