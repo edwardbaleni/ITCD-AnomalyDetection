@@ -14,7 +14,7 @@ import shapely
 # os.chdir("..")
 sampleSize = 20
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = dataHandler.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
-num = 0
+num = 19
 
 # start = timer()
 myData = dataHandler.engineer(num, data_paths_tif, data_paths_geojson, data_paths_geojson_zipped)
@@ -197,8 +197,8 @@ b = eif_result.as_data_frame()
 
     # 0.5 is a good threshold, for a weak one go <= 0.4
     # for a tight one go >= 0.5 
-anomaly = data[b["anomaly_score"] > 0.5]
-nominal = data[b["anomaly_score"] <= 0.5]
+anomaly = data[b["anomaly_score"] > 0.4]
+nominal = data[b["anomaly_score"] <= 0.4]
 
 # %%
 
