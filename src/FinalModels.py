@@ -37,7 +37,8 @@ tryout = tryout/255
 h2o.init()
 h2o_df = h2o.H2OFrame(data[list(data.columns)[4:]])
 predictors = list(data.columns)[4:]
-
+# https://github.com/sahandha/eif/blob/master/Notebooks/EIF.ipynb
+    # Maybe this may help with plotting but I am uncertain
 # %%
 # Extended Isolation Forest is a great unsupervised method for anomaly detection
 # however, it does not allow for the use of spatial features

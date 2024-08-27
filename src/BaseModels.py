@@ -231,6 +231,21 @@ tryout.plot.imshow(ax=ax)
 anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 
+# %% 
 
+from pyod.models.iforest import IForest
+clf = IForest()
+
+clf.fit(X)
+outlier_scores = clf.labels_
+outlierness = clf.decision_scores_
+
+anomaly_1 = data[outlier_scores == 1]
+nominal_1 = data[outlier_scores == 0]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 # %% 
 # can run many at once
