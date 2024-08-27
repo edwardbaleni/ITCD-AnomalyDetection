@@ -1,11 +1,8 @@
 # %%
 import dataHandler
-from timeit import default_timer as timer
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import math
-import shapely
 import shapely.plotting
 import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator

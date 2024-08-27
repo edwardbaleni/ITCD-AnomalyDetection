@@ -1,11 +1,8 @@
 # %%
 import dataHandler
-from timeit import default_timer as timer
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import math
-import shapely
 from sklearn.cluster import HDBSCAN
 
 sampleSize = 20
