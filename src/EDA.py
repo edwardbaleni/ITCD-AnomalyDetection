@@ -14,7 +14,7 @@ import shapely
 # os.chdir("..")
 sampleSize = 20
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = dataHandler.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
-num = 19
+num = 0
 
 # start = timer()
 myData = dataHandler.engineer(num, data_paths_tif, data_paths_geojson, data_paths_geojson_zipped)
@@ -286,7 +286,130 @@ anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 
 # %%
-#     # Robust PCA
+#     ABOD
+from pyod.models.abod import ABOD
+
+clf = ABOD()
+
+clf.fit(X)
+outlier_scores = clf.labels_
+outlierness = clf.decision_scores_
+
+anomaly_1 = data[outlier_scores == 1]
+nominal_1 = data[outlier_scores == 0]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+# %%
+    # KPCA Reconstruction
+from pyod.models.kpca import KPCA
+clf = KPCA()
+
+clf.fit(X)
+outlier_scores = clf.labels_
+outlierness = clf.decision_scores_
+
+anomaly_1 = data[outlier_scores == 1]
+nominal_1 = data[outlier_scores == 0]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+
+
+# %%
+from pyod.models.lunar import LUNAR
+clf = LUNAR()
+
+clf.fit(X)
+outlier_scores = clf.labels_
+outlierness = clf.decision_scores_
+
+anomaly_1 = data[outlier_scores == 1]
+nominal_1 = data[outlier_scores == 0]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+
+
+# %%
+
+from pyod.models.mcd import MCD
+clf = MCD()
+
+clf.fit(X)
+outlier_scores = clf.labels_
+outlierness = clf.decision_scores_
+
+anomaly_1 = data[outlier_scores == 1]
+nominal_1 = data[outlier_scores == 0]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+# %%
+
+from pyod.models.hbos import HBOS
+clf = HBOS(n_bins="auto")
+
+clf.fit(X)
+outlier_scores = clf.labels_
+outlierness = clf.decision_scores_
+
+anomaly_1 = data[outlier_scores == 1]
+nominal_1 = data[outlier_scores == 0]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+
+# %% 
+
+from pyod.models.vae import VAE
+
+clf = VAE()
+
+clf.fit(X)
+outlier_scores = clf.labels_
+outlierness = clf.decision_scores_
+
+anomaly_1 = data[outlier_scores == 1]
+nominal_1 = data[outlier_scores == 0]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+
+# %% 
+
+from pyod.models.vae import VAE
+
+clf = VAE()
+
+clf.fit(X)
+outlier_scores = clf.labels_
+outlierness = clf.decision_scores_
+
+anomaly_1 = data[outlier_scores == 1]
+nominal_1 = data[outlier_scores == 0]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
+nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+
+
+# %% 
+# can run many at once
+
 
 
 # %%
