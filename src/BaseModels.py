@@ -494,42 +494,42 @@ for i, offset in enumerate(clusters_separation):
 plt.show()
 
 
-
+# %%
 # Fit the models with the generated data and
 # compare model performances
 
 for i, offset in enumerate(clusters_separation):
 	np.random.seed(42)
-	X = np.array(data.loc[:, "confidence":])  
+	X = np.array(data.loc[:, "confidence":])
+	X = np.array(embedding)  
 	plt.figure(figsize=(22, 22)) # Fit the model
 	for i, (clf_name, clf) in enumerate(classifiers.items()):
 		print()
 		print(i + 1, 'fitting', clf_name)
 		# fit the data and tag outliers
-		X = np.array(embedding)
 		clf.fit(X)
 		scores_pred = clf.decision_function(X) * -1
 		y_pred = clf.predict(X)
 		threshold = percentile(scores_pred, 100 * outliers_fraction)
 		
 		# plot the levels lines and the points
-		anomaly_1 = X[outlier_scores == 0]
-		nominal_1 = X[outlier_scores == 1]
+		anomaly_1 = X[outlier_scores == 1]
+		nominal_1 = X[outlier_scores == 0]
 		
 		Z = clf.decision_function(np.c_[xx.ravel(), yy.ravel()]) * -1
 		Z = Z.reshape(xx.shape)
 		print([threshold, Z.max()])
 		n_outliers = (outlier_scores == 1)
 		subplot = plt.subplot(5, 5, i + 1)
-		subplot.contourf(xx, yy, Z, levels=np.linspace(Z.min(), threshold, 7),
+		subplot.contourf(xx, yy, Z, levels=np.linspace(min(Z.min(), threshold), max(Z.min(), threshold), 7),
 						 cmap=plt.cm.Blues_r)
 		# a = subplot.contour(xx, yy, Z, levels=[threshold],
 		#                     linewidths=2, colors='red')
 		subplot.contourf(xx, yy, Z, levels=sorted([threshold, Z.max()]),
 						 colors='orange')
-		b = subplot.scatter(anomaly_1[:,0], anomaly_1[:,1], c='white',
+		b = subplot.scatter(nominal_1[:,0], nominal_1[:,1], c='white',
 		 					s=20, edgecolor='k')
-		c = subplot.scatter(nominal_1[:,0], nominal_1[:,1], c='black',
+		c = subplot.scatter(anomaly_1[:,0], anomaly_1[:,1], c='black',
 		 					s=20, edgecolor='k')
 		#c = subplot.scatter(X[:, 0], X[:, 1], c='black',s=20, edgecolor='k')
 		subplot.axis('tight')
