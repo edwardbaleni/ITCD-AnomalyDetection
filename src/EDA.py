@@ -121,6 +121,15 @@ column_indices = pfa.indices_
 print(data.loc[:,"confidence":].iloc[:, column_indices])
 
 
+
+# %%
+
+# TODO: https://github.com/jundongl/scikit-feature/blob/master/skfeature/function/similarity_based/SPEC.py
+
+# TODO: https://doi.org/10.1016/j.chemolab.2021.104396
+#       https://www.google.com/search?client=firefox-b-d&q=filter+and+hybrid+filter-wrapper+feature+subset+selection
+
+# TODO: https://www.jmlr.org/papers/volume5/dy04a/dy04a.pdf
 # %%
 # To help with feature selection
 from sklearn.manifold import TSNE
