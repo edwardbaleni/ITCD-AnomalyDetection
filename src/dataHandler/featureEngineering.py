@@ -29,9 +29,9 @@ from rasterstats import zonal_stats
 
 class engineer(collect):
 
-    def __init__(self, num, tifs, geojsons, zips):
+    def __init__(self, num, tifs, geojsons, zips, scale = True):
         super().__init__(num, tifs, geojsons, zips)
-        self.scaleData(self.delineations, self.spectralData)
+        self.scaleData(self.delineations, self.spectralData, scale)
         
 
                         # Feature Engineering
@@ -165,7 +165,7 @@ class engineer(collect):
         placeholder = placeholder.to_crs(4326)
         return placeholder
 
-    def scaleData(self, placeholder, spectral):
+    def scaleData(self, placeholder, spectral, scale):
         placeholder["centroid"] = shapely.centroid(placeholder.loc[:,"geometry"])
         placeholder["latitude"] = placeholder["centroid"].y
         placeholder["longitude"] = placeholder["centroid"].x
@@ -179,9 +179,10 @@ class engineer(collect):
         # Feature Scaling
         # TODO: this paper says to use robust scaling: https://link.springer.com/article/10.1007/s00138-023-01450-x#Sec3
         #       For some reason it does work better than standard scaling
-        scaler = RobustScaler()
-        # scaler = StandardScaler()
-        placeholder.loc[:, "confidence":] = scaler.fit_transform(placeholder.loc[:,'confidence':])
+        if (scale):
+            scaler = RobustScaler()
+            # scaler = StandardScaler()
+            placeholder.loc[:, "confidence":] = scaler.fit_transform(placeholder.loc[:,'confidence':])
         
         self.data = placeholder
         self.delineations = placeholder["geometry"]

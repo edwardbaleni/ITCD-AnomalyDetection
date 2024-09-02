@@ -17,7 +17,7 @@ data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = dataHandler.coll
 num = 0
 
 # start = timer()
-myData = dataHandler.engineer(num, data_paths_tif, data_paths_geojson, data_paths_geojson_zipped)
+myData = dataHandler.engineer(num, data_paths_tif, data_paths_geojson, data_paths_geojson_zipped, scale=False)
 # end = timer()
 # print(end - start)
 
@@ -34,6 +34,46 @@ spectralData = myData.spectralData
 # tryout.plot.imshow(ax=ax)
 # delineations.plot(ax=ax, facecolor = 'none',edgecolor='red') 
 
+
+# %%
+
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+# the independent variables set
+X = data.loc[:,"confidence":]
+
+# VIF dataframe
+vif_data = pd.DataFrame()
+vif_data["feature"] = X.columns
+
+
+# calculating VIF for each feature
+vif_data["VIF"] = [variance_inflation_factor(X.values, i)
+                          for i in range(len(X.columns))]
+
+print(vif_data)
+
+# %%
+
+# calculate correlation values
+correlation_matrix = data.loc[:,"confidence":].corr()
+correlation_matrix
+
+# %%
+
+import seaborn as sns
+
+sns.clustermap(data.loc[:, "confidence":].corr(), annot=True)
+
+
+# %% 
+
+# plot data
+
+plt.scatter(data["confidence"], data["dist1"])
+plt.scatter(data["confidence"], data["NDVI_mean"])
+plt.scatter(data["confidence"], data["elongation"])
+plt.show()
 
 # %%    
                     # Feature Selection (if too many features)
@@ -186,12 +226,6 @@ def varClust(X):
 variables, demo1 = varClust(data.loc[:, "confidence":])
 print(variables)
 print(demo1.rsquare)
-
-# %%
-
-import seaborn as sns
-
-sns.heatmap(data.loc[:, "confidence":].corr(), annot=True, cmap="crest")
 
 
 # %%
