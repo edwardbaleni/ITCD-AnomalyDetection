@@ -38,11 +38,39 @@ spectralData = myData.spectralData
 # %%    
                     # Feature Selection (if too many features)
 
+
+
 # TODO: Feature selection
 #      - tSNE
 #      - IsoMap
 #      - feature clustering
 #      - UMAP
+
+
+# %%
+
+from sklearn.feature_selection import VarianceThreshold
+
+X = data.loc[:,"confidence":]
+
+selector = VarianceThreshold(threshold=1)
+
+selector.fit_transform(X)
+
+# outputting low variance columns
+concol = [column for column in data.loc[:,"confidence":].columns 
+          if column not in data.loc[:,"confidence":].columns[selector.get_support()]]
+
+for features in concol:
+    print(features)
+
+# drop low variance columns
+X.drop(concol, axis = 1)
+
+
+# %%
+
+
 
 # %%
 # To help with feature selection
