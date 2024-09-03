@@ -35,6 +35,59 @@ spectralData = myData.spectralData
 # delineations.plot(ax=ax, facecolor = 'none',edgecolor='red') 
 
 
+
+# %% 
+import plotly.express as px
+# plot data
+
+#plt.scatter(data["confidence"], data["dist1"]) 
+#plt.scatter(data["confidence"], data["NDVI_mean"])
+fig = px.scatter(x = data["confidence"], y = data["elongation"] )
+fig.add_scatter(x = data["confidence"], y = data["NDVI_mean"])
+fig.show()
+
+# %%
+px.imshow(tryout)
+# %%
+
+fig = px.scatter(data, 
+                 x = "latitude", 
+                 y = "longitude", 
+                 size = "confidence", 
+                 size_max=5,
+                 hover_data=["dist1", "NDVI_mean", "elongation"])
+#data.loc[:, "crown_projection_area":].columns
+
+fig.show()
+
+# %%
+import plotly.graph_objects as go
+tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
+tryout = tryout/255
+fig = go.Figure(go.Image(z=np.array(tryout)))
+fig.show()
+
+# %%
+
+
+
+fig = px.imshow(np.array(data.loc[:,"confidence":].corr()), text_auto=True, aspect=True,
+                x = list(data.loc[:,"confidence":].columns),
+                y = list(data.loc[:,"confidence":].columns))
+fig.show()
+# %%    
+                    # Feature Selection (if too many features)
+
+
+
+# TODO: Feature selection
+#      - tSNE
+#      - IsoMap
+#      - feature clustering
+#      - UMAP
+
+
+
 # %%
 
 from statsmodels.stats.outliers_influence import variance_inflation_factor
@@ -64,28 +117,6 @@ correlation_matrix
 import seaborn as sns
 
 sns.clustermap(data.loc[:, "confidence":].corr(), annot=True)
-
-
-# %% 
-
-# plot data
-
-plt.scatter(data["confidence"], data["dist1"])
-plt.scatter(data["confidence"], data["NDVI_mean"])
-plt.scatter(data["confidence"], data["elongation"])
-plt.show()
-
-# %%    
-                    # Feature Selection (if too many features)
-
-
-
-# TODO: Feature selection
-#      - tSNE
-#      - IsoMap
-#      - feature clustering
-#      - UMAP
-
 
 # %%
 

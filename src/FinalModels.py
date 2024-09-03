@@ -138,3 +138,15 @@ plt.show()
 # TODO: performance metrics for outlier detection
 #        https://scikit-learn.org/stable/auto_examples/miscellaneous/plot_outlier_detection_bench.html#sphx-glr-auto-examples-miscellaneous-plot-outlier-detection-bench-py
 
+
+
+# %%
+# For Correction purposes
+    # False-positives
+        # Remove observation
+    # Over-segmentations   
+        # TODO: https://medium.com/@jesse419419/understanding-iou-and-nms-by-a-j-dcebaad60652
+    # Under-segmentations
+        # https://arxiv.org/pdf/2202.08682
+    # False-negatives
+        # This is a problem area
