@@ -34,7 +34,45 @@ spectralData = myData.spectralData
 # tryout.plot.imshow(ax=ax)
 # delineations.plot(ax=ax, facecolor = 'none',edgecolor='red') 
 
+# %%
 
+    # TODO: For the spectral indices and vegetative indices we
+    #       just need to do profile plots to understand relevance
+    #       Can also look at local spatial autocorrelations
+    #       Can also view as spatial points and quickly perform a spatial points analysis
+    #       Just to gain as much of an understanding on the spectral data as possible
+    #       Can do the same for the morphological properties just to better understand 
+    #       what makes an anomaly an anomaly.
+
+    # TODO: Can do an EDA on graph infrastructure
+    #       https://towardsdatascience.com/eda-on-graphs-via-networkx-a79d2684da53
+    
+    # TODO: What we can do for the EDA is look at morphological and image properties separately
+    #       Then look at the most significant of these together
+
+# %%
+
+pd.DataFrame(data.loc[:,"confidence":]).plot()
+plt.show()
+
+
+# %%
+
+import seaborn as sns
+g = sns.PairGrid(data.loc[:,"confidence":], diag_sharey=False, corner=True)
+g.map_lower(plt.scatter, alpha = 0.6)
+g.map_diag(plt.hist, alpha = 0.7)
+# g.map_lower(sns.kdeplot)
+# g.map_diag(sns.kdeplot)
+
+
+# %%
+fig = px.scatter_matrix(data.loc[:,"confidence":])
+fig.show()
+
+# %%
+
+pd.plotting.scatter_matrix(data.loc[:,"confidence":], alpha=0.2)
 
 # %% 
 import plotly.express as px
@@ -61,11 +99,11 @@ fig = px.scatter(data,
 fig.show()
 
 # %%
-import plotly.graph_objects as go
-tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
-tryout = tryout/255
-fig = go.Figure(go.Image(z=np.array(tryout)))
-fig.show()
+# import plotly.graph_objects as go
+# tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
+# tryout = tryout/255
+# fig = go.Figure(go.Image(z=np.array(tryout)))
+# fig.show()
 
 # %%
 

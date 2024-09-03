@@ -253,6 +253,9 @@ nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 # %%
 
 	# Semi-supervised approach
+	# So we need to do outlier detection to split anomalies from inliers
+	# then we do novelty detection to see if an observation in the anomalies group is 
+	# actually an anomaly
 from pyod.models.copod import COPOD
 from pyod.models.vae import VAE
 from pyod.models.cof import COF
@@ -275,19 +278,31 @@ nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 #		Reconstruction does not work. But neighbourhood approach does
 #		Worth trying a couple
 # 		Problem with this method is that it takes everything as not an outlier
-clf = COF()
 
-clf.fit(np.array(nominal_1.loc[:, "confidence":]))
-outlier_scores = clf.labels_
-outlierness = clf.decision_scores_
+lof = LocalOutlierFactor(novelty=True)
+lof.fit(np.array(nominal_1.loc[:, "confidence":]))
+
+	# Other method
+# clf = COF()
+
+# clf.fit(np.array(nominal_1.loc[:, "confidence":]))
+# outlier_scores = clf.labels_
+# outlierness = clf.decision_scores_
+
+	# Doesn't work
+# from sklearn.svm import OneClassSVM
+# clf = OneClassSVM(gamma='auto').fit(nominal_1.loc[:, "confidence":])
+# y_test_pred = clf.predict(anomaly_1.loc[:, "confidence":])
 
 # %%
-# get the prediction on the test data
-y_test_pred = clf.predict(anomaly_1.loc[:, "confidence":])  # outlier labels (0 or 1)
-#y_test_scores = clf.decision_function(anomaly_1.loc[:, "confidence":])  # outlier scores
+y_test_pred = lof.predict(anomaly_1.loc[:, "confidence":])
 
-anomaly_2 = anomaly_1[y_test_pred == 1]
-nominal_2 = anomaly_1[y_test_pred == 0]
+# # get the prediction on the test data
+# y_test_pred = clf.predict(anomaly_1.loc[:, "confidence":])  # outlier labels (0 or 1)
+# #y_test_scores = clf.decision_function(anomaly_1.loc[:, "confidence":])  # outlier scores
+
+anomaly_2 = anomaly_1[y_test_pred == -1]
+nominal_2 = anomaly_1[y_test_pred == 1]
 
 fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
