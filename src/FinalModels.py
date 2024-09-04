@@ -156,7 +156,12 @@ delaunay_graph = delaunay.to_networkx()
 positions = dict(zip(delaunay_graph.nodes, coordinates))
 
 # Now, we can plot with a nice basemap.
-ax = cells.plot(facecolor="lightblue", alpha=0.50, edgecolor="cornsilk", linewidth=2)
+
+ax = cells.plot(figsize = (25,25),
+                facecolor="lightblue", 
+                alpha=0.50, 
+                edgecolor="cornsilk", 
+                linewidth=2)
 try:  # Try-except for issues with timeout/parsing failures in CI
     add_basemap(ax)
 except:
@@ -167,56 +172,29 @@ nx.draw(
     delaunay_graph,
     positions,
     ax=ax,
-    node_size=2,
+    node_size=5,
     node_color="k",
     edge_color="k",
     alpha=0.8,
 )
 plt.show()
-# %%
-# Spatial proximity graph
-from scipy.spatial import Delaunay
-# need to give lat and long
-#points = data.iloc[50:100,2:4].to_numpy()
-points = np.array(data.loc[:, ["longitude", "latitude"]])
-tri = Delaunay(points, incremental=True, qhull_options="Q14")
-
-# %%
-import igraph as ig
-
-# %%
-
-plt.figure(figsize=(25,25))
-plt.triplot(points[:,0], points[:,1], tri.simplices)
-plt.plot(points[:,0], points[:,1], 'o')
-plt.show()
-
-
-# %%
-# get mean edge length
-
-from itertools import combinations
-triangle = tri.simplices
-all_edges = set([tuple(sorted(edge)) for item in triangle for edge in combinations(item,2)])
-np.mean([np.linalg.norm(points[edge[0]]-points[edge[1]]) for edge in all_edges])
 
 # %%
 fig, ax = plt.subplots(figsize=(25, 25))
 tryout.plot.imshow(ax=ax)
-#ax.figure(figsize=(25,25))
-ax.triplot(points[:,0], points[:,1], tri.simplices)
-ax.plot(points[:,0], points[:,1], 'o')
-#ax.show()
-# try both delauney triangulation method and a nearest neighbour or could use a sort
+ax.axis("off")
+nx.draw(
+    delaunay_graph,
+    positions,
+    ax=ax,
+    node_size=5,
+    node_color="lightgreen",
+    edge_color="red",
+    alpha=0.8,
+)
+plt.show()
 
-# %%
 
-# fig, ax = plt.subplots(figsize=(20, 20))
-# rio.plot.show(clipped, ax=ax)
-# plt.triplot(points[:,0], points[:,1], tri.simplices)
-# plt.plot(points[:,0], points[:,1], 'o')
-# plt.show()
-          
 
 
 # %%
