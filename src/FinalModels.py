@@ -105,15 +105,108 @@ import shapely.plotting
 # don't have to do polygons to polygons can do centroid to centtroid.
 
 # %% 
+                    # Delauney Paper
+
+
+# %%
+
+from libpysal import weights, examples
+from libpysal.cg import voronoi_frames
+from contextily import add_basemap
+import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
+
+# read in example data from a geopackage file. Geopackages
+# are a format for storing geographic data that is backed
+# by sqlite. geopandas reads data relying on the fiona package,
+# providing a high-level pandas-style interface to geographic data.
+# Many different kinds of geographic data formats can be read by geopandas.
+cases = data["centroid"]
+
+# In order for networkx to plot the nodes of our graph correctly, we
+# need to construct the array of coordinates for each point in our dataset.
+# To get this as a numpy array, we extract the x and y coordinates from the
+# geometry column.
+coordinates = np.column_stack((cases.geometry.x, cases.geometry.y))
+
+# While we could simply present the Delaunay graph directly, it is useful to
+# visualize the Delaunay graph alongside the Voronoi diagram. This is because
+# the two are intrinsically linked: the adjacency graph of the Voronoi diagram
+# is the Delaunay graph for the set of generator points! Put simply, this means
+# we can build the Voronoi diagram (relying on scipy.spatial for the underlying
+# computations), and then convert these polygons quickly into the Delaunay graph.
+# Be careful, though; our algorithm, by default, will clip the voronoi diagram to
+# the bounding box of the point pattern. This is controlled by the "clip" argument.
+cells, generators = voronoi_frames(coordinates, clip="convex hull")
+
+# With the voronoi polygons, we can construct the adjacency graph between them using
+# "Rook" contiguity. This represents voronoi cells as being adjacent if they share
+# an edge/face. This is an analogue to the "von Neuman" neighborhood, or the 4 cardinal
+# neighbors in a regular grid. The name comes from the directions a Rook piece can move
+# on a chessboard.
+delaunay = weights.Rook.from_dataframe(cells)
+
+# Once the graph is built, we can convert the graphs to networkx objects using the
+# relevant method.
+delaunay_graph = delaunay.to_networkx()
+
+# To plot with networkx, we need to merge the nodes back to
+# their positions in order to plot in networkx
+positions = dict(zip(delaunay_graph.nodes, coordinates))
+
+# Now, we can plot with a nice basemap.
+ax = cells.plot(facecolor="lightblue", alpha=0.50, edgecolor="cornsilk", linewidth=2)
+try:  # Try-except for issues with timeout/parsing failures in CI
+    add_basemap(ax)
+except:
+    pass
+
+ax.axis("off")
+nx.draw(
+    delaunay_graph,
+    positions,
+    ax=ax,
+    node_size=2,
+    node_color="k",
+    edge_color="k",
+    alpha=0.8,
+)
+plt.show()
+# %%
+# Spatial proximity graph
 from scipy.spatial import Delaunay
 # need to give lat and long
-points = data.iloc[50:100,2:4].to_numpy()
-tri = Delaunay(points)
+#points = data.iloc[50:100,2:4].to_numpy()
+points = np.array(data.loc[:, ["longitude", "latitude"]])
+tri = Delaunay(points, incremental=True, qhull_options="Q14")
 
+# %%
+import igraph as ig
+
+# %%
+
+plt.figure(figsize=(25,25))
 plt.triplot(points[:,0], points[:,1], tri.simplices)
 plt.plot(points[:,0], points[:,1], 'o')
 plt.show()
 
+
+# %%
+# get mean edge length
+
+from itertools import combinations
+triangle = tri.simplices
+all_edges = set([tuple(sorted(edge)) for item in triangle for edge in combinations(item,2)])
+np.mean([np.linalg.norm(points[edge[0]]-points[edge[1]]) for edge in all_edges])
+
+# %%
+fig, ax = plt.subplots(figsize=(25, 25))
+tryout.plot.imshow(ax=ax)
+#ax.figure(figsize=(25,25))
+ax.triplot(points[:,0], points[:,1], tri.simplices)
+ax.plot(points[:,0], points[:,1], 'o')
+#ax.show()
 # try both delauney triangulation method and a nearest neighbour or could use a sort
 
 # %%
@@ -149,5 +242,11 @@ plt.show()
         #       https://infoscience.epfl.ch/server/api/core/bitstreams/768fc3bc-f7d4-4533-825d-5c398995526d/content
     # Under-segmentations
         # https://arxiv.org/pdf/2202.08682
-    # False-negatives
-        # This is a problem area
+        # https://www.mdpi.com/2072-4292/12/5/767
+    # False-negatives - https://www.mdpi.com/2072-4292/11/4/410
+        # YOlOv10
+        # Can train YOLO on all available orchards
+        # following this we can use it as a trianed model.
+        # we then isolate the area that has a potential false-negative and test using trained YOLOv10.
+
+    # Can build probability map using - https://www.mdpi.com/2072-4292/12/5/767

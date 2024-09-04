@@ -4,8 +4,8 @@ from glob import glob
 import gzip
 import geopandas as gpd
 import xarray
+import rioxarray as rio
 from rasterio.enums import Resampling
-#import pyogrio
 
 class collect:
     def __init__(self, num, tifs, geojsons, zips):
@@ -16,11 +16,11 @@ class collect:
 
     @staticmethod
     def _retrieveData(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped):
-        nir = xarray.open_dataarray([j for j in data_paths_tif if "nir_native" in j][0])
-        red = xarray.open_dataarray([j for j in data_paths_tif if "red_native" in j][0])
-        reg = xarray.open_dataarray([j for j in data_paths_tif if "reg_native" in j][0])
-        rgb = xarray.open_dataarray([j for j in data_paths_tif if "visible_5cm" in j][0])
-        dem = xarray.open_dataarray([j for j in data_paths_tif if "dem_native" in j][0])
+        nir = rio.open_rasterio([j for j in data_paths_tif if "nir_native" in j][0])
+        red = rio.open_rasterio([j for j in data_paths_tif if "red_native" in j][0])
+        reg = rio.open_rasterio([j for j in data_paths_tif if "reg_native" in j][0])
+        rgb = rio.open_rasterio([j for j in data_paths_tif if "visible_5cm" in j][0])
+        dem = rio.open_rasterio([j for j in data_paths_tif if "dem_native" in j][0])
         mask = gpd.read_file([j for j in data_paths_geojson if "survey_polygon" in j][0], engine='pyogrio',use_arrow=True)
         with gzip.open([j for j in data_paths_geojson_zipped if "mask_rcnn.geojson" in j][0], 'rb') as f:
             points = gpd.read_file(f, engine='pyogrio', use_arrow=True)
