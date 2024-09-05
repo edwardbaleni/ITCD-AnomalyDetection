@@ -308,3 +308,12 @@ ax = fig.add_axes([0, 0, 1, 1])
 bp = ax.boxplot(data.loc[:,"confidence":])
 # show plot
 plt.show()
+
+
+
+# %%
+# TODO: spatial EDA
+    # TODO: https://www.theoj.org/joss-papers/joss.02869/10.21105.joss.02869.pdf
+    # TODO: https://networkx.org/documentation/stable/auto_examples/geospatial/extended_description.html
+    # TODO: https://pysal.org/notebooks/explore/esda/intro.html
+            # Explore this pysal library for EDA stuff

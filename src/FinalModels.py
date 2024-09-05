@@ -187,7 +187,7 @@ nx.draw(
     delaunay_graph,
     positions,
     ax=ax,
-    node_size=5,
+    node_size=30,
     node_color="lightgreen",
     edge_color="red",
     alpha=0.8,
@@ -195,17 +195,63 @@ nx.draw(
 plt.show()
 
 
+# %%
+# check if any nodes have no neighbours
+delaunay.islands
+
+delaunay.neighbors
+
+delaunay_graph.edges
+
+# %%
+G = delaunay_graph
+# from confidence to distance 1 then from distance 4 till end
+# records = data.loc[:, "confidence":].to_dict('index')
+no_dists = list(data.columns)[4:18] + list(data.columns)[22:]
+records = data.loc[:, no_dists ].to_dict('index')
+
+# nodes now have attributes
+nx.set_node_attributes(G, records)
+G.nodes[1522]
+
+# %%
+edges = [e for e in delaunay_graph.edges]
+
+# Use the Inverse distance weighting
+# because we want to give stronger weights to closer items
+# Alpha <= 0
+def distance(x, p1, p2, alpha = -1):
+    position1 = x.iloc[p1]["centroid"]
+    position2 = x.iloc[p2]["centroid"]
+
+    return (shapely.distance(position1, position2) ** alpha)
+
+# These numbers are not scaled, but edges only have one
+# attribute so I don't think it is necessary to scale them
+
+while edges != []:
+    e = edges[0]
+    if G.edges[e]['weight'] == 1.0:
+        G.edges[e]['weight'] = distance(data, e[0], e[1])
+        edges.pop(0)
 
 
 # %%
+# TODO: https://stackoverflow.com/questions/70452465/how-to-load-in-graph-from-networkx-into-pytorch-geometric-and-set-node-features
+#       https://stackoverflow.com/questions/71011514/converting-a-pyg-graph-to-a-networkx-graph
 
-# because distances aren't already worked out from Delauney, we can
-# do this manually from polygon to polygon instead of from vertex to vertex
+# %%
+# TODO: AD with just graph structure
+# TODO: AD with graph structure plus attributes
+    # TODO: https://docs.pygod.org/en/latest/tutorials/1_intro.html#sphx-glr-tutorials-1-intro-py
+    # TODO: https://pytorch-geometric.readthedocs.io/en/latest/index.html
 
-# Simplices are the indices of the vertices that make up the triangle in
-# points. If we match this to the centroid in main dataframe then we could 
-# find distances between polygons.
 
+
+
+
+
+# %%
 # TODO: performance metrics for outlier detection
 #        https://scikit-learn.org/stable/auto_examples/miscellaneous/plot_outlier_detection_bench.html#sphx-glr-auto-examples-miscellaneous-plot-outlier-detection-bench-py
 
