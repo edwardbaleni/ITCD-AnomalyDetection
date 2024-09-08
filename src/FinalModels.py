@@ -13,7 +13,8 @@ num = 0
 myData = dataHandler.engineer(num, 
                               data_paths_tif, 
                               data_paths_geojson, 
-                              data_paths_geojson_zipped)
+                              data_paths_geojson_zipped,
+                              scale=True)
 data = myData.data
 delineations = myData.delineations
 mask = myData.mask
@@ -110,76 +111,144 @@ import shapely.plotting
 
 # %%
 
+
+def KNNGraph(data, nn = 3):
+    from libpysal import weights, examples
+    from contextily import add_basemap
+    import matplotlib.pyplot as plt
+    import networkx as nx
+    import numpy as np
+    import geopandas
+
+    # read in example data from a geopackage file. Geopackages
+    # are a format for storing geographic data that is backed
+    # by sqlite. geopandas reads data relying on the fiona package,
+    # providing a high-level pandas-style interface to geographic data.
+    cases = data[["centroid"]]
+    cases.rename({"centroid": "geometry"}, axis="columns", inplace=True)
+
+    # construct the array of coordinates for the centroid
+    coordinates = np.column_stack((cases.geometry.x, cases.geometry.y))
+
+    # construct two different kinds of graphs:
+
+    ## 3-nearest neighbor graph, meaning that points are connected
+    ## to the three closest other points. This means every point
+    ## will have exactly three neighbors.
+    knn3 = weights.KNN.from_dataframe(cases, k=nn)
+
+    ## The 50-meter distance band graph will connect all pairs of points
+    ## that are within 50 meters from one another. This means that points
+    ## may have different numbers of neighbors.
+    dist = weights.DistanceBand.from_array(coordinates, threshold=50)
+
+    # Then, we can convert the graph to networkx object using the
+    # .to_networkx() method.
+    knn_graph = knn3.to_networkx()
+    dist_graph = dist.to_networkx()
+
+    # To plot with networkx, we need to merge the nodes back to
+    # their positions in order to plot in networkx
+    positions = dict(zip(knn_graph.nodes, coordinates))
+
+    # plot with a nice basemap
+    f, ax = plt.subplots(1, 2, figsize=(20, 20))
+    for i, facet in enumerate(ax):
+        cases.plot(marker=".", color="orangered", ax=facet)
+        try:  # For issues with downloading/parsing basemaps in CI
+            add_basemap(facet)
+        except:
+            pass
+        facet.set_title(("KNN-3", "50-meter Distance Band")[i])
+        facet.axis("off")
+    nx.draw(knn_graph, positions, ax=ax[0], node_size=5, node_color="b")
+    nx.draw(dist_graph, positions, ax=ax[1], node_size=5, node_color="b")
+    plt.show()
+
+    return knn_graph, positions
+
+
+
+# %%
 from libpysal import weights, examples
 from libpysal.cg import voronoi_frames
 from contextily import add_basemap
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+def delauneyTriangulation(data):
 
-# read in example data from a geopackage file. Geopackages
-# are a format for storing geographic data that is backed
-# by sqlite. geopandas reads data relying on the fiona package,
-# providing a high-level pandas-style interface to geographic data.
-# Many different kinds of geographic data formats can be read by geopandas.
-cases = data["centroid"]
+    # read in example data from a geopackage file. Geopackages
+    # are a format for storing geographic data that is backed
+    # by sqlite. geopandas reads data relying on the fiona package,
+    # providing a high-level pandas-style interface to geographic data.
+    # Many different kinds of geographic data formats can be read by geopandas.
+    cases = data["centroid"]
 
-# In order for networkx to plot the nodes of our graph correctly, we
-# need to construct the array of coordinates for each point in our dataset.
-# To get this as a numpy array, we extract the x and y coordinates from the
-# geometry column.
-coordinates = np.column_stack((cases.geometry.x, cases.geometry.y))
+    # In order for networkx to plot the nodes of our graph correctly, we
+    # need to construct the array of coordinates for each point in our dataset.
+    # To get this as a numpy array, we extract the x and y coordinates from the
+    # geometry column.
+    coordinates = np.column_stack((cases.geometry.x, cases.geometry.y))
 
-# While we could simply present the Delaunay graph directly, it is useful to
-# visualize the Delaunay graph alongside the Voronoi diagram. This is because
-# the two are intrinsically linked: the adjacency graph of the Voronoi diagram
-# is the Delaunay graph for the set of generator points! Put simply, this means
-# we can build the Voronoi diagram (relying on scipy.spatial for the underlying
-# computations), and then convert these polygons quickly into the Delaunay graph.
-# Be careful, though; our algorithm, by default, will clip the voronoi diagram to
-# the bounding box of the point pattern. This is controlled by the "clip" argument.
-cells, generators = voronoi_frames(coordinates, clip="convex hull")
+    # While we could simply present the Delaunay graph directly, it is useful to
+    # visualize the Delaunay graph alongside the Voronoi diagram. This is because
+    # the two are intrinsically linked: the adjacency graph of the Voronoi diagram
+    # is the Delaunay graph for the set of generator points! Put simply, this means
+    # we can build the Voronoi diagram (relying on scipy.spatial for the underlying
+    # computations), and then convert these polygons quickly into the Delaunay graph.
+    # Be careful, though; our algorithm, by default, will clip the voronoi diagram to
+    # the bounding box of the point pattern. This is controlled by the "clip" argument.
+    cells, generators = voronoi_frames(coordinates, clip="convex hull")
 
-# With the voronoi polygons, we can construct the adjacency graph between them using
-# "Rook" contiguity. This represents voronoi cells as being adjacent if they share
-# an edge/face. This is an analogue to the "von Neuman" neighborhood, or the 4 cardinal
-# neighbors in a regular grid. The name comes from the directions a Rook piece can move
-# on a chessboard.
-delaunay = weights.Rook.from_dataframe(cells)
+    # With the voronoi polygons, we can construct the adjacency graph between them using
+    # "Rook" contiguity. This represents voronoi cells as being adjacent if they share
+    # an edge/face. This is an analogue to the "von Neuman" neighborhood, or the 4 cardinal
+    # neighbors in a regular grid. The name comes from the directions a Rook piece can move
+    # on a chessboard.
+    delaunay = weights.Rook.from_dataframe(cells)
 
-# Once the graph is built, we can convert the graphs to networkx objects using the
-# relevant method.
-delaunay_graph = delaunay.to_networkx()
+    # Once the graph is built, we can convert the graphs to networkx objects using the
+    # relevant method.
+    delaunay_graph = delaunay.to_networkx()
 
-# To plot with networkx, we need to merge the nodes back to
-# their positions in order to plot in networkx
-positions = dict(zip(delaunay_graph.nodes, coordinates))
+    # To plot with networkx, we need to merge the nodes back to
+    # their positions in order to plot in networkx
+    positions = dict(zip(delaunay_graph.nodes, coordinates))
+    
+    # Now, we can plot with a nice basemap.
 
-# Now, we can plot with a nice basemap.
+    ax = cells.plot(figsize = (25,25),
+                    facecolor="lightblue", 
+                    alpha=0.50, 
+                    edgecolor="cornsilk", 
+                    linewidth=2)
+    try:  # Try-except for issues with timeout/parsing failures in CI
+        add_basemap(ax)
+    except:
+        pass
 
-ax = cells.plot(figsize = (25,25),
-                facecolor="lightblue", 
-                alpha=0.50, 
-                edgecolor="cornsilk", 
-                linewidth=2)
-try:  # Try-except for issues with timeout/parsing failures in CI
-    add_basemap(ax)
-except:
-    pass
+    ax.axis("off")
+    nx.draw(
+        delaunay_graph,
+        positions,
+        ax=ax,
+        node_size=5,
+        node_color="k",
+        edge_color="k",
+        alpha=0.8,
+    )
+    plt.show()
 
-ax.axis("off")
-nx.draw(
-    delaunay_graph,
-    positions,
-    ax=ax,
-    node_size=5,
-    node_color="k",
-    edge_color="k",
-    alpha=0.8,
-)
-plt.show()
+    return delaunay_graph, positions
+
+
+delaunay_graph, positions = delauneyTriangulation(data)
 
 # %%
+
+delaunay_graph, positions = delauneyTriangulation(data)
+
 fig, ax = plt.subplots(figsize=(25, 25))
 tryout.plot.imshow(ax=ax)
 ax.axis("off")
@@ -194,12 +263,28 @@ nx.draw(
 )
 plt.show()
 
+knn_graph, positions2 = KNNGraph(data)
+
+
+fig, ax = plt.subplots(figsize=(25, 25))
+tryout.plot.imshow(ax=ax)
+ax.axis("off")
+nx.draw(
+    knn_graph,
+    positions,
+    ax=ax,
+    node_size=30,
+    node_color="lightgreen",
+    edge_color="red",
+    alpha=0.8,
+)
+plt.show()
 
 # %%
 # check if any nodes have no neighbours
-delaunay.islands
+# delaunay.islands
 
-delaunay.neighbors
+# delaunay.neighbors
 
 delaunay_graph.edges
 
@@ -228,17 +313,35 @@ def distance(x, p1, p2, alpha = -1):
 
 # These numbers are not scaled, but edges only have one
 # attribute so I don't think it is necessary to scale them
-
+attribute_dict = {}
 while edges != []:
     e = edges[0]
-    if G.edges[e]['weight'] == 1.0:
-        G.edges[e]['weight'] = distance(data, e[0], e[1])
-        edges.pop(0)
+    # # Can't scale it with this commented out method
+    # if G.edges[e]['weight'] == 1.0:
+    #     G.edges[e]['weight'] = distance(data, e[0], e[1])
+    #     edges.pop(0)
+    attribute_dict[e] = {"distance" : distance(data, e[0], e[1])}
+    edges.pop(0)
+
+# now we can scale distances
+distances = pd.DataFrame.from_dict(attribute_dict, "index")
+distances = (distances - distances.mean()) / distances.std()
+attribute_dict = distances.to_dict("index")
+# Add attributes to network
+nx.set_edge_attributes(G, attribute_dict)
+
+
 
 
 # %%
 # TODO: https://stackoverflow.com/questions/70452465/how-to-load-in-graph-from-networkx-into-pytorch-geometric-and-set-node-features
 #       https://stackoverflow.com/questions/71011514/converting-a-pyg-graph-to-a-networkx-graph
+import torch
+from torch_geometric.utils.convert import from_networkx
+
+pyg_graph = from_networkx(G, 
+                          group_node_attrs = "all", 
+                          group_edge_attrs= "distances")
 
 # %%
 # TODO: AD with just graph structure
@@ -246,9 +349,26 @@ while edges != []:
     # TODO: https://docs.pygod.org/en/latest/tutorials/1_intro.html#sphx-glr-tutorials-1-intro-py
     # TODO: https://pytorch-geometric.readthedocs.io/en/latest/index.html
 
+# train a dominant detector
+from pygod.detector import CoLA
 
+model = CoLA()  # hyperparameters can be set here
+model.fit(pyg_graph)  # input data is a PyG data object
 
+# get outlier scores on the training data (transductive setting)
+label = model.label_
+labels = label.detach().cpu().numpy()
+score = model.decision_score_
 
+# %%
+anomaly = data[labels == 1]
+nominal = data[labels == 0]
+
+# Plotting
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+nominal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
+anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
 
 
 # %%
