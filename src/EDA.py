@@ -317,3 +317,38 @@ plt.show()
     # TODO: https://networkx.org/documentation/stable/auto_examples/geospatial/extended_description.html
     # TODO: https://pysal.org/notebooks/explore/esda/intro.html
             # Explore this pysal library for EDA stuff
+
+import utils
+d_w, d_g, d_p = utils.Triangulation.delauneyTriangulation(data)
+knn_w, knn_g, knn_p = utils.Triangulation.delauneyTriangulation(data)
+
+import esda
+import pandas as pd
+import geopandas as gpd
+from geopandas import GeoDataFrame
+import libpysal as lps
+import numpy as np
+import matplotlib.pyplot as plt
+from shapely.geometry import Point
+
+# TODO: Do it with a graph method
+# Only shows autocorrelation for intersecting points
+# So right now it only shows autocorrelaiton for oversegmented points
+df = data
+wq = lps.weights.Rook.from_dataframe(df)
+wq.transform = 'r'
+
+y = df['confidence']
+ylag = lps.weights.lag_spatial(wq, y)
+
+import mapclassify as mc
+ylagq5 = mc.Quantiles(ylag, k=5)
+
+f, ax = plt.subplots(1, figsize=(9, 9))
+df.assign(cl=ylagq5.yb).plot(column='cl', categorical=True, \
+        k=5, cmap='GnBu', linewidth=0.1, ax=ax, \
+        edgecolor='white', legend=True)
+ax.set_axis_off()
+plt.title("Spatial Lag Median Price (Quintiles)")
+
+plt.show()
