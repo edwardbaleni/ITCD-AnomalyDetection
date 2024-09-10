@@ -352,7 +352,7 @@ pyg_graph = from_networkx(G,
 # train a dominant detector
 from pygod.detector import CoLA
 
-model = CoLA()  # hyperparameters can be set here
+model = CoLA(gpu=0)  # hyperparameters can be set here # gpu = 0, uses gpu # gpu = 1 uses cpu
 model.fit(pyg_graph)  # input data is a PyG data object
 
 # get outlier scores on the training data (transductive setting)
@@ -361,6 +361,27 @@ labels = label.detach().cpu().numpy()
 score = model.decision_score_
 
 # %%
+anomaly = data[labels == 1]
+nominal = data[labels == 0]
+
+# Plotting
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+nominal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
+anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
+
+# %%
+# train a dominant detector
+from pygod.detector import DMGD
+
+model = DMGD()  # hyperparameters can be set here # gpu = 0, uses gpu # gpu = 1 uses cpu
+model.fit(pyg_graph)  # input data is a PyG data object
+
+# get outlier scores on the training data (transductive setting)
+label = model.label_
+labels = label.detach().cpu().numpy()
+score = model.decision_score_
+
 anomaly = data[labels == 1]
 nominal = data[labels == 0]
 
