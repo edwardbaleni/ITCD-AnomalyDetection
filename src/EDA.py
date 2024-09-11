@@ -319,7 +319,9 @@ plt.show()
             # Explore this pysal library for EDA stuff
 
 import utils
+import networkx as nx
 d_w, d_g, d_p = utils.Triangulation.delauneyTriangulation(data)
+nx.draw(d_g, node_size = 10, alpha = 0.8)
 knn_w, knn_g, knn_p = utils.Triangulation.delauneyTriangulation(data)
 
 import esda
@@ -352,3 +354,7 @@ ax.set_axis_off()
 plt.title("Spatial Lag Median Price (Quintiles)")
 
 plt.show()
+
+
+# %%
+# TODO: https://www-jstor-org.ezproxy.uct.ac.za/stable/2684298?sid=primo&seq=6
