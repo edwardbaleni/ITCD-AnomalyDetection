@@ -83,11 +83,9 @@ fig.add_scatter(x = data["confidence"], y = data["NDVI_mean"])
 fig.show()
 
 # %%
-px.imshow(tryout)
-# %%
 
 fig = px.scatter(data, 
-                 x = "latitude", 
+                 x = "latitude",
                  y = "longitude", 
                  size = "confidence", 
                  size_max=5,
@@ -336,7 +334,7 @@ import matplotlib.pyplot as plt
 from shapely.geometry import Point
 
 df = data
-wq = knn_w#lps.weights.Rook.from_dataframe(df)
+wq = knn_w#d_w#lps.weights.Rook.from_dataframe(df)
 wq.transform = 'r'
 
 y = df['confidence']
