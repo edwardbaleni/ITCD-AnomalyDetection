@@ -363,3 +363,26 @@ plt.show()
 # %%
 # TODO: https://www-jstor-org.ezproxy.uct.ac.za/stable/2684298?sid=primo&seq=6
 
+# %%
+
+# TODO: multivariate spatial autocorrelation not exaclty feasible
+#       https://gis.stackexchange.com/questions/304122/compute-morans-i-on-more-than-one-attribute
+
+# TODO: Can do a spatial autocorrelation for each variable in each category
+#       Then analyse this
+
+# %%
+
+# TODO: Go through networkx and see if there are any more 
+#       Network analysis tools that would be helpful in EDA
+
+# https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.centrality.degree_centrality.html#networkx.algorithms.centrality.degree_centrality
+print(nx.degree_centrality(G_delauney))
+
+# https://networkx.org/documentation/stable/reference/algorithms/assortativity.html 
+print(nx.numeric_assortativity_coefficient(G_delauney, "confidence"))
+print(nx.degree_pearson_correlation_coefficient(G_delauney))
+# TODO: Read more into this one
+# https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.assortativity.average_neighbor_degree.html#networkx.algorithms.assortativity.average_neighbor_degree
+print(nx.average_neighbor_degree(G_delauney))#, weight="weight")
+
