@@ -320,6 +320,13 @@ import networkx as nx
 d_w, d_g, d_p, v_cells = tri.delauneyTriangulation(data)
 knn_w, knn_g, knn_p, knn_centroids = tri.KNNGraph(data)
 
+# TODO: Only pass in necessary attributes
+# TODO: do this in FinalModels as well
+
+# graph plots well even with attributes added in
+G_delauney = tri.setNodeAttributes(d_g, data)
+G_delauney = tri.setEdgeAttributes(G_delauney, data)
+
 tri.delauneyPlot(d_g, d_p, v_cells, tryout, True)
 tri.KNNPlot(knn_g, knn_p, knn_centroids, tryout, True)
 
@@ -355,3 +362,4 @@ plt.show()
 
 # %%
 # TODO: https://www-jstor-org.ezproxy.uct.ac.za/stable/2684298?sid=primo&seq=6
+

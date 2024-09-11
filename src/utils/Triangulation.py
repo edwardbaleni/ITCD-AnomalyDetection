@@ -6,6 +6,8 @@ from contextily import add_basemap
 import matplotlib.pyplot as plt
 import numpy as np
 import networkx as nx
+import shapely
+import pandas as pd
 
 
 def KNNGraph(data, nn = 3):
@@ -78,6 +80,59 @@ def delauneyTriangulation(data):
     positions = dict(zip(delaunay_graph.nodes, coordinates))
 
     return delaunay, delaunay_graph, positions, cells
+
+# TODO: make sure the data being received is actually what we want.
+#       should not subset data inside method
+def setNodeAttributes(d_g, data):
+    G = d_g
+    # from confidence to distance 1 then from distance 4 till end
+    # records = data.loc[:, "confidence":].to_dict('index')
+    no_dists = list(data.columns)[4:18] + list(data.columns)[22:]
+    records = data.loc[:, no_dists ].to_dict('index')
+
+    # nodes now have attributes
+    nx.set_node_attributes(G, records)
+    return G
+
+def distance(x, p1, p2, alpha = -1):
+    """
+
+
+    Notes:  Use the Inverse distance weighting
+            because we want to give stronger weights to closer items
+            Alpha <= 0    
+    """
+    position1 = x.iloc[p1]["centroid"]
+    position2 = x.iloc[p2]["centroid"]
+
+    return (shapely.distance(position1, position2) ** alpha)
+
+def setEdgeAttributes(G, data):
+    """
+    
+    """
+    edges = [e for e in G.edges]
+
+    # These numbers are not scaled, but edges only have one
+    # attribute so I don't think it is necessary to scale them
+    attribute_dict = {}
+    while edges != []:
+        e = edges[0]
+        # # Can't scale it with this commented out method
+        # if G.edges[e]['weight'] == 1.0:
+        #     G.edges[e]['weight'] = distance(data, e[0], e[1])
+        #     edges.pop(0)
+        attribute_dict[e] = {"distance" : distance(data, e[0], e[1])}
+        edges.pop(0)
+
+    # now we can scale distances
+    distances = pd.DataFrame.from_dict(attribute_dict, "index")
+    distances = (distances - distances.mean()) / distances.std()
+    attribute_dict = distances.to_dict("index")
+    # Add attributes to network
+    nx.set_edge_attributes(G, attribute_dict)
+
+    return G
 
 
 def delauneyPlot(d_g, d_p, v_cells, tryout,  plot_all = True):
