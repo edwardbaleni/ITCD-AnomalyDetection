@@ -2,6 +2,10 @@ from libpysal import weights
 from libpysal.cg import voronoi_frames
 from libpysal import weights
 import numpy as np
+from contextily import add_basemap
+import matplotlib.pyplot as plt
+import numpy as np
+import networkx as nx
 
 
 def KNNGraph(data, nn = 3):
@@ -31,7 +35,7 @@ def KNNGraph(data, nn = 3):
     # their positions in order to plot in networkx
     positions = dict(zip(knn_graph.nodes, coordinates))
 
-    return knn, knn_graph, positions
+    return knn, knn_graph, positions, cases
 
 def delauneyTriangulation(data):
 
@@ -73,4 +77,131 @@ def delauneyTriangulation(data):
     # their positions in order to plot in networkx
     positions = dict(zip(delaunay_graph.nodes, coordinates))
 
-    return delaunay, delaunay_graph, positions
+    return delaunay, delaunay_graph, positions, cells
+
+
+def delauneyPlot(d_g, d_p, v_cells, tryout,  plot_all = True):
+    """
+    Description:
+
+    Attributes:
+
+    Return:    
+    """
+    
+    # Now, we can plot with a nice basemap.
+
+    if (plot_all):
+        fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(20, 15))
+
+        v_cells.plot(ax=ax[0], 
+                    facecolor="lightblue", 
+                    alpha=0.50, 
+                    edgecolor="cornsilk", 
+                    linewidth=2)
+        try:  # Try-except for issues with timeout/parsing failures in CI
+            add_basemap(ax[0])
+        except:
+            pass
+
+            ax[0].axis("off")
+            ax[0].set_title("Delauney")
+            nx.draw(d_g,
+                    d_p,
+                    ax=ax[0],
+                    node_size=5,
+                    node_color="k",
+                    edge_color="k",
+                    alpha=0.8)
+
+
+
+            # plot 2
+        tryout.plot.imshow(ax=ax[1])
+        ax[1].axis("off")
+        ax[1].set_title("Delauney")
+        nx.draw(
+        d_g,
+        d_p,
+        ax=ax[1],
+        node_size=30,
+        node_color="lightgreen",
+        edge_color="red",
+        alpha=0.8,
+        )
+
+            # plot 3
+        nx.draw(d_g, ax=ax[2],node_size = 10, alpha = 0.8)
+        ax[2].set_title("Delauney")
+        plt.show()
+    else:
+        tryout.plot.imshow(ax=ax)
+        ax.axis("off")
+        ax.set_title("Delauney")
+        nx.draw(
+        d_g,
+        d_p,
+        ax=ax,
+        node_size=30,
+        node_color="lightgreen",
+        edge_color="red",
+        alpha=0.8,
+        )
+        plt.show()
+
+
+
+
+def KNNPlot(knn_g, knn_p, cases, tryout, plot_all = True):
+    """
+    Description:
+
+    Attributes:
+
+    Return:    
+    """
+    cases.rename({"centroid": "geometry"}, axis="columns", inplace=True)
+    if (plot_all):
+            # plot with a nice basemap
+        f, ax = plt.subplots(1, 3, figsize=(20, 20))
+        # Plot 1
+        cases.plot(marker=".", color="orangered", ax=ax[0])
+        try:  # For issues with downloading/parsing basemaps in CI
+            add_basemap(ax[0])
+        except:
+            pass
+        ax[0].set_title("KNN-3")
+        ax[0].axis("off")
+        nx.draw(knn_g, knn_p, ax=ax[0], node_size=5, node_color="b")
+
+        # Plot 2
+        tryout.plot.imshow(ax=ax[1])
+        ax[1].axis("off")
+        ax[1].set_title("KNN-3")
+        nx.draw(
+            knn_g,
+            knn_p,
+            ax=ax[1],
+            node_size=30,
+            node_color="lightgreen",
+            edge_color="red",
+            alpha=0.8,
+        )
+        # Plot 3
+        nx.draw(knn_g, ax=ax[2],node_size = 10, alpha = 0.8)
+        plt.show()
+    else:
+        fig, ax = plt.subplots(figsize=(25, 25))
+        tryout.plot.imshow(ax=ax)
+        ax.set_title("KNN-3")
+        ax.axis("off")
+        nx.draw(
+            knn_g,
+            knn_p,
+            ax=ax,
+            node_size=30,
+            node_color="lightgreen",
+            edge_color="red",
+            alpha=0.8,
+        )
+        plt.show()

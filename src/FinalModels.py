@@ -6,6 +6,8 @@ import pandas as pd
 import shapely.plotting
 import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator
+import networkx as nx
+import utils.plotAnomaly as plotA
 
 sampleSize = 20
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = dataHandler.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
@@ -108,188 +110,27 @@ import shapely.plotting
 # %% 
                     # Delauney Paper
 
+import utils.Triangulation as tri
 
-# %%
+d_w, d_g, d_p, v_cells = tri.delauneyTriangulation(data)
 
-
-def KNNGraph(data, nn = 3):
-    from libpysal import weights, examples
-    from contextily import add_basemap
-    import matplotlib.pyplot as plt
-    import networkx as nx
-    import numpy as np
-    import geopandas
-
-    # read in example data from a geopackage file. Geopackages
-    # are a format for storing geographic data that is backed
-    # by sqlite. geopandas reads data relying on the fiona package,
-    # providing a high-level pandas-style interface to geographic data.
-    cases = data[["centroid"]]
-    cases.rename({"centroid": "geometry"}, axis="columns", inplace=True)
-
-    # construct the array of coordinates for the centroid
-    coordinates = np.column_stack((cases.geometry.x, cases.geometry.y))
-
-    # construct two different kinds of graphs:
-
-    ## 3-nearest neighbor graph, meaning that points are connected
-    ## to the three closest other points. This means every point
-    ## will have exactly three neighbors.
-    knn3 = weights.KNN.from_dataframe(cases, k=nn)
-
-    ## The 50-meter distance band graph will connect all pairs of points
-    ## that are within 50 meters from one another. This means that points
-    ## may have different numbers of neighbors.
-    dist = weights.DistanceBand.from_array(coordinates, threshold=50)
-
-    # Then, we can convert the graph to networkx object using the
-    # .to_networkx() method.
-    knn_graph = knn3.to_networkx()
-    dist_graph = dist.to_networkx()
-
-    # To plot with networkx, we need to merge the nodes back to
-    # their positions in order to plot in networkx
-    positions = dict(zip(knn_graph.nodes, coordinates))
-
-    # plot with a nice basemap
-    f, ax = plt.subplots(1, 2, figsize=(20, 20))
-    for i, facet in enumerate(ax):
-        cases.plot(marker=".", color="orangered", ax=facet)
-        try:  # For issues with downloading/parsing basemaps in CI
-            add_basemap(facet)
-        except:
-            pass
-        facet.set_title(("KNN-3", "50-meter Distance Band")[i])
-        facet.axis("off")
-    nx.draw(knn_graph, positions, ax=ax[0], node_size=5, node_color="b")
-    nx.draw(dist_graph, positions, ax=ax[1], node_size=5, node_color="b")
-    plt.show()
-
-    return knn_graph, positions
+knn_w, knn_g, knn_p, knn_centroids = tri.KNNGraph(data)
 
 
 
 # %%
-from libpysal import weights, examples
-from libpysal.cg import voronoi_frames
-from contextily import add_basemap
-import matplotlib.pyplot as plt
-import networkx as nx
-import numpy as np
-def delauneyTriangulation(data):
+    # Plot Triangulations
+tri.delauneyPlot(d_g, d_p, v_cells, tryout, True)
 
-    # read in example data from a geopackage file. Geopackages
-    # are a format for storing geographic data that is backed
-    # by sqlite. geopandas reads data relying on the fiona package,
-    # providing a high-level pandas-style interface to geographic data.
-    # Many different kinds of geographic data formats can be read by geopandas.
-    cases = data["centroid"]
+tri.KNNPlot(knn_g, knn_p, knn_centroids, tryout, True)
 
-    # In order for networkx to plot the nodes of our graph correctly, we
-    # need to construct the array of coordinates for each point in our dataset.
-    # To get this as a numpy array, we extract the x and y coordinates from the
-    # geometry column.
-    coordinates = np.column_stack((cases.geometry.x, cases.geometry.y))
-
-    # While we could simply present the Delaunay graph directly, it is useful to
-    # visualize the Delaunay graph alongside the Voronoi diagram. This is because
-    # the two are intrinsically linked: the adjacency graph of the Voronoi diagram
-    # is the Delaunay graph for the set of generator points! Put simply, this means
-    # we can build the Voronoi diagram (relying on scipy.spatial for the underlying
-    # computations), and then convert these polygons quickly into the Delaunay graph.
-    # Be careful, though; our algorithm, by default, will clip the voronoi diagram to
-    # the bounding box of the point pattern. This is controlled by the "clip" argument.
-    cells, generators = voronoi_frames(coordinates, clip="convex hull")
-
-    # With the voronoi polygons, we can construct the adjacency graph between them using
-    # "Rook" contiguity. This represents voronoi cells as being adjacent if they share
-    # an edge/face. This is an analogue to the "von Neuman" neighborhood, or the 4 cardinal
-    # neighbors in a regular grid. The name comes from the directions a Rook piece can move
-    # on a chessboard.
-    delaunay = weights.Rook.from_dataframe(cells)
-
-    # Once the graph is built, we can convert the graphs to networkx objects using the
-    # relevant method.
-    delaunay_graph = delaunay.to_networkx()
-
-    # To plot with networkx, we need to merge the nodes back to
-    # their positions in order to plot in networkx
-    positions = dict(zip(delaunay_graph.nodes, coordinates))
-    
-    # Now, we can plot with a nice basemap.
-
-    ax = cells.plot(figsize = (25,25),
-                    facecolor="lightblue", 
-                    alpha=0.50, 
-                    edgecolor="cornsilk", 
-                    linewidth=2)
-    try:  # Try-except for issues with timeout/parsing failures in CI
-        add_basemap(ax)
-    except:
-        pass
-
-    ax.axis("off")
-    nx.draw(
-        delaunay_graph,
-        positions,
-        ax=ax,
-        node_size=5,
-        node_color="k",
-        edge_color="k",
-        alpha=0.8,
-    )
-    plt.show()
-
-    return delaunay_graph, positions
-
-
-delaunay_graph, positions = delauneyTriangulation(data)
-
-# %%
-
-delaunay_graph, positions = delauneyTriangulation(data)
-
-fig, ax = plt.subplots(figsize=(25, 25))
-tryout.plot.imshow(ax=ax)
-ax.axis("off")
-nx.draw(
-    delaunay_graph,
-    positions,
-    ax=ax,
-    node_size=30,
-    node_color="lightgreen",
-    edge_color="red",
-    alpha=0.8,
-)
-plt.show()
-
-knn_graph, positions2 = KNNGraph(data)
-
-
-fig, ax = plt.subplots(figsize=(25, 25))
-tryout.plot.imshow(ax=ax)
-ax.axis("off")
-nx.draw(
-    knn_graph,
-    positions,
-    ax=ax,
-    node_size=30,
-    node_color="lightgreen",
-    edge_color="red",
-    alpha=0.8,
-)
-plt.show()
 
 # %%
 # check if any nodes have no neighbours
 # delaunay.islands
 
-# delaunay.neighbors
-
-delaunay_graph.edges
-
 # %%
-G = delaunay_graph
+G = d_g
 # from confidence to distance 1 then from distance 4 till end
 # records = data.loc[:, "confidence":].to_dict('index')
 no_dists = list(data.columns)[4:18] + list(data.columns)[22:]
@@ -300,7 +141,7 @@ nx.set_node_attributes(G, records)
 G.nodes[1522]
 
 # %%
-edges = [e for e in delaunay_graph.edges]
+edges = [e for e in d_g.edges]
 
 # Use the Inverse distance weighting
 # because we want to give stronger weights to closer items
@@ -364,11 +205,6 @@ score = model.decision_score_
 anomaly = data[labels == 1]
 nominal = data[labels == 0]
 
-# Plotting
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-nominal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
-anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
 
 # %%
 # train a dominant detector
@@ -385,11 +221,7 @@ score = model.decision_score_
 anomaly = data[labels == 1]
 nominal = data[labels == 0]
 
-# Plotting
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-nominal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
-anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
+plotA.plot(tryout, nominal, anomaly)
 
 
 # %%

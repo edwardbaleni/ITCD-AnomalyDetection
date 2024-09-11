@@ -8,6 +8,9 @@ import pandas as pd
 import math
 import shapely
 
+import seaborn as sns
+import plotly.express as px
+
 # TODO: Speed up dataCollect
 
 # working directory is that where the file is placed
@@ -26,13 +29,9 @@ delineations = myData.delineations
 mask = myData.mask
 spectralData = myData.spectralData
 
-# # Plotting
-# mask = mask
-# tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
-# tryout = tryout/255
-# fig, ax = plt.subplots(figsize=(15, 15))
-# tryout.plot.imshow(ax=ax)
-# delineations.plot(ax=ax, facecolor = 'none',edgecolor='red') 
+# Plotting
+tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
+tryout = tryout/255
 
 # %%
 
@@ -58,7 +57,7 @@ plt.show()
 
 # %%
 
-import seaborn as sns
+
 g = sns.PairGrid(data.loc[:,"confidence":], diag_sharey=False, corner=True)
 g.map_lower(plt.scatter, alpha = 0.6)
 g.map_diag(plt.hist, alpha = 0.7)
@@ -75,7 +74,6 @@ fig.show()
 pd.plotting.scatter_matrix(data.loc[:,"confidence":], alpha=0.2)
 
 # %% 
-import plotly.express as px
 # plot data
 
 #plt.scatter(data["confidence"], data["dist1"]) 
@@ -320,10 +318,14 @@ plt.show()
 
 import utils.Triangulation as tri
 import networkx as nx
-d_w, d_g, d_p = tri.delauneyTriangulation(data)
-nx.draw(d_g, node_size = 10, alpha = 0.8)
-knn_w, knn_g, knn_p = tri.delauneyTriangulation(data)
 
+d_w, d_g, d_p, v_cells = tri.delauneyTriangulation(data)
+knn_w, knn_g, knn_p, knn_centroids = tri.KNNGraph(data)
+
+tri.delauneyPlot(d_g, d_p, v_cells, tryout, True)
+tri.KNNPlot(knn_g, knn_p, knn_centroids, tryout, True)
+
+# %%
 import esda
 import pandas as pd
 import geopandas as gpd
@@ -334,7 +336,7 @@ import matplotlib.pyplot as plt
 from shapely.geometry import Point
 
 df = data
-wq = lps.weights.Rook.from_dataframe(df)
+wq = knn_w#lps.weights.Rook.from_dataframe(df)
 wq.transform = 'r'
 
 y = df['confidence']
