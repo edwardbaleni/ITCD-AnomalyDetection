@@ -318,11 +318,11 @@ plt.show()
     # TODO: https://pysal.org/notebooks/explore/esda/intro.html
             # Explore this pysal library for EDA stuff
 
-import utils
+import utils.Triangulation as tri
 import networkx as nx
-d_w, d_g, d_p = utils.Triangulation.delauneyTriangulation(data)
+d_w, d_g, d_p = tri.delauneyTriangulation(data)
 nx.draw(d_g, node_size = 10, alpha = 0.8)
-knn_w, knn_g, knn_p = utils.Triangulation.delauneyTriangulation(data)
+knn_w, knn_g, knn_p = tri.delauneyTriangulation(data)
 
 import esda
 import pandas as pd
@@ -333,9 +333,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import Point
 
-# TODO: Do it with a graph method
-# Only shows autocorrelation for intersecting points
-# So right now it only shows autocorrelaiton for oversegmented points
 df = data
 wq = lps.weights.Rook.from_dataframe(df)
 wq.transform = 'r'
