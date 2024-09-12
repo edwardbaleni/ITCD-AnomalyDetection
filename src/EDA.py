@@ -49,6 +49,28 @@ tryout = tryout/255
     # TODO: What we can do for the EDA is look at morphological and image properties separately
     #       Then look at the most significant of these together
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # %%
 
 pd.DataFrame(data.loc[:,"confidence":]).plot()
@@ -379,10 +401,37 @@ plt.show()
 # https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.centrality.degree_centrality.html#networkx.algorithms.centrality.degree_centrality
 print(nx.degree_centrality(G_delauney))
 
-# https://networkx.org/documentation/stable/reference/algorithms/assortativity.html 
+# TODO: Assortivity as part of an analysis, used to understand local structure of networks
+    # https://doi.org/10.1038/s41598-020-78336-9
+        # https://networkx.org/documentation/stable/reference/algorithms/assortativity.html 
 print(nx.numeric_assortativity_coefficient(G_delauney, "confidence"))
 print(nx.degree_pearson_correlation_coefficient(G_delauney))
 # TODO: Read more into this one
 # https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.assortativity.average_neighbor_degree.html#networkx.algorithms.assortativity.average_neighbor_degree
 print(nx.average_neighbor_degree(G_delauney))#, weight="weight")
 
+
+# %%
+
+# TODO: Analyse the structure of our graphs
+    # https://www.nature.com/articles/s41598-020-69795-1?fromPaywallRec=false
+    # https://www.nature.com/articles/srep31708 - code below can also be used to find sub-graphs (neighbourhoods)
+        # https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.core.onion_layers.html#networkx.algorithms.core.onion_layers
+
+# %%
+# Variogram clouds and spatial autocorrelation and https://www.tandfonline.com/doi/abs/10.1080/10618600.1999.10474812 
+# are interesting tools for detecting outliers in a univariate setting
+
+# TODO: https://link.springer.com/article/10.1007/s00362-013-0524-z#Sec2
+#       This paper is great for exploration of multivariate spatial data
+#       https://cran.r-project.org/web/packages/mvoutlier/index.html
+
+#       We can run R packages in python using 
+#       https://willfondrie.com/2022/01/how-to-use-r-packages-in-python/
+
+# TODO: Can use this same logic to do robustPCA
+
+
+
+# TODO: https://scikit-gstat.readthedocs.io/en/latest/userguide/introduction.html
+#       w/ Melahanobis distance
