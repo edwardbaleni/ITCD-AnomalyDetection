@@ -337,7 +337,7 @@ from pyod.models.inne import INNE
 from pyod.models.gmm import GMM
 from pyod.models.kde import KDE
 from pyod.models.lmdd import LMDD
-
+from pyod.models.cof import COF
 from pyod.models.dif import DIF
 from pyod.models.copod import COPOD
 from pyod.models.ecod import ECOD
@@ -373,7 +373,7 @@ import umap
 
 df_dr = data.loc[:, "confidence":]
 #embedding = umap.UMAP(n_neighbors=5).fit_transform(np.array(df_dr))#X)
-embedding = pd.DataFrame(umap.UMAP(n_neighbors=5).fit_transform(np.array(df_dr)))
+embedding = pd.DataFrame(umap.UMAP(n_neighbors=20).fit_transform(np.array(df_dr)))
 
 # TODO: Lower dimensionality already achieved by UMAP, now we shou
 # Plot points in 2D so we can use dimensionality reduction to do this
@@ -433,8 +433,11 @@ classifiers = {
 	'Minimum Covariance Determinant (MCD)': MCD(
 		contamination=outliers_fraction, random_state=random_state),
 
-	'Principal Component Analysis (PCA)': PCA(
-		contamination=outliers_fraction, random_state=random_state),
+	# 'Principal Component Analysis (PCA)': PCA(
+	# 	contamination=outliers_fraction, random_state=random_state),
+
+	'Connectivity-Based Outlier Factor (COF)' : COF(contamination=outliers_fraction),
+
 	'KPCA': KPCA(
 		contamination=outliers_fraction),
 
@@ -528,8 +531,8 @@ for i, offset in enumerate(clusters_separation):
 		threshold = percentile(scores_pred, 100 * outliers_fraction)
 		
 		# plot the levels lines and the points
-		anomaly_1 = X[outlier_scores == 1]
-		nominal_1 = X[outlier_scores == 0]
+		anomaly_1 = X[y_pred == 1]
+		nominal_1 = X[y_pred == 0]
 		
 		Z = clf.decision_function(np.c_[xx.ravel(), yy.ravel()]) * -1
 		Z = Z.reshape(xx.shape)
@@ -572,3 +575,11 @@ plt.show()
 
 # TODO: Ensemble
 # 		https://pyod.readthedocs.io/en/latest/pyod.models.html#pyod.models.combination.majority_vote
+
+
+
+
+# %%
+
+# TODO: Might be a nice visualise in the x and y direction for anomaly scoring
+# 		https://plotly.com/python/3d-surface-plots/

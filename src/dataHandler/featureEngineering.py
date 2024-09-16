@@ -185,5 +185,5 @@ class engineer(collect):
             placeholder.loc[:, "confidence":] = scaler.fit_transform(placeholder.loc[:,'confidence':])
         
         self.data = placeholder
-        self.delineations = placeholder["geometry"]
+        self.delineations = placeholder[["geometry"]]
         #return placeholder
