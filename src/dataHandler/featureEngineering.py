@@ -70,24 +70,64 @@ class engineer(collect):
         major_axis = max(mbr_lengths)
         return pd.Series([minor_axis, major_axis])
 
-    # TODO: http://www.cyto.purdue.edu/cdroms/micro2/content/education/wirth10.pdf
+    @staticmethod
+    def _curvature(xx):
+        """
+        xx - coordinates
+
+        Notes: https://stackoverflow.com/questions/28269379/curve-curvature-in-numpy
+        """
+        dx_dt = np.gradient(xx[:, 0])
+        dy_dt = np.gradient(xx[:, 1])
+        ds_dt = np.sqrt(dx_dt * dx_dt + dy_dt * dy_dt)
+        d2s_dt2 = np.gradient(ds_dt)
+        d2x_dt2 = np.gradient(dx_dt)
+        d2y_dt2 = np.gradient(dy_dt)
+        curvature = np.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / (dx_dt * dx_dt + dy_dt * dy_dt)**1.5
+        return curvature
+
+    @staticmethod
+    def _bendingEnergy(xx, r):
+        """
+        xx - Polygon
+        """
+        import math
+        xx = shapely.get_coordinates(xx)
+        L = xx.shape[0]
+        return pd.Series(max( (2 * math.pi)/r , 1/L * sum( engineer._curvature(xx)**2 )))
+
     # TODO: https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
     def shapeDescriptors(self, placeholder):
         placeholder =  placeholder.to_crs(3857)
+        convexHull = placeholder.loc[:, "geometry"].convex_hull
+        convex_area = shapely.area(convexHull)
+        convex_perimeter = shapely.length(convexHull)
         # Shape Descriptors Not Robust
         placeholder["crown_projection_area"] = shapely.area(placeholder.loc[:,"geometry"])
         placeholder["crown_perimeter"] = shapely.length(placeholder.loc[:,"geometry"])
         placeholder["radius_of_gyration"] = placeholder[["centroid", "geometry"]].apply(lambda x: engineer._radiusOfGyration(x.iloc[0], x.iloc[1].exterior.coords.xy[0], x.iloc[1].exterior.coords.xy[1]), axis=1)
         # Robust Shape Descriptors
         placeholder[["minor_axis", "major_axis"]] = placeholder["geometry"].apply(lambda x: engineer._major_minor(x))
-        placeholder["isoperimetric"] = (4 * math.pi * placeholder["crown_projection_area"]) / (placeholder["crown_perimeter"]**2)
+        placeholder["roundness"] = (4 * math.pi * placeholder["crown_projection_area"]) / (convex_perimeter**2)#(4 * placeholder["crown_projection_area"]) / (math.pi * placeholder["major_axis"]**2)
+        # Circularity is NB for some reason
+        placeholder["circularity"] = (placeholder["crown_perimeter"]**2) / (4 * math.pi * placeholder["crown_projection_area"])
         placeholder["shape_index"] = (placeholder["crown_perimeter"]**2) / placeholder["crown_projection_area"]
         placeholder["form_factor"] = placeholder["crown_projection_area"] / (placeholder["crown_perimeter"]**2)
-        placeholder["circularity"] = (placeholder["crown_perimeter"]**2) / (4 * math.pi * placeholder["crown_projection_area"])
-        placeholder["convexity"] = placeholder["crown_perimeter"] / placeholder["geometry"].convex_hull.length
+        # Useful Robust Features
+            # Can remove compactness
+        placeholder["compactness"] = (4 * math.pi * placeholder["crown_projection_area"]) / (placeholder["crown_perimeter"]**2)
+        placeholder["convexity"] = placeholder["crown_perimeter"] / convex_perimeter
         placeholder["solidity"] = placeholder["crown_projection_area"] / placeholder["geometry"].convex_hull.area # convex hull score
         placeholder["elongation"] = placeholder["major_axis"] / placeholder["minor_axis"]
-        placeholder["roundness"] = (4 * placeholder["crown_projection_area"]) / (math.pi * placeholder["major_axis"]**2)
+
+        # TODO: Add in Bending energy, first and second order invariant moment
+        placeholder["bendingE"] = list(map(engineer._bendingEnergy, placeholder["geometry"], placeholder["radius_of_gyration"]))
+        
+        # Removing the bottom features makes detection slightly worse. So will keep them
+        # for EDA and decide from there.
+        # # Drop useless/repeat/non-robust items
+        #placeholder.drop(["circularity", "form_factor", "minor_axis", "major_axis", "radius_of_gyration", "crown_perimeter", "crown_projection_area"], axis=1, inplace = True)
+        #placeholder.drop(["minor_axis", "major_axis", "radius_of_gyration", "crown_perimeter", "crown_projection_area"], axis=1, inplace = True)
         return placeholder
 
     # https://gis.stackexchange.com/questions/297076/how-to-calculate-mean-value-of-a-raster-for-each-polygon-in-a-shapefile
