@@ -57,8 +57,8 @@ clustering = DBSCAN(eps=3, min_samples=10).fit(X)
 
 clustering.labels_
 
-anomaly_1 = data[hdb.labels_ < 0] # data[hdb.labels_ == -1]
-nominal_1 = data[hdb.labels_ >= 0] # data[hdb.labels_ != -1]
+anomaly_1 = data[clustering.labels_ < 0] # data[hdb.labels_ == -1]
+nominal_1 = data[clustering.labels_ >= 0] # data[hdb.labels_ != -1]
 
 fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
