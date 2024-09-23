@@ -17,7 +17,7 @@ import plotly.express as px
 # os.chdir("..")
 sampleSize = 20
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = dataHandler.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
-num = 0
+num = 1
 
 # start = timer()
 myData = dataHandler.engineer(num, data_paths_tif, 
@@ -316,10 +316,6 @@ plt.show()
 
 # %%
 # TODO: spatial EDA
-    # TODO: https://www.theoj.org/joss-papers/joss.02869/10.21105.joss.02869.pdf
-    # TODO: https://networkx.org/documentation/stable/auto_examples/geospatial/extended_description.html
-    # TODO: https://pysal.org/notebooks/explore/esda/intro.html
-            # Explore this pysal library for EDA stuff
 
 import utils.Triangulation as tri
 import networkx as nx
@@ -353,7 +349,7 @@ df = data
 wq = knn_w#d_w#lps.weights.Rook.from_dataframe(df)
 wq.transform = 'r'
 
-y = df['confidence']
+y = df['roundness']
 ylag = lps.weights.lag_spatial(wq, y)
 
 import mapclassify as mc
@@ -368,6 +364,31 @@ plt.title("Spatial Lag Median Price (Quintiles)")
 
 plt.show()
 
+# %%
+mi = esda.moran.Moran(y, wq)
+mi.I
+# here we basically observe no spatial autocorrelation
+import seaborn as sbn
+sbn.kdeplot(mi.sim, shade=True)
+plt.vlines(mi.I, 0, 1, color='r')
+plt.vlines(mi.EI, 0,1)
+plt.xlabel("Moran's I")
+
+# %%
+
+# single variable local morans I
+li = esda.moran.Moran_Local(y, wq)
+
+df = data
+f, ax = plt.subplots(1, figsize=(20, 20))
+tryout.plot.imshow(ax=ax)
+df.assign(cl= li.Is).plot(column='cl', categorical=False,
+        k=5, cmap='viridis', linewidth=0.1, ax=ax,
+        edgecolor='white', legend=True, alpha = 0.7)
+ax.set_axis_off()
+plt.title("LISA Spatial Autocorrelation")
+
+plt.show()
 
 # %%
 # TODO: https://www-jstor-org.ezproxy.uct.ac.za/stable/2684298?sid=primo&seq=6
@@ -399,15 +420,17 @@ print(nx.average_neighbor_degree(G_delauney))#, weight="weight")
 
 # %%
 
-# TODO: multivariate spatial autocorrelation not exaclty feasible
-#       https://gis.stackexchange.com/questions/304122/compute-morans-i-on-more-than-one-attribute
+# TODO: ESDA on at least one variable of each category
 
-# TODO: Can do a spatial autocorrelation for each variable in each category
-#       Then analyse this
+
+
+
+
 # %%
 # Multivariate Spatial Autocorrelation
 # https://onlinelibrary.wiley.com/doi/epdf/10.1111/gean.12164
 # https://www.jstor.org/stable/143141?origin=crossref
+    # suffers from the curse of dimensionality so pick features wisely. 
 # 
 
 w = d_w
@@ -421,23 +444,26 @@ lG_mv = esda.Geary_Local_MV(connectivity=w).fit([x1,x2,x3,x4])
 # observed multivariate Local Geary values.
 lG_mv.localG[0:5] 
 # array containing the simulated p-values for each unit.
+# significance level of statistic
 lG_mv.p_sim[0:5]
 
 df = data
-f, ax = plt.subplots(1, figsize=(9, 9))
+f, ax = plt.subplots(1, figsize=(20, 20))
+tryout.plot.imshow(ax=ax)
 df.assign(cl= np.log10(lG_mv.localG)).plot(column='cl', categorical=False,
         k=5, cmap='viridis', linewidth=0.1, ax=ax,
-        edgecolor='white', legend=True)
+        edgecolor='white', legend=True, alpha=0.7)
 ax.set_axis_off()
 plt.title("Geary C Multivariate Spatial Autocorrelation")
 
 plt.show()
 
 # p-value point
-f, ax = plt.subplots(1, figsize=(9, 9))
+f, ax = plt.subplots(1, figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
 df.assign(cl= lG_mv.p_sim > 0.05).plot(column='cl', categorical=True,
         k=5, cmap='viridis', linewidth=0.1, ax=ax,
-        edgecolor='black', legend=True)
+        edgecolor='black', legend=True, alpha=0.7)
 ax.set_axis_off()
 plt.title("Geary C Multivariate P-Value")
 
@@ -490,25 +516,6 @@ plt.show()
 #                      ylim = ylim)
 # # plotting code here
 # grdevices.dev_off()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # %% 
