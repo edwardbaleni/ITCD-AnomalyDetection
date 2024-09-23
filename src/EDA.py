@@ -374,14 +374,6 @@ plt.show()
 
 # %%
 
-# TODO: multivariate spatial autocorrelation not exaclty feasible
-#       https://gis.stackexchange.com/questions/304122/compute-morans-i-on-more-than-one-attribute
-
-# TODO: Can do a spatial autocorrelation for each variable in each category
-#       Then analyse this
-
-# %%
-
 # TODO: Go through networkx and see if there are any more 
 #       Network analysis tools that would be helpful in EDA
 
@@ -406,22 +398,18 @@ print(nx.average_neighbor_degree(G_delauney))#, weight="weight")
         # https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.core.onion_layers.html#networkx.algorithms.core.onion_layers
 
 # %%
-# Variogram clouds and spatial autocorrelation and https://www.tandfonline.com/doi/abs/10.1080/10618600.1999.10474812 
-# are interesting tools for detecting outliers in a univariate setting
 
-# TODO: https://link.springer.com/article/10.1007/s00362-013-0524-z#Sec2
-#       This paper is great for exploration of multivariate spatial data
-#       https://cran.r-project.org/web/packages/mvoutlier/index.html\
+# TODO: multivariate spatial autocorrelation not exaclty feasible
+#       https://gis.stackexchange.com/questions/304122/compute-morans-i-on-more-than-one-attribute
 
-
-
+# TODO: Can do a spatial autocorrelation for each variable in each category
+#       Then analyse this
 # %%
 # Multivariate Spatial Autocorrelation
 # https://onlinelibrary.wiley.com/doi/epdf/10.1111/gean.12164
 # https://www.jstor.org/stable/143141?origin=crossref
 # 
-# import esda.geary_local_mv as Local_Geary
-# use NN triangulation
+
 w = d_w
 x1 = data["confidence"]
 x2 = data["NDVI_mean"]
@@ -456,13 +444,53 @@ plt.title("Geary C Multivariate P-Value")
 plt.show()
 
 
-
 # %%
+# Variogram clouds and spatial autocorrelation and https://www.tandfonline.com/doi/abs/10.1080/10618600.1999.10474812 
+# are interesting tools for detecting outliers in a univariate setting
 
+# TODO: https://link.springer.com/article/10.1007/s00362-013-0524-z#Sec2
+#       This paper is great for exploration of multivariate spatial data
+#       https://cran.r-project.org/web/packages/mvoutlier/index.html\
 
+# from rpy2.robjects.packages import importr
+# from rpy2.robjects import r, pandas2ri
+# import rpy2.robjects as ro
 
-# TODO: https://scikit-gstat.readthedocs.io/en/latest/userguide/introduction.html
-#       w/ Melahanobis distance
+# # rprint = ro.globalenv.get("print")
+# geometry = data.loc[:, "centroid":]
+# geometry.rename(columns={"centroid" : "geometry"}, inplace=True)
+# geometry.set_crs(data.crs, inplace=True)
+# geometry.to_crs(3857, inplace=True)
+
+# df = geometry.loc[:,"confidence":].copy()
+# df = pd.DataFrame(dataHandler.engineer._scaleData(df), 
+#                   columns = list(df.columns))
+
+# with (ro.default_converter + pandas2ri.converter).context():
+#   r_from_pd_df = ro.conversion.get_conversion().py2rpy(df)
+
+# val = 1
+# geometry["latitude"] = geometry["geometry"].x + 6.43*10**6
+# geometry["longitude"] = geometry["geometry"].y + 3.644*10**6
+# la = ro.IntVector( round(geometry["latitude"] * val) )
+# lo = ro.IntVector( (geometry["longitude"] * val) )
+
+# ylim = ro.IntVector([ np.array( geometry["latitude"]).min() * val , np.array(geometry["latitude"]).max() * val  ])
+
+# mvoutlier = importr("mvoutlier")
+
+# # dat, X, Y
+
+# grdevices = importr('grDevices')
+
+# grdevices.png(file="file.png", width=1000, height=1000)
+# mvoutlier.locoutSort(dat=r_from_pd_df, 
+#                      X=lo, 
+#                      Y=la, 
+#                      ylim = ylim)
+# # plotting code here
+# grdevices.dev_off()
+
 
 
 

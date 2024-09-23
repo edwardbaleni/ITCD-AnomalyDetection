@@ -205,6 +205,16 @@ class engineer(collect):
         placeholder = placeholder.to_crs(4326)
         return placeholder
 
+    @staticmethod
+    def _scaleData(x):
+        """
+        
+        """
+        scaler = RobustScaler()
+        # scaler = StandardScaler()
+        return(scaler.fit_transform(x))
+
+
     def scaleData(self, placeholder, spectral, scale):
         placeholder["centroid"] = shapely.centroid(placeholder.loc[:,"geometry"])
         placeholder["latitude"] = placeholder["centroid"].y
@@ -220,9 +230,7 @@ class engineer(collect):
         # TODO: this paper says to use robust scaling: https://link.springer.com/article/10.1007/s00138-023-01450-x#Sec3
         #       For some reason it does work better than standard scaling
         if (scale):
-            scaler = RobustScaler()
-            # scaler = StandardScaler()
-            placeholder.loc[:, "confidence":] = scaler.fit_transform(placeholder.loc[:,'confidence':])
+            placeholder.loc[:, "confidence":] = engineer._scaleData(placeholder.loc[:,'confidence':])
         
         self.data = placeholder
         self.delineations = placeholder[["geometry"]]
