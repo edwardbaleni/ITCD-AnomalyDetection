@@ -20,7 +20,10 @@ data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = dataHandler.coll
 num = 0
 
 # start = timer()
-myData = dataHandler.engineer(num, data_paths_tif, data_paths_geojson, data_paths_geojson_zipped, scale=False)
+myData = dataHandler.engineer(num, data_paths_tif, 
+                              data_paths_geojson, 
+                              data_paths_geojson_zipped, 
+                              scale=True)
 # end = timer()
 # print(end - start)
 
@@ -30,7 +33,10 @@ mask = myData.mask
 spectralData = myData.spectralData
 
 # Plotting
-tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
+tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, 
+                                           mask.crs, 
+                                           drop=True, 
+                                           invert=False)
 tryout = tryout/255
 
 # %%
@@ -328,8 +334,10 @@ knn_w, knn_g, knn_p, knn_centroids = tri.KNNGraph(data)
 G_delauney = tri.setNodeAttributes(d_g, data)
 G_delauney = tri.setEdgeAttributes(G_delauney, data)
 
-tri.delauneyPlot(d_g, d_p, v_cells, tryout, True)
-tri.KNNPlot(knn_g, knn_p, knn_centroids, tryout, True)
+# tri.delauneyPlot(d_g, d_p, v_cells, tryout, True)
+# tri.KNNPlot(knn_g, knn_p, knn_centroids, tryout, True)
+
+# %%
 
 # %%
 import esda
@@ -403,12 +411,77 @@ print(nx.average_neighbor_degree(G_delauney))#, weight="weight")
 
 # TODO: https://link.springer.com/article/10.1007/s00362-013-0524-z#Sec2
 #       This paper is great for exploration of multivariate spatial data
-#       https://cran.r-project.org/web/packages/mvoutlier/index.html
+#       https://cran.r-project.org/web/packages/mvoutlier/index.html\
+
+
+
+# %%
+# Multivariate Spatial Autocorrelation
+# https://onlinelibrary.wiley.com/doi/epdf/10.1111/gean.12164
+# https://www.jstor.org/stable/143141?origin=crossref
+# 
+# import esda.geary_local_mv as Local_Geary
+# use NN triangulation
+w = d_w
+x1 = data["confidence"]
+x2 = data["NDVI_mean"]
+x3 = data["elongation"]
+x4 = data["roundness"]
+
+lG_mv = esda.Geary_Local_MV(connectivity=w).fit([x1,x2,x3,x4])
+
+# observed multivariate Local Geary values.
+lG_mv.localG[0:5] 
+# array containing the simulated p-values for each unit.
+lG_mv.p_sim[0:5]
+
+df = data
+f, ax = plt.subplots(1, figsize=(9, 9))
+df.assign(cl= np.log10(lG_mv.localG)).plot(column='cl', categorical=False,
+        k=5, cmap='viridis', linewidth=0.1, ax=ax,
+        edgecolor='white', legend=True)
+ax.set_axis_off()
+plt.title("Geary C Multivariate Spatial Autocorrelation")
+
+plt.show()
+
+# p-value point
+f, ax = plt.subplots(1, figsize=(9, 9))
+df.assign(cl= lG_mv.p_sim > 0.05).plot(column='cl', categorical=True,
+        k=5, cmap='viridis', linewidth=0.1, ax=ax,
+        edgecolor='black', legend=True)
+ax.set_axis_off()
+plt.title("Geary C Multivariate P-Value")
+
+plt.show()
+
+
+
+# %%
 
 #       We can run R packages in python using 
 #       https://willfondrie.com/2022/01/how-to-use-r-packages-in-python/
 
 # TODO: Can use this same logic to do robustPCA
+
+from rpy2.robjects.packages import importr
+from rpy2.robjects import r, pandas2ri
+import rpy2.robjects as ro
+
+df = data.loc[:,"confidence":]
+
+with (ro.default_converter + pandas2ri.converter).context():
+  r_from_pd_df = ro.conversion.get_conversion().py2rpy(df)
+
+r_from_pd_df
+
+rrcov = importr("rrcov")
+
+a = rrcov.PcaHubert(r_from_pd_df, k = 10)
+
+print(rrcov.plot(a))
+
+# %%
 
 
 

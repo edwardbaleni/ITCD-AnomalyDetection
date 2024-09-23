@@ -94,7 +94,7 @@ class engineer(collect):
         import math
         xx = shapely.get_coordinates(xx)
         L = xx.shape[0]
-        return pd.Series(max( (2 * math.pi)/r , 1/L * sum( engineer._curvature(xx)**2 )))
+        return max( (2 * math.pi)/r , 1/L * sum( engineer._curvature(xx)**2 ))
 
     # TODO: https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
     def shapeDescriptors(self, placeholder):
