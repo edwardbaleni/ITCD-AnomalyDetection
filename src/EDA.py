@@ -23,7 +23,7 @@ num = 0
 myData = dataHandler.engineer(num, data_paths_tif, 
                               data_paths_geojson, 
                               data_paths_geojson_zipped, 
-                              scale=True)
+                              scale=False)
 # end = timer()
 # print(end - start)
 
@@ -456,30 +456,6 @@ plt.title("Geary C Multivariate P-Value")
 plt.show()
 
 
-
-# %%
-
-#       We can run R packages in python using 
-#       https://willfondrie.com/2022/01/how-to-use-r-packages-in-python/
-
-# TODO: Can use this same logic to do robustPCA
-
-from rpy2.robjects.packages import importr
-from rpy2.robjects import r, pandas2ri
-import rpy2.robjects as ro
-
-df = data.loc[:,"confidence":]
-
-with (ro.default_converter + pandas2ri.converter).context():
-  r_from_pd_df = ro.conversion.get_conversion().py2rpy(df)
-
-r_from_pd_df
-
-rrcov = importr("rrcov")
-
-a = rrcov.PcaHubert(r_from_pd_df, k = 10)
-
-print(rrcov.plot(a))
 
 # %%
 
