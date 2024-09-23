@@ -242,38 +242,7 @@ print(data.loc[:,"confidence":].iloc[:, column_indices])
 #       https://www.google.com/search?client=firefox-b-d&q=filter+and+hybrid+filter-wrapper+feature+subset+selection
 
 # TODO: https://www.jmlr.org/papers/volume5/dy04a/dy04a.pdf
-# %%
-# To help with feature selection
-from sklearn.manifold import TSNE
-import plotly.express as px
 
-df_dr = data.loc[:, "confidence":]
-df_dr = df_dr.T
-
-    # visualise
-TSNE_model = TSNE(n_components=2, perplexity=3)
-df_tsne = pd.DataFrame(TSNE_model.fit_transform(np.array(df_dr)))
-
-df_tsne['entity'] = df_dr.index
-df_tsne["theme"] = df_tsne["entity"].apply(lambda d : d[0:4])
-
-fig_tsne = px.scatter(data_frame=df_tsne, x=0, y=1, hover_name='entity', color = "theme",title='T-SNE With 2 Components',)
-fig_tsne.show()
-
-# %%
-
-import umap
-
-df_dr = data.loc[:, "confidence":]
-df_dr = df_dr.T
-
-#embedding = umap.UMAP(n_neighbors=5).fit_transform(np.array(df_dr))#X)
-df_umap = embedding = pd.DataFrame(umap.UMAP(n_neighbors=5).fit_transform(np.array(df_dr)))#X)
-df_umap['entity'] = df_dr.index
-df_umap["theme"] = df_umap["entity"].apply(lambda d : d[0:4])
-
-fig_umap = px.scatter(data_frame=df_umap, x=0, y=1, hover_name='entity', color = "theme",title='T-SNE With 2 Components',)
-fig_umap.show()
 
 
 # %%
@@ -314,6 +283,13 @@ plt.show()
 
 
 
+
+
+
+
+
+
+
 # %%
 # TODO: spatial EDA
 
@@ -326,16 +302,12 @@ knn_w, knn_g, knn_p, knn_centroids = tri.KNNGraph(data)
 # TODO: Only pass in necessary attributes
 # TODO: do this in FinalModels as well
 
-# graph plots well even with attributes added in
-G_delauney = tri.setNodeAttributes(d_g, data)
-G_delauney = tri.setEdgeAttributes(G_delauney, data)
-
 # tri.delauneyPlot(d_g, d_p, v_cells, tryout, True)
 # tri.KNNPlot(knn_g, knn_p, knn_centroids, tryout, True)
 
 # %%
 
-# %%
+# TODO: ESDA on at least one variable of each category
 import esda
 import pandas as pd
 import geopandas as gpd
@@ -354,7 +326,7 @@ ylag = lps.weights.lag_spatial(wq, y)
 
 import mapclassify as mc
 ylagq5 = mc.Quantiles(ylag, k=5)
-
+# Plasma is also a good colour
 f, ax = plt.subplots(1, figsize=(9, 9))
 df.assign(cl=ylagq5.yb).plot(column='cl', categorical=True, \
         k=5, cmap='GnBu', linewidth=0.1, ax=ax, \
@@ -389,41 +361,6 @@ ax.set_axis_off()
 plt.title("LISA Spatial Autocorrelation")
 
 plt.show()
-
-# %%
-# TODO: https://www-jstor-org.ezproxy.uct.ac.za/stable/2684298?sid=primo&seq=6
-
-# %%
-
-# TODO: Go through networkx and see if there are any more 
-#       Network analysis tools that would be helpful in EDA
-
-# https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.centrality.degree_centrality.html#networkx.algorithms.centrality.degree_centrality
-print(nx.degree_centrality(G_delauney))
-
-# TODO: Assortivity as part of an analysis, used to understand local structure of networks
-    # https://doi.org/10.1038/s41598-020-78336-9
-        # https://networkx.org/documentation/stable/reference/algorithms/assortativity.html 
-print(nx.numeric_assortativity_coefficient(G_delauney, "confidence"))
-print(nx.degree_pearson_correlation_coefficient(G_delauney))
-# TODO: Read more into this one
-# https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.assortativity.average_neighbor_degree.html#networkx.algorithms.assortativity.average_neighbor_degree
-print(nx.average_neighbor_degree(G_delauney))#, weight="weight")
-
-
-# %%
-
-# TODO: Analyse the structure of our graphs
-    # https://www.nature.com/articles/s41598-020-69795-1?fromPaywallRec=false
-    # https://www.nature.com/articles/srep31708 - code below can also be used to find sub-graphs (neighbourhoods)
-        # https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.core.onion_layers.html#networkx.algorithms.core.onion_layers
-
-# %%
-
-# TODO: ESDA on at least one variable of each category
-
-
-
 
 
 # %%
@@ -516,6 +453,41 @@ plt.show()
 #                      ylim = ylim)
 # # plotting code here
 # grdevices.dev_off()
+
+
+
+
+# %%
+# TODO: https://www-jstor-org.ezproxy.uct.ac.za/stable/2684298?sid=primo&seq=6
+
+# %%
+
+# TODO: Go through networkx and see if there are any more 
+#       Network analysis tools that would be helpful in EDA
+
+# graph plots well even with attributes added in
+G_delauney = tri.setEdgeAttributes(tri.setNodeAttributes(d_g, data), 
+                                   data)
+
+# https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.centrality.degree_centrality.html#networkx.algorithms.centrality.degree_centrality
+print(nx.degree_centrality(G_delauney))
+
+# TODO: Assortivity as part of an analysis, used to understand local structure of networks
+    # https://doi.org/10.1038/s41598-020-78336-9
+        # https://networkx.org/documentation/stable/reference/algorithms/assortativity.html 
+print(nx.numeric_assortativity_coefficient(G_delauney, "confidence"))
+print(nx.degree_pearson_correlation_coefficient(G_delauney))
+# TODO: Read more into this one
+# https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.assortativity.average_neighbor_degree.html#networkx.algorithms.assortativity.average_neighbor_degree
+print(nx.average_neighbor_degree(G_delauney))#, weight="weight")
+
+
+# %%
+
+# TODO: Analyse the structure of our graphs
+    # https://www.nature.com/articles/s41598-020-69795-1?fromPaywallRec=false
+    # https://www.nature.com/articles/srep31708 - code below can also be used to find sub-graphs (neighbourhoods)
+        # https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.core.onion_layers.html#networkx.algorithms.core.onion_layers
 
 
 # %% 
