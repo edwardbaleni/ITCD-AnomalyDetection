@@ -11,6 +11,7 @@ import shapely
 import seaborn as sns
 import plotly.express as px
 
+
 # TODO: Speed up dataCollect
 
 # working directory is that where the file is placed
@@ -56,38 +57,70 @@ tryout = tryout/255
     #       Then look at the most significant of these together
 
 
-# %%
-
-pd.DataFrame(data.loc[:,"confidence":]).plot()
-plt.show()
-
-
-# %%
-
-
-g = sns.PairGrid(data.loc[:,"confidence":], diag_sharey=False, corner=True)
-g.map_lower(plt.scatter, alpha = 0.6)
-g.map_diag(plt.hist, alpha = 0.7)
-# g.map_lower(sns.kdeplot)
-# g.map_diag(sns.kdeplot)
-
-
-# %%
-fig = px.scatter_matrix(data.loc[:,"confidence":])
-fig.show()
-
-# %%
-
-pd.plotting.scatter_matrix(data.loc[:,"confidence":], alpha=0.2)
 
 # %% 
-# plot data
 
-#plt.scatter(data["confidence"], data["dist1"]) 
-#plt.scatter(data["confidence"], data["NDVI_mean"])
-fig = px.scatter(x = data["confidence"], y = data["elongation"] )
-fig.add_scatter(x = data["confidence"], y = data["NDVI_mean"])
-fig.show()
+shape = data.loc[:, "crown_projection_area":"bendingE"]
+dist = data.loc[:, "dist1":"dist4"]
+spec = data.loc[:, "DEM_mean":]
+
+
+# %%
+
+                    # Histogram          
+    # Can simply look into outliers in the data here
+fig = plt.figure(figsize =(10, 10))
+ax = fig.add_axes([0, 0, 1, 1])
+bp = ax.boxplot(dist)
+ax.set_xticklabels(list(dist.columns))
+plt.semilogy()
+plt.show()
+
+fig = plt.figure(figsize =(10, 10))
+ax = fig.add_axes([0, 0, 1, 1])
+bp = ax.boxplot(spec)
+ax.set_xticklabels(list(spec.columns))
+plt.semilogy()
+plt.show()
+
+fig = plt.figure(figsize =(10, 10))
+ax = fig.add_axes([0, 0, 1, 1])
+bp = ax.boxplot(shape.iloc[:,:-1])
+ax.set_xticklabels(list(shape.columns)[:-1])
+plt.semilogy()
+plt.show()
+
+# bending energy doesn't play well with others
+
+# %%
+
+spec.boxplot(figsize=(20,20))
+plt.semilogy()
+plt.show()
+
+shape.boxplot(figsize=(20,20))
+plt.semilogy()
+plt.show()
+
+dist.boxplot(figsize=(20,20))
+plt.show()
+# %%
+
+
+g = sns.PairGrid(shape, diag_sharey=False, corner=True)
+g.map_lower(plt.scatter, alpha = 0.6, color='')
+g.map_diag(plt.hist, alpha = 0.7)
+g.map_upper(sns.kdeplot)
+
+g = sns.PairGrid(dist, diag_sharey=False, corner=True)
+g.map_lower(plt.scatter, alpha = 0.6, color='red')
+g.map_diag(plt.hist, alpha = 0.7)
+g.map_upper(sns.kdeplot)
+
+g = sns.PairGrid(spec, diag_sharey=False, corner=True)
+g.map_lower(plt.scatter, alpha = 0.6, color='red')
+g.map_diag(plt.hist, alpha = 0.7)
+g.map_upper(sns.kdeplot)
 
 # %%
 
@@ -96,38 +129,19 @@ fig = px.scatter(data,
                  y = "longitude", 
                  size = "confidence", 
                  size_max=5,
+                 color='roundness',
                  hover_data=["dist1", "NDVI_mean", "elongation"])
-#data.loc[:, "crown_projection_area":].columns
-
 fig.show()
 
-# %%
-# import plotly.graph_objects as go
-# tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
-# tryout = tryout/255
-# fig = go.Figure(go.Image(z=np.array(tryout)))
-# fig.show()
-
-# %%
-
-
-
-fig = px.imshow(np.array(data.loc[:,"confidence":].corr()), text_auto=True, aspect=True,
-                x = list(data.loc[:,"confidence":].columns),
-                y = list(data.loc[:,"confidence":].columns))
-fig.show()
 # %%    
-                    # Feature Selection (if too many features)
+                    # Feature Selection
 
-
-
-# TODO: Feature selection
-#      - tSNE
-#      - IsoMap
-#      - feature clustering
-#      - UMAP
-
-
+# %%
+    # calculate correlation values
+    # Recognise Multicollinearities
+sns.clustermap(spec.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
+sns.clustermap(dist.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
+sns.clustermap(shape.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
 
 # %%
 
@@ -140,24 +154,11 @@ X = data.loc[:,"confidence":]
 vif_data = pd.DataFrame()
 vif_data["feature"] = X.columns
 
-
 # calculating VIF for each feature
 vif_data["VIF"] = [variance_inflation_factor(X.values, i)
                           for i in range(len(X.columns))]
 
 print(vif_data)
-
-# %%
-
-# calculate correlation values
-correlation_matrix = data.loc[:,"confidence":].corr()
-correlation_matrix
-
-# %%
-
-import seaborn as sns
-
-sns.clustermap(data.loc[:, "confidence":].corr(), annot=True)
 
 # %%
 
@@ -238,10 +239,8 @@ print(data.loc[:,"confidence":].iloc[:, column_indices])
 
 # TODO: https://github.com/jundongl/scikit-feature/blob/master/skfeature/function/similarity_based/SPEC.py
 
-# TODO: https://doi.org/10.1016/j.chemolab.2021.104396
-#       https://www.google.com/search?client=firefox-b-d&q=filter+and+hybrid+filter-wrapper+feature+subset+selection
-
-# TODO: https://www.jmlr.org/papers/volume5/dy04a/dy04a.pdf
+# TODO: Exhaustive search of unsupervised feature selection techniques
+        # https://medium.com/analytics-vidhya/feature-selection-extended-overview-b58f1d524c1c
 
 
 
@@ -269,17 +268,8 @@ print(variables)
 print(demo1.rsquare)
 
 
-# %%
 
-                    # Histogram          
-    # Can simply look into outliers in the data here
-fig = plt.figure(figsize =(10, 10))
-# Creating axes instance
-ax = fig.add_axes([0, 0, 1, 1])
-# Creating plot
-bp = ax.boxplot(data.loc[:,"confidence":])
-# show plot
-plt.show()
+
 
 
 
