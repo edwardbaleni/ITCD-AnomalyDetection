@@ -54,23 +54,6 @@ tryout.plot.imshow(ax=ax)
 anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 
-# %%
-from sklearn.cluster import DBSCAN
-
-import numpy as np
-
-clustering = DBSCAN(eps=3, min_samples=10).fit(X)
-
-clustering.labels_
-
-anomaly_1 = data[clustering.labels_ < 0] # data[hdb.labels_ == -1]
-nominal_1 = data[clustering.labels_ >= 0] # data[hdb.labels_ != -1]
-
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
-
 
 # %%
 # https://www.geeksforgeeks.org/novelty-detection-with-local-outlier-factor-lof-in-scikit-learn/
