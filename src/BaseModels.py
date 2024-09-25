@@ -26,12 +26,10 @@ tryout = tryout/255
 # Below methods are in line with: https://ieeexplore-ieee-org.ezproxy.uct.ac.za/document/9297055
 # Paper says that isolation forests are the best option for AD
 
-# REfernce:
+# Refernce:
     # https://arxiv.org/pdf/2206.09426
     # https://pyod.readthedocs.io/en/latest/index.html
 
-# bending energy is actually ruining reducing performance ever so slighlty
-data.drop(['bendingE'], axis = 1 ,inplace=True)
 
 # %%
 data.loc[:,"confidence":] = dataHandler.engineer._scaleData(data.loc[:,"confidence":])
@@ -46,8 +44,8 @@ hdb = HDBSCAN(min_cluster_size=5)
 hdb.fit(X)
 hdb.labels_
 
-anomaly_1 = data[hdb.labels_ <= 0] # data[hdb.labels_ == -1]
-nominal_1 = data[hdb.labels_ > 0] # data[hdb.labels_ != -1]
+anomaly_1 = data[hdb.labels_ <= 0] 
+nominal_1 = data[hdb.labels_ > 0] 
 
 fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
