@@ -115,18 +115,6 @@ g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
 g.map_diag(plt.hist, alpha = 1, bins=100,color = palette[3])
 g.map_upper(sns.kdeplot, color=palette[2])
 
-
-# %%
-
-fig = px.scatter(data, 
-                 x = "latitude",
-                 y = "longitude", 
-                 size = "confidence", 
-                 size_max=5,
-                 color='roundness',
-                 hover_data=["dist1", "NDVI_mean", "elongation"])
-fig.show()
-
 # %%    
                     # Feature Selection
 
