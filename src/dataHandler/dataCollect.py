@@ -6,6 +6,7 @@ import geopandas as gpd
 import xarray
 import rioxarray as rio
 from rasterio.enums import Resampling
+import re
 
 class collect:
     def __init__(self, num, tifs, geojsons, zips):
@@ -13,6 +14,7 @@ class collect:
         self._tif, self._geojson, self._zipped = tifs[self._num], geojsons[self._num], zips[self._num]
         self.spectralData, self.delineations, self.mask, self.ref_data = self.fixData(self._tif, self._geojson, self._zipped)      
         self._vegIndices(self.spectralData)  
+        self.erf = (re.search("\d+", geojsons[num][0])).group(0)
 
     @staticmethod
     def _retrieveData(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped):

@@ -32,6 +32,7 @@ data = myData.data
 delineations = myData.delineations
 mask = myData.mask
 spectralData = myData.spectralData
+erf_num = myData.erf
 
 # Plotting
 tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, 
@@ -64,63 +65,56 @@ shape = data.loc[:, "crown_projection_area":"bendingE"]
 dist = data.loc[:, "dist1":"dist4"]
 spec = data.loc[:, "DEM_mean":]
 
+from pypalettes import get_hex
+palette = get_hex("VanGogh3", keep_first_n=8)
+
+
+# %%
+# Note that the palette is set as a global variable can change this later.
+def boxplot(dat, col, lo = True):
+    sns.set_theme(style="darkgrid")
+    Props = {'boxprops':{"alpha":0.7, 'edgecolor':palette[3], 'facecolor':palette[2]},
+            'medianprops':{'color':palette[3]},
+            'whiskerprops':{'color':palette[3]},
+            'capprops':{'color':palette[3]},
+            'flierprops':{'color':palette[3]}
+            }
+
+    fig, ax = plt.subplots(figsize=(15, 10))
+    if (lo):
+        ax.set(yscale="log")
+    sns.boxplot(data=dat, 
+                ax=ax, 
+                linewidth=2,
+                #color=palette[0], 
+                **Props)
+
+    ax.tick_params("x", labelrotation=45)
+    
+
+boxplot(spec)
+boxplot(shape.iloc[:,:-1])
+boxplot(shape[["bendingE"]])
+boxplot(dist, False)
 
 # %%
 
-                    # Histogram          
-    # Can simply look into outliers in the data here
-fig = plt.figure(figsize =(10, 10))
-ax = fig.add_axes([0, 0, 1, 1])
-bp = ax.boxplot(dist)
-ax.set_xticklabels(list(dist.columns))
-plt.semilogy()
-plt.show()
 
-fig = plt.figure(figsize =(10, 10))
-ax = fig.add_axes([0, 0, 1, 1])
-bp = ax.boxplot(spec)
-ax.set_xticklabels(list(spec.columns))
-plt.semilogy()
-plt.show()
+g = sns.PairGrid(shape, diag_sharey=False, corner=False)
+g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
+g.map_diag(plt.hist, alpha = 1, bins=100, color = palette[3])
+g.map_upper(sns.kdeplot, color=palette[2])
 
-fig = plt.figure(figsize =(10, 10))
-ax = fig.add_axes([0, 0, 1, 1])
-bp = ax.boxplot(shape.iloc[:,:-1])
-ax.set_xticklabels(list(shape.columns)[:-1])
-plt.semilogy()
-plt.show()
+g = sns.PairGrid(dist, diag_sharey=False, corner=False)
+g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
+g.map_diag(plt.hist, alpha = 1, bins=100,color = palette[3])
+g.map_upper(sns.kdeplot, color=palette[2])
 
-# bending energy doesn't play well with others
+g = sns.PairGrid(spec, diag_sharey=False, corner=False)
+g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
+g.map_diag(plt.hist, alpha = 1, bins=100,color = palette[3])
+g.map_upper(sns.kdeplot, color=palette[2])
 
-# %%
-
-spec.boxplot(figsize=(20,20))
-plt.semilogy()
-plt.show()
-
-shape.boxplot(figsize=(20,20))
-plt.semilogy()
-plt.show()
-
-dist.boxplot(figsize=(20,20))
-plt.show()
-# %%
-
-
-g = sns.PairGrid(shape, diag_sharey=False, corner=True)
-g.map_lower(plt.scatter, alpha = 0.6, color='')
-g.map_diag(plt.hist, alpha = 0.7)
-g.map_upper(sns.kdeplot)
-
-g = sns.PairGrid(dist, diag_sharey=False, corner=True)
-g.map_lower(plt.scatter, alpha = 0.6, color='red')
-g.map_diag(plt.hist, alpha = 0.7)
-g.map_upper(sns.kdeplot)
-
-g = sns.PairGrid(spec, diag_sharey=False, corner=True)
-g.map_lower(plt.scatter, alpha = 0.6, color='red')
-g.map_diag(plt.hist, alpha = 0.7)
-g.map_upper(sns.kdeplot)
 
 # %%
 
@@ -236,15 +230,6 @@ print(data.loc[:,"confidence":].iloc[:, column_indices])
 
 
 # %%
-
-# TODO: https://github.com/jundongl/scikit-feature/blob/master/skfeature/function/similarity_based/SPEC.py
-
-# TODO: Exhaustive search of unsupervised feature selection techniques
-        # https://medium.com/analytics-vidhya/feature-selection-extended-overview-b58f1d524c1c
-
-
-
-# %%
     #               Variable clustering
     #               Can pick one variable from each cluster
 from varclushi import VarClusHi
@@ -268,13 +253,10 @@ print(variables)
 print(demo1.rsquare)
 
 
+# %%
 
-
-
-
-
-
-
+# TODO: Exhaustive search of unsupervised feature selection techniques
+        # https://medium.com/analytics-vidhya/feature-selection-extended-overview-b58f1d524c1c
 
 
 
@@ -445,10 +427,6 @@ plt.show()
 # grdevices.dev_off()
 
 
-
-
-# %%
-# TODO: https://www-jstor-org.ezproxy.uct.ac.za/stable/2684298?sid=primo&seq=6
 
 # %%
 
