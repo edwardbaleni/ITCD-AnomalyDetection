@@ -148,8 +148,8 @@ class engineer(collect):
         #             add_stats={"CoV":CoV}))
         return pd.DataFrame(zonal_stats(geometry, array, nodata=np.nan,
                     affine=affine,
-                    stats="mean",
-                    add_stats={"CoV":engineer._CoV}))   
+                    stats="mean"))#,
+                    #add_stats={"CoV":engineer._CoV}))   
         
 
     # TODO: Select a better statistic mean/median/mode/max/etc.
@@ -158,38 +158,16 @@ class engineer(collect):
         # Spectral Features
         geom = placeholder.loc[:,"geometry"]
 
-        placeholder[["DEM_mean", "DEM_CV"]] = engineer._detStats(spectral["dem"], geom)
-        placeholder[["NIR_mean", "NIR_CV"]] = engineer._detStats(spectral["nir"], geom)
-        placeholder[["Red_mean", "Red_CV"]] = engineer._detStats(spectral["red"], geom)
-        placeholder[["Reg_mean", "Reg_CV"]] = engineer._detStats(spectral["reg"], geom)
-        placeholder[["NDRE_mean", "NDRE_CV"]] = engineer._detStats(spectral["ndre"], geom)
-        placeholder[["NDVI_mean", "NDVI_CV"]] = engineer._detStats(spectral["ndvi"], geom)
-        placeholder[["GNVDI_mean", "GNVDI_CV"]] = engineer._detStats(spectral["gndvi"], geom)
-        placeholder[["ENDVI_mean", "ENDVI_CV"]] = engineer._detStats(spectral["endvi"], geom)
-        placeholder[["Intensity_mean", "Intensity_CV"]] = engineer._detStats(spectral["intensity"], geom)
-        placeholder[["Saturation_mean", "Saturation_CV"]] = engineer._detStats(spectral["saturation"], geom)
-
-        # More options if Zonal Statistics stops working
-        # # https://github.com/shakasom/zonalstatistics/blob/master/Zonal_Statistics_Sentinel.ipynb
-        # # https://corteva.github.io/geocube/html/examples/zonal_statistics.html
-        # grouped_elevation = spectral["dem"].drop("spatial_ref").groupby(geom)
-        # grid_mean = grouped_elevation.mean().rename({"dem": "elevation_mean"})
-        # print(grid_mean)
-
-        # placeholder[["Green_mean", "Green_CV"]] = engineer._detStats(spectral["green"], geom)
-        # placeholder[["Blue_mean", "Blue_CV"]] = engineer._detStats(spectral["blue"], geom)
-        # placeholder[["DEM_max", "DEM_majority", "DEM_mean", "DEM_CV"]] = engineer._detStats(spectral["dem"], geom)
-        # placeholder[["NIR_max", "NIR_majority", "NIR_mean", "NIR_CV"]] = engineer._detStats(spectral["nir"], geom)
-        # placeholder[["Red_max", "Red_majority", "Red_mean", "Red_CV"]] = engineer._detStats(spectral["red"], geom)
-        # placeholder[["Reg_max", "Reg_majority", "Reg_mean", "Reg_CV"]] = engineer._detStats(spectral["reg"], geom)
-        # placeholder[["Green_max", "Green_majority", "Green_mean", "Green_CV"]] = engineer._detStats(spectral["green"], geom)
-        # placeholder[["Blue_max", "Blue_majority", "Blue_mean", "Blue_CV"]] = engineer._detStats(spectral["blue"], geom)
-        # placeholder[["NDRE_max", "NDRE_majority", "NDRE_mean", "NDRE_CV"]] = engineer._detStats(spectral["ndre"], geom)
-        # placeholder[["NDVI_max", "NDVI_majority", "NDVI_mean", "NDVI_CV"]] = engineer._detStats(spectral["ndvi"], geom)
-        # placeholder[["GNVDI_max", "GNVDI_majority", "GNVDI_mean", "GNVDI_CV"]] = engineer._detStats(spectral["gndvi"], geom)
-        # placeholder[["ENDVI_max", "ENDVI_majority", "ENDVI_mean", "ENDVI_CV"]] = engineer._detStats(spectral["endvi"], geom)
-        # placeholder[["Intensity_max", "Intensity_majority", "Intensity_mean", "Intensity_CV"]] = engineer._detStats(spectral["intensity"], geom)
-        # placeholder[["Saturation_max", "Saturation_majority", "Saturation_mean", "Saturation_CV"]] = engineer._detStats(spectral["saturation"], geom)
+        placeholder[["DEM_mean"]] = engineer._detStats(spectral["dem"], geom)
+        placeholder[["NIR_mean"]] = engineer._detStats(spectral["nir"], geom)
+        placeholder[["Red_mean"]] = engineer._detStats(spectral["red"], geom)
+        placeholder[["Reg_mean"]] = engineer._detStats(spectral["reg"], geom)
+        placeholder[["NDRE_mean"]] = engineer._detStats(spectral["ndre"], geom)
+        placeholder[["NDVI_mean"]] = engineer._detStats(spectral["ndvi"], geom)
+        placeholder[["GNVDI_mean"]] = engineer._detStats(spectral["gndvi"], geom)
+        placeholder[["ENDVI_mean"]] = engineer._detStats(spectral["endvi"], geom)
+        placeholder[["Intensity_mean"]] = engineer._detStats(spectral["intensity"], geom)
+        placeholder[["Saturation_mean"]] = engineer._detStats(spectral["saturation"], geom)
         return placeholder
 
     # TODO: https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data

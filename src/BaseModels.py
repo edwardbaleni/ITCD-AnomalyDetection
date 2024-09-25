@@ -11,13 +11,13 @@ num = 0
 myData = dataHandler.engineer(num, 
                               data_paths_tif, 
                               data_paths_geojson, 
-                              data_paths_geojson_zipped)
-data = myData.data
-delineations = myData.delineations
-mask = myData.mask
+                              data_paths_geojson_zipped,
+							  False)
+data = myData.data.copy(deep=True)
+delineations = myData.delineations.copy(deep=True)
+mask = myData.mask.copy(deep=True)
 spectralData = myData.spectralData
 # For plotting
-mask = mask
 tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
 tryout = tryout/255
 
@@ -29,6 +29,15 @@ tryout = tryout/255
 # REfernce:
     # https://arxiv.org/pdf/2206.09426
     # https://pyod.readthedocs.io/en/latest/index.html
+
+data.drop(['DEM_CV',
+        'NIR_CV', 'Red_CV', 'Reg_CV',
+        'NDRE_CV', 'NDVI_CV',
+       'GNVDI_CV', 'ENDVI_CV', 'Intensity_CV',
+        'Saturation_CV'], axis = 1 ,inplace=True)
+
+# %%
+data.loc[:,"confidence":] = dataHandler.engineer._scaleData(data.loc[:,"confidence":])
 
 # %%
 # DBSCAN
