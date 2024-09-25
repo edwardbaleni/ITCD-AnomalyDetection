@@ -121,10 +121,13 @@ g.map_upper(sns.kdeplot, color=palette[2])
 # %%
     # calculate correlation values
     # Recognise Multicollinearities
-sns.clustermap(spec.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
+sns.clustermap(spec.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")# palette)
 sns.clustermap(dist.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
 sns.clustermap(shape.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
-
+# When observing below clustermap, it is clear that the clusters are first divied up
+# between spec and shape. So it is not necessary to do them together.
+# Because it is uninterpretable
+# sns.clustermap(pd.concat([spec, shape], axis=1).corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
 # %%
 
 from statsmodels.stats.outliers_influence import variance_inflation_factor
