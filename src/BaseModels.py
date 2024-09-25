@@ -30,11 +30,8 @@ tryout = tryout/255
     # https://arxiv.org/pdf/2206.09426
     # https://pyod.readthedocs.io/en/latest/index.html
 
-data.drop(['DEM_CV',
-        'NIR_CV', 'Red_CV', 'Reg_CV',
-        'NDRE_CV', 'NDVI_CV',
-       'GNVDI_CV', 'ENDVI_CV', 'Intensity_CV',
-        'Saturation_CV'], axis = 1 ,inplace=True)
+# bending energy is actually ruining reducing performance ever so slighlty
+data.drop(['bendingE'], axis = 1 ,inplace=True)
 
 # %%
 data.loc[:,"confidence":] = dataHandler.engineer._scaleData(data.loc[:,"confidence":])
