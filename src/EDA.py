@@ -71,7 +71,7 @@ palette = get_hex("VanGogh3", keep_first_n=8)
 
 # %%
 # Note that the palette is set as a global variable can change this later.
-def boxplot(dat, col, lo = True):
+def boxplot(dat, lo = True):
     sns.set_theme(style="darkgrid")
     Props = {'boxprops':{"alpha":0.7, 'edgecolor':palette[3], 'facecolor':palette[2]},
             'medianprops':{'color':palette[3]},
@@ -102,18 +102,18 @@ boxplot(dist, False)
 
 g = sns.PairGrid(shape, diag_sharey=False, corner=False)
 g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
-g.map_diag(plt.hist, alpha = 1, bins=100, color = palette[3])
-g.map_upper(sns.kdeplot, color=palette[2])
+g.map_diag(plt.hist, alpha = 1, bins=30, color = palette[3])
+g.map_upper(sns.kdeplot, color=palette[2], warn_singular=False)
 
 g = sns.PairGrid(dist, diag_sharey=False, corner=False)
 g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
-g.map_diag(plt.hist, alpha = 1, bins=100,color = palette[3])
-g.map_upper(sns.kdeplot, color=palette[2])
+g.map_diag(plt.hist, alpha = 1, bins=30,color = palette[3])
+g.map_upper(sns.kdeplot, color=palette[2], warn_singular=False)
 
 g = sns.PairGrid(spec, diag_sharey=False, corner=False)
 g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
-g.map_diag(plt.hist, alpha = 1, bins=100,color = palette[3])
-g.map_upper(sns.kdeplot, color=palette[2])
+g.map_diag(plt.hist, alpha = 1, bins=30,color = palette[3])
+g.map_upper(sns.kdeplot, color=palette[2], warn_singular=False)
 
 # %%    
                     # Feature Selection
