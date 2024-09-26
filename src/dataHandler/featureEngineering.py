@@ -96,6 +96,20 @@ class engineer(collect):
         L = xx.shape[0]
         return max( (2 * math.pi)/r , 1/L * sum( engineer._curvature(xx)**2 ))
 
+    # TODO: Zernicke Moments
+    import cv2 as cv
+    import mahotas as mh
+    @staticmethod
+    def _zernickeMoments(dat, spectral):
+        touch = spectral.rio.clip([dat], spectral.rio.crs)
+        im = cv.cvtColor(touch.T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
+        zernike_moments = mh.features.zernike_moments(im, radius = (mh.labeled.bbox(im).max()/2),#(data["major_axis"][0]/2),
+                                                        cm=mh.center_of_mass(im))
+        return pd.Series(zernike_moments)
+        # plt.imshow(im, interpolation='nearest')
+        # plt.show()
+
+
     # TODO: https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
     def shapeDescriptors(self, placeholder):
         placeholder =  placeholder.to_crs(3857)
@@ -123,6 +137,8 @@ class engineer(collect):
         # TODO: Add in Bending energy, first and second order invariant moment
         placeholder["bendingE"] = list(map(engineer._bendingEnergy, placeholder["geometry"], placeholder["radius_of_gyration"]))
         
+        # calling upon a global variable.
+        placeholder[["z" + str(x) for x in range(25)]] = placeholder["geometry"].apply(lambda x: engineer._zernickeMoments(x, self.spectralData['rgb']))
         # Removing the bottom features makes detection slightly worse. So will keep them
         # for EDA and decide from there.
         # # Drop useless/repeat/non-robust items
