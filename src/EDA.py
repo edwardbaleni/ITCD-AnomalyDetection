@@ -502,3 +502,20 @@ print(nx.average_neighbor_degree(G_delauney))#, weight="weight")
 # # a["NDRE_median"] = a["geometry"].progress_apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()))
 
 # # touch.plot()
+
+
+# %% 
+# TODO: Zernicke Moments
+import cv2 as cv
+import mahotas as mh
+
+def _zernickeMoments(dat, spectral):
+    touch = spectral.rio.clip([dat], spectral.rio.crs)
+    im = cv.cvtColor(touch.T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
+    zernike_moments = mh.features.zernike_moments(im, radius = (mh.labeled.bbox(im).max()/2),
+                                                  cm=mh.center_of_mass(im))
+    return pd.Series(zernike_moments)
+    # plt.imshow(im, interpolation='nearest')
+    # plt.show()
+
+data[["z" + str(x) for x in range(25)]] = data["geometry"].apply(lambda x: _zernickeMoments(x, spectralData['rgb']))

@@ -27,6 +27,9 @@ from sklearn.preprocessing import RobustScaler
 
 from rasterstats import zonal_stats
 
+import cv2 as cv
+import mahotas as mh
+
 class engineer(collect):
 
     def __init__(self, num, tifs, geojsons, zips, scale = True):
@@ -97,8 +100,7 @@ class engineer(collect):
         return max( (2 * math.pi)/r , 1/L * sum( engineer._curvature(xx)**2 ))
 
     # TODO: Zernicke Moments
-    import cv2 as cv
-    import mahotas as mh
+
     @staticmethod
     def _zernickeMoments(dat, spectral):
         touch = spectral.rio.clip([dat], spectral.rio.crs)
@@ -138,7 +140,7 @@ class engineer(collect):
         placeholder["bendingE"] = list(map(engineer._bendingEnergy, placeholder["geometry"], placeholder["radius_of_gyration"]))
         
         # calling upon a global variable.
-        placeholder[["z" + str(x) for x in range(25)]] = placeholder["geometry"].apply(lambda x: engineer._zernickeMoments(x, self.spectralData['rgb']))
+    
         # Removing the bottom features makes detection slightly worse. So will keep them
         # for EDA and decide from there.
         # # Drop useless/repeat/non-robust items
@@ -220,6 +222,9 @@ class engineer(collect):
         # zonal statistics have to come last as crs is 4326 
         # and above crs is converted to 3857 to work with the shape descriptors
         placeholder = self.zonalStatistics(placeholder, spectral)
+
+        # print(self.spectralData['rgb'])
+        placeholder[["z" + str(x) for x in range(25)]] = placeholder["geometry"].apply(lambda x: self._zernickeMoments(x, spectral['rgb']))
         # Feature Scaling
         # TODO: this paper says to use robust scaling: https://link.springer.com/article/10.1007/s00138-023-01450-x#Sec3
         #       For some reason it does work better than standard scaling
