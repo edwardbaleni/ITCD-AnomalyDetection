@@ -29,10 +29,12 @@ tryout = tryout/255
 # Refernce:
     # https://arxiv.org/pdf/2206.09426
     # https://pyod.readthedocs.io/en/latest/index.html
-# data.drop(["z" + str(x) for x in range(25)], axis = 1, inplace=True)
+data.drop(['contrast', 'correlation', 'energy', 'homogeneity', 'ASM',
+       'dissimilarity'], axis = 1, inplace=True)
 
 # %%
 data.loc[:,"confidence":] = dataHandler.engineer._scaleData(data.loc[:,"confidence":])
+
 
 # %%
 # DBSCAN
