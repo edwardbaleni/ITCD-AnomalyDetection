@@ -368,55 +368,6 @@ plt.show()
 
 
 # %%
-# Variogram clouds and spatial autocorrelation and https://www.tandfonline.com/doi/abs/10.1080/10618600.1999.10474812 
-# are interesting tools for detecting outliers in a univariate setting
-
-# TODO: https://link.springer.com/article/10.1007/s00362-013-0524-z#Sec2
-#       This paper is great for exploration of multivariate spatial data
-#       https://cran.r-project.org/web/packages/mvoutlier/index.html\
-
-# from rpy2.robjects.packages import importr
-# from rpy2.robjects import r, pandas2ri
-# import rpy2.robjects as ro
-
-# # rprint = ro.globalenv.get("print")
-# geometry = data.loc[:, "centroid":]
-# geometry.rename(columns={"centroid" : "geometry"}, inplace=True)
-# geometry.set_crs(data.crs, inplace=True)
-# geometry.to_crs(3857, inplace=True)
-
-# df = geometry.loc[:,"confidence":].copy()
-# df = pd.DataFrame(dataHandler.engineer._scaleData(df), 
-#                   columns = list(df.columns))
-
-# with (ro.default_converter + pandas2ri.converter).context():
-#   r_from_pd_df = ro.conversion.get_conversion().py2rpy(df)
-
-# val = 1
-# geometry["latitude"] = geometry["geometry"].x + 6.43*10**6
-# geometry["longitude"] = geometry["geometry"].y + 3.644*10**6
-# la = ro.IntVector( round(geometry["latitude"] * val) )
-# lo = ro.IntVector( (geometry["longitude"] * val) )
-
-# ylim = ro.IntVector([ np.array( geometry["latitude"]).min() * val , np.array(geometry["latitude"]).max() * val  ])
-
-# mvoutlier = importr("mvoutlier")
-
-# # dat, X, Y
-
-# grdevices = importr('grDevices')
-
-# grdevices.png(file="file.png", width=1000, height=1000)
-# mvoutlier.locoutSort(dat=r_from_pd_df, 
-#                      X=lo, 
-#                      Y=la, 
-#                      ylim = ylim)
-# # plotting code here
-# grdevices.dev_off()
-
-
-
-# %%
 
 # TODO: Go through networkx and see if there are any more 
 #       Network analysis tools that would be helpful in EDA
