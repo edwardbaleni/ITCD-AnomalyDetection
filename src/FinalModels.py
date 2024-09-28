@@ -76,29 +76,7 @@ nominal = data[b["anomaly_score"] <= 0.4]
 
 plotA.plot(tryout, nominal, anomaly)
 
-# %%
 
-
-
-# %%
-                    # Delauney Paper
-# %%
-
-# https://gis.stackexchange.com/questions/459091/definition-of-multipolygon-distance-in-shapely
-import shapely.plotting
-
-# shapely.plotting.plot_polygon(data.iloc[0,1], color = "red")
-# shapely.plotting.plot_polygon(data.iloc[4,1], color = "blue")
-# plt.show()
-
-# # this distance outputs the distance from the nearest vertex to the nearest vertex of the
-# # polygons not from the centroid to the centroid
-# print("distance: ", {data.iloc[0,1].distance(data.iloc[4,1])})
-
-# (-8.28502 - -8.28497) = 0.00005       # From closrset vertex to closest vertex
-# (-8.28506 - -8.28495) = 0.00011       # From centroid to centroid\
-
-# don't have to do polygons to polygons can do centroid to centtroid.
 
 # %% 
                     # Delauney Paper
@@ -179,6 +157,24 @@ plotA.plot(tryout, nominal, anomaly)
 # %%
 # TODO: performance metrics for outlier detection
 #        https://scikit-learn.org/stable/auto_examples/miscellaneous/plot_outlier_detection_bench.html#sphx-glr-auto-examples-miscellaneous-plot-outlier-detection-bench-py
+
+
+
+
+# %%
+
+    # https://onlinelibrary.wiley.com/doi/epdf/10.1111/tgis.12725?saml_referrer
+
+
+
+
+# %%
+
+
+
+
+
+
 
 
 

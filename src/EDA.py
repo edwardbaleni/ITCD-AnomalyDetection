@@ -454,54 +454,54 @@ print(nx.average_neighbor_degree(G_delauney))#, weight="weight")
 #       https://pyimagesearch.com/2015/12/07/local-binary-patterns-with-python-opencv/?source=post_page-----cb1feb2dbd73--------------------------------
 #       
 
-# import cv2 as cv
-#     # have to transpose the image a couple of times to get it right.
-#     # but here we have a grayscale image
-# im = cv.cvtColor(spectralData["rgb"].T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
+import cv2 as cv
+    # have to transpose the image a couple of times to get it right.
+    # but here we have a grayscale image
+im = cv.cvtColor(spectralData["rgb"].T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
 
-# #     # get the masks
-# # a = spectralData["rgb"].rio.clip(delineations)
-# # ma = cv.cvtColor(a.T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
-
-
-# # %%
-# import pyfeats
-
-# features_mean, features_range, labels_mean, labels_range = pyfeats.glcm_features(im, ignore_zeros=True)
-
-# # features, labels = pyfeats.fos(im, ma)
+#     # get the masks
+# a = spectralData["rgb"].rio.clip(delineations)
+# ma = cv.cvtColor(a.T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
 
 
 # # %%
-# # https://www.kaggle.com/code/datascientistsohail/texture-features-extraction
-# import skimage
-# # this get the first geometry
-# # we can use this to get texture properties
-# touch = spectralData["rgb"].rio.clip([delineations.iloc[0,0]], spectralData["rgb"].rio.crs)
-# im = cv.cvtColor(touch.T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
+import pyfeats
 
-# # co_matrix = skimage.feature.graycomatrix(im, [5], [0], levels=256, symmetric=True, normed=True)
+features_mean, features_range, labels_mean, labels_range = pyfeats.glcm_features(im, ignore_zeros=True)
 
-# # # Calculate texture features from the co-occurrence matrix
-# # # https://scikit-image.org/docs/stable/api/skimage.feature.html#skimage.feature.graycomatrix
-# # contrast = skimage.feature.graycoprops(co_matrix, 'contrast')
-# # correlation = skimage.feature.graycoprops(co_matrix, 'correlation')
-# # energy = skimage.feature.graycoprops(co_matrix, 'energy')
-# # homogeneity = skimage.feature.graycoprops(co_matrix, 'homogeneity')
-
-# # # Print the texture features
-# # print("Contrast:", contrast)
-# # print("Correlation:", correlation)
-# # print("Energy:", energy)
-# # print("Homogeneity:", homogeneity)
+# features, labels = pyfeats.fos(im, ma)
 
 
+# %%
+# https://www.kaggle.com/code/datascientistsohail/texture-features-extraction
+import skimage
+# this get the first geometry
+# we can use this to get texture properties
+# Pyfeat library is good. But this one is more trusted
+# Need to play around with 
+def _texture(dat, spectral):
+    touch = spectral.rio.clip([dat], spectral.rio.crs)
+    im = cv.cvtColor(touch.T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
+    co_matrix = skimage.feature.graycomatrix(im, 
+                                         distances=[5], 
+                                         angles=[0], 
+                                         levels=256, 
+                                         symmetric=True, 
+                                         normed=True)
+    
+    # Calculate texture features from the co-occurrence matrix
+    # https://scikit-image.org/docs/stable/api/skimage.feature.html#skimage.feature.graycomatrix
+    contrast = skimage.feature.graycoprops(co_matrix, 'contrast')
+    correlation = skimage.feature.graycoprops(co_matrix, 'correlation')
+    energy = skimage.feature.graycoprops(co_matrix, 'energy')
+    homogeneity = skimage.feature.graycoprops(co_matrix, 'homogeneity')
+    ASM = skimage.feature.graycoprops(co_matrix, 'ASM')
+    diss = skimage.feature.graycoprops(co_matrix, 'dissimilarity')
 
-# features_mean, features_range, labels_mean, labels_range = pyfeats.glcm_features(im, ignore_zeros=True)
+    return pd.Series(contrast, correlation, energy, homogeneity, ASM, diss)
 
-# # a["NDRE_median"] = a["geometry"].progress_apply(lambda x: float(data["NDRE"].rio.clip( [x], data["NDRE"].rio.crs).median()))
+data[["contrast", 'correlation', 'energy', 'homogeneity', 'ASM', "dissimilarity"]] = data["geometry"].apply(lambda x: _zernickeMoments(x, spectralData['rgb']))
 
-# # touch.plot()
 
 
 # %% 
