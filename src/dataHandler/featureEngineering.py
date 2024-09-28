@@ -29,6 +29,8 @@ from rasterstats import zonal_stats
 
 import cv2 as cv
 import mahotas as mh
+import skimage
+
 
 class engineer(collect):
 
@@ -111,6 +113,35 @@ class engineer(collect):
         # plt.imshow(im, interpolation='nearest')
         # plt.show()
 
+
+    @staticmethod
+    def _texture(dat, spectral):
+        """
+        
+        Notes : # this get the first geometry
+                # we can use this to get texture properties
+                # Pyfeat library is good. But this one is more trusted
+                # Need to play around with 
+        """
+        touch = spectral.rio.clip([dat], spectral.rio.crs)
+        im = cv.cvtColor(touch.T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
+        co_matrix = skimage.feature.graycomatrix(im, 
+                                            distances=[5], # looks at distances and how many pixels away to consider
+                                            angles=[0], 
+                                            levels=256, 
+                                            symmetric=True, 
+                                            normed=True)
+        
+        # Calculate texture features from the co-occurrence matrix
+        # https://scikit-image.org/docs/stable/api/skimage.feature.html#skimage.feature.graycomatrix
+        contrast = skimage.feature.graycoprops(co_matrix, 'contrast')[0][0]
+        correlation = skimage.feature.graycoprops(co_matrix, 'correlation')[0][0]
+        energy = skimage.feature.graycoprops(co_matrix, 'energy')[0][0]
+        homogeneity = skimage.feature.graycoprops(co_matrix, 'homogeneity')[0][0]
+        ASM = skimage.feature.graycoprops(co_matrix, 'ASM')[0][0]
+        diss = skimage.feature.graycoprops(co_matrix, 'dissimilarity')[0][0]
+
+        return pd.Series([contrast, correlation, energy, homogeneity, ASM, diss])
 
     # TODO: https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
     def shapeDescriptors(self, placeholder):
@@ -225,6 +256,8 @@ class engineer(collect):
 
         # print(self.spectralData['rgb'])
         placeholder[["z" + str(x) for x in range(25)]] = placeholder["geometry"].apply(lambda x: self._zernickeMoments(x, spectral['rgb']))
+        placeholder[['contrast', 'correlation', 'energy', 'homogeneity', 'ASM', "dissimilarity"]] = placeholder["geometry"].apply(lambda x: self._texture(x, spectral['rgb']))
+
         # Feature Scaling
         # TODO: this paper says to use robust scaling: https://link.springer.com/article/10.1007/s00138-023-01450-x#Sec3
         #       For some reason it does work better than standard scaling
