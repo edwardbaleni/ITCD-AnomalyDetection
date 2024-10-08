@@ -28,9 +28,9 @@ myData = dataHandler.engineer(num, data_paths_tif,
 # end = timer()
 # print(end - start)
 
-data = myData.data
-delineations = myData.delineations
-mask = myData.mask
+data = myData.data.copy(deep=True)
+delineations = myData.delineations.copy(deep=True)
+mask = myData.mask.copy(deep=True)
 spectralData = myData.spectralData
 erf_num = myData.erf
 
@@ -329,14 +329,22 @@ plt.show()
 # https://www.jstor.org/stable/143141?origin=crossref
     # suffers from the curse of dimensionality so pick features wisely. 
 # 
+data.loc[:,"confidence":] = dataHandler.engineer._scaleData(data.loc[:,"confidence":])
+
 
 w = d_w
 x1 = data["confidence"]
 x2 = data["NDVI_mean"]
 x3 = data["elongation"]
 x4 = data["roundness"]
-
-lG_mv = esda.Geary_Local_MV(connectivity=w).fit([x1,x2,x3,x4])
+# x5 = data["z0"]
+# x6 = data["z1"]
+# x7 = data["z2"]
+# x8 = data["contrast"]
+# x9 = data["energy"]
+# x10 = data["bendingE"]
+xx = [x1,x2,x3,x4]#,x5,x6,x7,x10]
+lG_mv = esda.Geary_Local_MV(connectivity=w).fit(xx)
 
 # observed multivariate Local Geary values.
 lG_mv.localG[0:5] 

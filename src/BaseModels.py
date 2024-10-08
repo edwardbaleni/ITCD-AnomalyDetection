@@ -17,6 +17,7 @@ data = myData.data.copy(deep=True)
 delineations = myData.delineations.copy(deep=True)
 mask = myData.mask.copy(deep=True)
 spectralData = myData.spectralData
+erf_num = myData.erf
 # For plotting
 tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
 tryout = tryout/255
@@ -29,8 +30,7 @@ tryout = tryout/255
 # Refernce:
     # https://arxiv.org/pdf/2206.09426
     # https://pyod.readthedocs.io/en/latest/index.html
-data.drop(['contrast', 'correlation', 'energy', 'homogeneity', 'ASM',
-       'dissimilarity'], axis = 1, inplace=True)
+data.drop(['dist1', 'dist2', 'dist3', 'dist4'], axis = 1, inplace=True)
 
 # %%
 data.loc[:,"confidence":] = dataHandler.engineer._scaleData(data.loc[:,"confidence":])
