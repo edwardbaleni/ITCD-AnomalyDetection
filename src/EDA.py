@@ -307,6 +307,9 @@ plt.vlines(mi.EI, 0,1)
 plt.xlabel("Moran's I")
 
 # %%
+c = esda.Geary(y, wq)
+c.C
+# %%
 
 # single variable local morans I
 li = esda.moran.Moran_Local(y, wq)
@@ -322,6 +325,21 @@ plt.title("LISA Spatial Autocorrelation")
 
 plt.show()
 
+# %%
+w = d_w
+xx = y
+ci = esda.Geary_Local(connectivity=w).fit(xx)
+
+df = data
+f, ax = plt.subplots(1, figsize=(20, 20))
+tryout.plot.imshow(ax=ax)
+df.assign(cl= np.array(ci.localG)).plot(column='cl', categorical=False,
+        k=5, cmap='viridis', linewidth=0.1, ax=ax,
+        edgecolor='white', legend=True, alpha = 0.7)
+ax.set_axis_off()
+plt.title("Geary Local Spatial Autocorrelation")
+
+plt.show()
 
 # %%
 # Multivariate Spatial Autocorrelation
@@ -330,7 +348,6 @@ plt.show()
     # suffers from the curse of dimensionality so pick features wisely. 
 # 
 data.loc[:,"confidence":] = dataHandler.engineer._scaleData(data.loc[:,"confidence":])
-
 
 w = d_w
 x1 = data["confidence"]

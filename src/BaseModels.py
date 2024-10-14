@@ -30,6 +30,9 @@ tryout = tryout/255
 # Refernce:
     # https://arxiv.org/pdf/2206.09426
     # https://pyod.readthedocs.io/en/latest/index.html
+
+# removing distances is helpful as trees on the edge that are correct
+# are sometimes anomalies when they should not be
 data.drop(['dist1', 'dist2', 'dist3', 'dist4'], axis = 1, inplace=True)
 
 # %%
