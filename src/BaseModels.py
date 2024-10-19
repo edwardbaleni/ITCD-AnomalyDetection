@@ -33,7 +33,7 @@ tryout = tryout/255
 
 # removing distances is helpful as trees on the edge that are correct
 # are sometimes anomalies when they should not be
-data.drop(['dist1', 'dist2', 'dist3', 'dist4'], axis = 1, inplace=True)
+# data.drop(['dist1', 'dist2', 'dist3', 'dist4'], axis = 1, inplace=True)
 
 # %%
 data.loc[:,"confidence":] = dataHandler.engineer._scaleData(data.loc[:,"confidence":])

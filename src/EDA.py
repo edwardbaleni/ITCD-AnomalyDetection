@@ -337,7 +337,7 @@ df.assign(cl= np.array(ci.localG)).plot(column='cl', categorical=False,
         k=5, cmap='viridis', linewidth=0.1, ax=ax,
         edgecolor='white', legend=True, alpha = 0.7)
 ax.set_axis_off()
-plt.title("Geary Local Spatial Autocorrelation")
+plt.title("Geary Local Univariate Spatial Autocorrelation")
 
 plt.show()
 

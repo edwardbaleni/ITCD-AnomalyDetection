@@ -104,18 +104,16 @@ class engineer(collect):
     # TODO: Zernicke Moments
 
     @staticmethod
-    def _zernickeMoments(dat, spectral):
-        touch = spectral.rio.clip([dat], spectral.rio.crs)
-        im = cv.cvtColor(touch.T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
+    def _zernickeMoments(im):
         zernike_moments = mh.features.zernike_moments(im, radius = (mh.labeled.bbox(im).max()/2),#(data["major_axis"][0]/2),
                                                         cm=mh.center_of_mass(im))
-        return pd.Series(zernike_moments)
+        return list(zernike_moments)
         # plt.imshow(im, interpolation='nearest')
         # plt.show()
 
 
     @staticmethod
-    def _texture(dat, spectral):
+    def _texture(im):
         """
         
         Notes : # this get the first geometry
@@ -123,8 +121,6 @@ class engineer(collect):
                 # Pyfeat library is good. But this one is more trusted
                 # Need to play around with 
         """
-        touch = spectral.rio.clip([dat], spectral.rio.crs)
-        im = cv.cvtColor(touch.T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
         co_matrix = skimage.feature.graycomatrix(im, 
                                             distances=[5], # looks at distances and how many pixels away to consider
                                             angles=[0], 
@@ -141,7 +137,22 @@ class engineer(collect):
         ASM = skimage.feature.graycoprops(co_matrix, 'ASM')[0][0]
         diss = skimage.feature.graycoprops(co_matrix, 'dissimilarity')[0][0]
 
-        return pd.Series([contrast, correlation, energy, homogeneity, ASM, diss])
+        return [contrast, correlation, energy, homogeneity, ASM, diss]
+
+
+    def imageA(self, dat, spectral):
+        """
+        
+        
+        """
+        touch = spectral.rio.clip([dat], spectral.rio.crs)
+        im = cv.cvtColor(touch.T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
+
+        text = self._texture(im)
+        zernicke = self._zernickeMoments(im)
+        return pd.Series(zernicke + text)
+
+
 
     # TODO: https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
     def shapeDescriptors(self, placeholder):
@@ -249,15 +260,18 @@ class engineer(collect):
         # put the spatial features first
         placeholder = placeholder.loc[:, ['geometry', 'centroid', 'latitude', 'longitude', 'confidence']]
         placeholder = self.shapeDescriptors(placeholder)
-        placeholder = self.distanceFeatures(placeholder)
+        # placeholder = self.distanceFeatures(placeholder)
+        placeholder = placeholder.to_crs(4326)
         # zonal statistics have to come last as crs is 4326 
         # and above crs is converted to 3857 to work with the shape descriptors
         placeholder = self.zonalStatistics(placeholder, spectral)
 
         # print(self.spectralData['rgb'])
-        placeholder[["z" + str(x) for x in range(25)]] = placeholder["geometry"].apply(lambda x: self._zernickeMoments(x, spectral['rgb']))
-        placeholder[['contrast', 'correlation', 'energy', 'homogeneity', 'ASM', "dissimilarity"]] = placeholder["geometry"].apply(lambda x: self._texture(x, spectral['rgb']))
+        analysis = ["z" + str(x) for x in range(25)] + ['contrast', 'correlation', 'energy', 'homogeneity', 'ASM', "dissimilarity"]
+        placeholder[analysis] = placeholder["geometry"].apply(lambda x: self.imageA(x, spectral['rgb']))
+        #placeholder[['contrast', 'correlation', 'energy', 'homogeneity', 'ASM', "dissimilarity"]] = placeholder["geometry"].apply(lambda x: self._texture(x, spectral['rgb']))
 
+        # placeholder.drop(['dist1', 'dist2', 'dist3', 'dist4'], axis = 1, inplace=True)
         # Feature Scaling
         # TODO: this paper says to use robust scaling: https://link.springer.com/article/10.1007/s00138-023-01450-x#Sec3
         #       For some reason it does work better than standard scaling

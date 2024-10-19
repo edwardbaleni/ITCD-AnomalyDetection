@@ -27,8 +27,11 @@ tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=
 tryout = tryout/255
 
 
+# %%
 # remove non-robust features - Doesn't help yet
 # data = data[list(data.columns)[:5] + list(data.columns)[10:]]
+# data.drop(['dist1', 'dist2', 'dist3', 'dist4'], axis = 1, inplace=True)
+
 # %%
 
                     # Extended Isolation Forest
