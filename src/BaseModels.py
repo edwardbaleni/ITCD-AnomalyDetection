@@ -36,6 +36,12 @@ tryout = tryout/255
 # data.drop(['dist1', 'dist2', 'dist3', 'dist4'], axis = 1, inplace=True)
 
 # %%
+
+	# when looking at colour specs only in AD, there is a problem. 
+	# It is not simply just between soil and crown
+	# we also start to pick up ill trees
+	# trees that may be burnt by sun
+	# and different species of trees.
 data.loc[:,"confidence":] = dataHandler.engineer._scaleData(data.loc[:,"confidence":])
 
 

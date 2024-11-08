@@ -108,8 +108,24 @@ class collect:
         data["ndre"] = (data["nir"] - data["reg"]) / (data["nir"] + data["reg"])
         data["gndvi"] = (data["nir"] - data["green"]) / (data["nir"] + data["green"])
         data["endvi"] = ((data["nir"]+ data["green"] - 2 * data["blue"]) / (data["nir"] + data["green"] + 2 * data["blue"]))
-        data["intensity"] = data["nir"] + data["green"] + data["blue"]
-        data["saturation"] = (data["intensity"] -3 * data["blue"]) / data["intensity"]
+        data["savi"] = ((data["nir"]/1000 - data["red"]/1000)/(data["nir"]/1000 + data["red"]/1000 + 0.5))*(1+0.5)
+        data["evi"] = 2.5 * ((data["nir"]/1000 - data["red"]/1000)/(data["nir"]/1000 + 6*data["red"]/1000 -7.5 * data["blue"]/1000 +1))
+        data["ci"] = (data["nir"]/1000) / (data["reg"]/1000) - 1 
+        data["osavi"] = 1.16 * (data["nir"]/1000 - data["red"]/1000) / (data["nir"]/1000+data["red"]/1000 + 0.16)
+        data["sr_reg"] = data["nir"]/data["reg"]
+        # Graveyard of unworkeable vegetative indices.
+        # When plotted, they did not distinguish well between soil and 
+        # vegetation
+        # data["intensity"] = data["nir"] + data["green"] + data["blue"]
+        # data["saturation"] = (data["intensity"] -3 * data["blue"]) / data["intensity"]
+        # msavi = (2 * spectralData["nir"]/1000 + 1 - np.sqrt( ( 2 * spectralData["nir"]/1000 + 1)**2 - 8 * (spectralData["nir"]/1000 - spectralData["red"]/1000))) / 2
+        # data["ccci"] = data["ndre"]/data["ndvi"]
+        # sr = spectralData["nir"]/spectralData["red"] # Simple Ratio
+        # WDRI = sr = 0.1* spectralData["nir"] - spectralData["red"] / (0.1 * spectralData["nir"]) + spectralData["red"] # Wide Dynamic Range Vegetation Index
+        # vari = (spectralData["green"] - spectralData["red"])/(spectralData["green"] + spectralData["red"] -spectralData["blue"]) 
+        # ci = (spectralData["nir"]/1000) / (spectralData["green"]/1000) - 1
+
+
         #       as only NDVI seems to distinguish ground pixels from trees well
         #data["NDVI"].plot()
         #data["NDRE"].plot()

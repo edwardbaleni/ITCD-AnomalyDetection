@@ -33,6 +33,7 @@ delineations = myData.delineations.copy(deep=True)
 mask = myData.mask.copy(deep=True)
 spectralData = myData.spectralData
 erf_num = myData.erf
+refData = myData.ref_data.copy(deep=True)
 
 # Plotting
 tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, 
@@ -57,12 +58,10 @@ tryout = tryout/255
     # TODO: What we can do for the EDA is look at morphological and image properties separately
     #       Then look at the most significant of these together
 
-
-
 # %% 
 
 shape = data.loc[:, "crown_projection_area":"bendingE"]
-dist = data.loc[:, "dist1":"dist4"]
+# dist = data.loc[:, "dist1":"dist4"]
 spec = data.loc[:, "DEM_mean":]
 
 from pypalettes import get_hex
@@ -90,12 +89,11 @@ def boxplot(dat, lo = True):
                 **Props)
 
     ax.tick_params("x", labelrotation=45)
-    
 
 boxplot(spec)
 boxplot(shape.iloc[:,:-1])
 boxplot(shape[["bendingE"]])
-boxplot(dist, False)
+# boxplot(dist, False)
 
 # %%
 
@@ -105,10 +103,10 @@ g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
 g.map_diag(plt.hist, alpha = 1, bins=30, color = palette[3])
 g.map_upper(sns.kdeplot, color=palette[2], warn_singular=False)
 
-g = sns.PairGrid(dist, diag_sharey=False, corner=False)
-g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
-g.map_diag(plt.hist, alpha = 1, bins=30,color = palette[3])
-g.map_upper(sns.kdeplot, color=palette[2], warn_singular=False)
+# g = sns.PairGrid(dist, diag_sharey=False, corner=False)
+# g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
+# g.map_diag(plt.hist, alpha = 1, bins=30,color = palette[3])
+# g.map_upper(sns.kdeplot, color=palette[2], warn_singular=False)
 
 g = sns.PairGrid(spec, diag_sharey=False, corner=False)
 g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
@@ -122,7 +120,7 @@ g.map_upper(sns.kdeplot, color=palette[2], warn_singular=False)
     # calculate correlation values
     # Recognise Multicollinearities
 sns.clustermap(spec.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")# palette)
-sns.clustermap(dist.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
+# sns.clustermap(dist.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
 sns.clustermap(shape.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
 
 # %%

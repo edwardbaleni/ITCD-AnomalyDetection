@@ -220,14 +220,19 @@ class engineer(collect):
 
         placeholder[["DEM_mean"]] = engineer._detStats(spectral["dem"], geom)
         placeholder[["NIR_mean"]] = engineer._detStats(spectral["nir"], geom)
-        placeholder[["Red_mean"]] = engineer._detStats(spectral["red"], geom)
-        placeholder[["Reg_mean"]] = engineer._detStats(spectral["reg"], geom)
+        # placeholder[["Red_mean"]] = engineer._detStats(spectral["red"], geom)
+        # placeholder[["Reg_mean"]] = engineer._detStats(spectral["reg"], geom)
         placeholder[["NDRE_mean"]] = engineer._detStats(spectral["ndre"], geom)
         placeholder[["NDVI_mean"]] = engineer._detStats(spectral["ndvi"], geom)
         placeholder[["GNVDI_mean"]] = engineer._detStats(spectral["gndvi"], geom)
-        placeholder[["ENDVI_mean"]] = engineer._detStats(spectral["endvi"], geom)
-        placeholder[["Intensity_mean"]] = engineer._detStats(spectral["intensity"], geom)
-        placeholder[["Saturation_mean"]] = engineer._detStats(spectral["saturation"], geom)
+        # placeholder[["ENDVI_mean"]] = engineer._detStats(spectral["endvi"], geom)
+        # placeholder[["Intensity_mean"]] = engineer._detStats(spectral["intensity"], geom)
+        # placeholder[["Saturation_mean"]] = engineer._detStats(spectral["saturation"], geom)
+        placeholder[["SAVI_mean"]] = engineer._detStats(spectral["savi"], geom)
+        placeholder[["EVI_mean"]] = engineer._detStats(spectral["evi"], geom)
+        # placeholder[["CI_mean"]] = engineer._detStats(spectral["ci"], geom)
+        placeholder[["OSAVI_mean"]] = engineer._detStats(spectral["osavi"], geom)
+        
         return placeholder
 
     # TODO: https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
