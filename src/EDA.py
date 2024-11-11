@@ -62,7 +62,8 @@ tryout = tryout/255
 
 shape = data.loc[:, "crown_projection_area":"bendingE"]
 # dist = data.loc[:, "dist1":"dist4"]
-spec = data.loc[:, "DEM_mean":]
+spec = data.loc[:, "DEM_mean":"z24"]
+tex = data.loc[:, "contrast":]
 
 from pypalettes import get_hex
 palette = get_hex("VanGogh3", keep_first_n=8)
@@ -122,6 +123,7 @@ g.map_upper(sns.kdeplot, color=palette[2], warn_singular=False)
 sns.clustermap(spec.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")# palette)
 # sns.clustermap(dist.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
 sns.clustermap(shape.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
+sns.clustermap(tex.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")# palette)
 
 # %%
 

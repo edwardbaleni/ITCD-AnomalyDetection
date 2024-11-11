@@ -11,6 +11,19 @@ import pandas as pd
 
 
 def KNNGraph(data, nn = 3):
+    def KNNGraph(data, nn=3):
+        """
+        Constructs a k-nearest neighbor (KNN) graph from the given geographic data.
+        Parameters:
+        data (GeoDataFrame): A GeoDataFrame containing geographic data with a 'centroid' column.
+        nn (int, optional): The number of nearest neighbors to connect each point to. Default is 3.
+        Returns:
+        tuple: A tuple containing:
+            - knn (libpysal.weights.KNN): The KNN weights object.
+            - knn_graph (networkx.Graph): The KNN graph as a NetworkX object.
+            - positions (dict): A dictionary mapping node IDs to their geographic coordinates.
+            - cases (GeoDataFrame): The modified GeoDataFrame with 'geometry' column.
+        """
 
     # read in example data from a geopackage file. Geopackages
     # are a format for storing geographic data that is backed
@@ -40,6 +53,19 @@ def KNNGraph(data, nn = 3):
     return knn, knn_graph, positions, cases
 
 def delauneyTriangulation(data):
+    """
+    Perform Delaunay triangulation on a given dataset.
+    This function reads geographic data, constructs the Delaunay graph, and 
+    returns the graph along with its positions and Voronoi cells.
+    Parameters:
+    data (GeoDataFrame): A GeoDataFrame containing geographic data with a "centroid" column.
+    Returns:
+    tuple: A tuple containing:
+        - delaunay (libpysal.weights.Rook): The Delaunay graph represented as Rook contiguity.
+        - delaunay_graph (networkx.Graph): The Delaunay graph as a networkx object.
+        - positions (dict): A dictionary mapping nodes to their coordinates.
+        - cells (GeoDataFrame): The Voronoi cells generated from the input data.
+    """
 
     # read in example data from a geopackage file. Geopackages
     # are a format for storing geographic data that is backed
@@ -84,6 +110,16 @@ def delauneyTriangulation(data):
 # TODO: make sure the data being received is actually what we want.
 #       should not subset data inside method
 def setNodeAttributes(d_g, data):
+    """
+    Sets node attributes for a given graph using data from a DataFrame.
+    Parameters:
+    d_g (networkx.Graph): The graph to which the node attributes will be added.
+    data (pandas.DataFrame): The DataFrame containing the data to be used as node attributes. 
+                             The columns from index 4 to 17 and from index 22 onwards are used.
+    Returns:
+    networkx.Graph: The graph with the updated node attributes.
+    """
+
     G = d_g
     # from confidence to distance 1 then from distance 4 till end
     # records = data.loc[:, "confidence":].to_dict('index')
@@ -94,13 +130,19 @@ def setNodeAttributes(d_g, data):
     nx.set_node_attributes(G, records)
     return G
 
-def distance(x, p1, p2, alpha = -1):
-    """
-
-
-    Notes:  Use the Inverse distance weighting
-            because we want to give stronger weights to closer items
-            Alpha <= 0    
+def distance(x, p1, p2, alpha=-1):
+    """        
+    Calculate the weighted distance between two points using Inverse Distance Weighting.
+    Parameters:
+        x (DataFrame): A pandas DataFrame containing the points with their centroids.
+        p1 (int): The index of the first point in the DataFrame.
+        p2 (int): The index of the second point in the DataFrame.
+        alpha (float, optional): The exponent applied to the distance. Default is -1. 
+                                 Should be less than or equal to 0 to give stronger weights to closer items.
+    Returns:
+        float: The weighted distance between the two points.
+        Notes:
+        Use the Inverse Distance Weighting because we want to give stronger weights to closer items.
     """
     position1 = x.iloc[p1]["centroid"]
     position2 = x.iloc[p2]["centroid"]
@@ -109,7 +151,15 @@ def distance(x, p1, p2, alpha = -1):
 
 def setEdgeAttributes(G, data):
     """
-    
+    Sets the edge attributes for a given graph G based on the provided data.
+    This function calculates the distance between nodes for each edge in the graph
+    and assigns it as an attribute. The distances are then standardized (scaled)
+    before being added to the graph.
+    Parameters:
+    G (networkx.Graph): The input graph whose edges will be assigned attributes.
+    data (any): The data used to calculate the distance between nodes.
+    Returns:
+    networkx.Graph: The graph with updated edge attributes.  
     """
     edges = [e for e in G.edges]
 
@@ -137,13 +187,21 @@ def setEdgeAttributes(G, data):
 
 def delauneyPlot(d_g, d_p, v_cells, tryout,  plot_all = True):
     """
-    Description:
-
-    Attributes:
-
-    Return:    
+    Plots Delaunay triangulation results using Matplotlib and NetworkX.
+    Parameters:
+    d_g : networkx.Graph
+        The graph representing the Delaunay triangulation.
+    d_p : dict
+        A dictionary of positions keyed by node.
+    v_cells : geopandas.GeoDataFrame
+        A GeoDataFrame containing the Voronoi cells to be plotted.
+    tryout : matplotlib.image.AxesImage
+        An image to be plotted.
+    plot_all : bool, optional
+        If True, plots three subplots with different visualizations. If False, plots a single subplot. Default is True.
+    Returns:
+    None
     """
-    
     # Now, we can plot with a nice basemap.
 
     if (plot_all):
@@ -209,12 +267,22 @@ def delauneyPlot(d_g, d_p, v_cells, tryout,  plot_all = True):
 
 def KNNPlot(knn_g, knn_p, cases, tryout, plot_all = True):
     """
-    Description:
-
-    Attributes:
-
-    Return:    
+    Plots K-Nearest Neighbors (KNN) graphs and related data.
+    Parameters:
+    knn_g : networkx.Graph
+        The KNN graph to be plotted.
+    knn_p : dict
+        Positions of nodes in the KNN graph.
+    cases : geopandas.GeoDataFrame
+        GeoDataFrame containing the cases data with a 'centroid' column.
+    tryout : matplotlib.image.AxesImage
+        Image data to be plotted.
+    plot_all : bool, optional
+        If True, plots three subplots with different visualizations. If False, plots a single visualization. Default is True.
+    Returns:
+    None
     """
+    
     cases.rename({"centroid": "geometry"}, axis="columns", inplace=True)
     if (plot_all):
             # plot with a nice basemap

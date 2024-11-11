@@ -58,6 +58,17 @@ class engineer(collect):
 
     @staticmethod
     def _radiusOfGyration(xx_centre, xx, yy):
+        """
+        Calculate the radius of gyration for a set of points.
+        The radius of gyration is a measure of the distribution of the points around a central point.
+        Parameters:
+        xx_centre (shapely.geometry.Point): The central point from which distances are measured.
+        xx (list or array-like): The x-coordinates of the points.
+        yy (list or array-like): The y-coordinates of the points.
+        Returns:
+        pd.Series: The radius of gyration.
+        """
+
         rad = 0
         for i in range(len(xx)):
             dist = xx_centre.distance(shapely.Point(xx[i], yy[i]))
@@ -68,6 +79,14 @@ class engineer(collect):
     @staticmethod
     # https://stackoverflow.com/questions/13536209/efficient-way-to-measure-region-properties-using-shapely
     def _major_minor(xx):
+        """
+        Calculate the lengths of the major and minor axes of the minimum bounding rectangle of a given shape.
+        Args:
+            xx (shapely.geometry.Polygon): A shapely Polygon object.
+        Returns:
+            pd.Series: A pandas Series containing the lengths of the minor and major axes.
+        """
+
         # major and minor axis
         mbr_points = list(zip(*xx.minimum_rotated_rectangle.exterior.xy))
         mbr_lengths = [shapely.LineString([mbr_points[i], mbr_points[i + 1]]).length for i in range(len(mbr_points) - 1)]
@@ -78,9 +97,17 @@ class engineer(collect):
     @staticmethod
     def _curvature(xx):
         """
-        xx - coordinates
-
-        Notes: https://stackoverflow.com/questions/28269379/curve-curvature-in-numpy
+        Calculate the curvature of a 2D curve given its coordinates.
+        Parameters:
+        xx (numpy.ndarray): A 2D array of shape (n, 2) where n is the number of points, 
+                            and each row represents the (x, y) coordinates of a point.
+        Returns:
+        numpy.ndarray: A 1D array of curvature values for each point on the curve.
+        Notes:
+        The curvature is calculated using the formula:
+        curvature = |(d2x/dt2 * dy/dt - dx/dt * d2y/dt2)| / (dx/dt^2 + dy/dt^2)^(3/2)
+        Reference:
+        https://stackoverflow.com/questions/28269379/curve-curvature-in-numpy
         """
         dx_dt = np.gradient(xx[:, 0])
         dy_dt = np.gradient(xx[:, 1])
@@ -94,7 +121,21 @@ class engineer(collect):
     @staticmethod
     def _bendingEnergy(xx, r):
         """
-        xx - Polygon
+        Calculate the bending energy of a polygon.
+
+        Parameters:
+        xx (Polygon): The polygon for which the bending energy is calculated.
+        r (float): A radius value used in the bending energy calculation.
+
+        Returns:
+        float: The bending energy of the polygon.
+
+        Notes:
+        - The function uses the curvature of the polygon's coordinates.
+        - The Shapely library is used to get the coordinates of the polygon.
+        - The bending energy is calculated using the formula:
+          max((2 * math.pi) / r, 1 / L * sum(curvature(xx)**2)),
+          where L is the number of coordinates in the polygon.
         """
         import math
         xx = shapely.get_coordinates(xx)
@@ -105,6 +146,17 @@ class engineer(collect):
 
     @staticmethod
     def _zernickeMoments(im):
+        """
+        Calculate the Zernike moments for a given image.
+        Parameters:
+        im (ndarray): The input image for which Zernike moments are to be calculated.
+        Returns:
+        list: A list of Zernike moments for the input image.
+        Notes:
+        This function uses the `zernike_moments` function from the `mahotas` library to compute the moments.
+        The radius is calculated as half of the maximum bounding box dimension of the labeled image.
+        The center of mass of the image is used as the center for the Zernike moments calculation.
+        """
         zernike_moments = mh.features.zernike_moments(im, radius = (mh.labeled.bbox(im).max()/2),#(data["major_axis"][0]/2),
                                                         cm=mh.center_of_mass(im))
         return list(zernike_moments)
@@ -115,14 +167,30 @@ class engineer(collect):
     @staticmethod
     def _texture(im):
         """
-        
+        Calculate texture features from a grayscale image using the gray-level co-occurrence matrix (GLCM).
+        Parameters:
+        im (ndarray): Input grayscale image.
+        Returns:
+        list: A list containing the following texture features:
+            - contrast: Measure of the intensity contrast between a pixel and its neighbor over the whole image.
+            - correlation: Measure of how correlated a pixel is to its neighbor over the whole image.
+            - ASM (Angular Second Moment): Measure of the uniformity or energy of the image.
+        Notes:
+        - This function uses the `graycomatrix` and `graycoprops` functions from the `skimage.feature` module.
+        - The distances parameter in `graycomatrix` is set to [2], which considers pixels that are 2 units apart.
+        - The angles parameter in `graycomatrix` is set to [0], which considers horizontal pixel pairs.
+        - The levels parameter in `graycomatrix` is set to 256, which is suitable for 8-bit images.
+        - The symmetric and normed parameters in `graycomatrix` are set to True.
+        - The function calculates contrast, correlation, and ASM from the co-occurrence matrix.
+               
         Notes : # this get the first geometry
                 # we can use this to get texture properties
                 # Pyfeat library is good. But this one is more trusted
                 # Need to play around with 
         """
         co_matrix = skimage.feature.graycomatrix(im, 
-                                            distances=[5], # looks at distances and how many pixels away to consider
+                                                 # I changed the distances from 5 -> 2
+                                            distances=[2], # looks at distances and how many pixels away to consider
                                             angles=[0], 
                                             levels=256, 
                                             symmetric=True, 
@@ -132,18 +200,26 @@ class engineer(collect):
         # https://scikit-image.org/docs/stable/api/skimage.feature.html#skimage.feature.graycomatrix
         contrast = skimage.feature.graycoprops(co_matrix, 'contrast')[0][0]
         correlation = skimage.feature.graycoprops(co_matrix, 'correlation')[0][0]
-        energy = skimage.feature.graycoprops(co_matrix, 'energy')[0][0]
-        homogeneity = skimage.feature.graycoprops(co_matrix, 'homogeneity')[0][0]
+            # energy = sqrt(ASM) # so we can just remove it!
+        # energy = skimage.feature.graycoprops(co_matrix, 'energy')[0][0]
+            # ASM is a measure of homogeneity of an image. so we don't need homo
+        # homogeneity = skimage.feature.graycoprops(co_matrix, 'homogeneity')[0][0]
         ASM = skimage.feature.graycoprops(co_matrix, 'ASM')[0][0]
-        diss = skimage.feature.graycoprops(co_matrix, 'dissimilarity')[0][0]
+            # diss captures the same information as contrast
+        # diss = skimage.feature.graycoprops(co_matrix, 'dissimilarity')[0][0]
 
-        return [contrast, correlation, energy, homogeneity, ASM, diss]
+        return [contrast, correlation, ASM]#, homogeneity,diss]#, energy]
 
 
     def imageA(self, dat, spectral):
         """
-        
-        
+        Processes an image by clipping it to a specified region and converting it to grayscale,
+        then extracts texture and Zernike moments features.
+        Parameters:
+        dat (GeoDataFrame): The geographical data used to clip the image.
+        spectral (xarray.DataArray): The spectral image data to be processed.
+        Returns:
+        pd.Series: A pandas Series containing the extracted Zernike moments and texture features.
         """
         touch = spectral.rio.clip([dat], spectral.rio.crs)
         im = cv.cvtColor(touch.T.to_numpy()[:,:,:3], cv.COLOR_BGR2GRAY).T
@@ -156,6 +232,28 @@ class engineer(collect):
 
     # TODO: https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
     def shapeDescriptors(self, placeholder):
+        """
+        Calculate various shape descriptors for a given GeoDataFrame.
+        Parameters:
+        placeholder (GeoDataFrame): A GeoDataFrame containing geometries for which shape descriptors are to be calculated.
+        Returns:
+        GeoDataFrame: The input GeoDataFrame with additional columns for each calculated shape descriptor.
+        Shape Descriptors:
+        - crown_projection_area: Area of the geometry.
+        - crown_perimeter: Perimeter of the geometry.
+        - radius_of_gyration: Radius of gyration of the geometry.
+        - minor_axis: Length of the minor axis of the geometry.
+        - major_axis: Length of the major axis of the geometry.
+        - roundness: Roundness of the geometry.
+        - circularity: Circularity of the geometry.
+        - shape_index: Shape index of the geometry.
+        - form_factor: Form factor of the geometry.
+        - compactness: Compactness of the geometry.
+        - convexity: Convexity of the geometry.
+        - solidity: Solidity of the geometry.
+        - elongation: Elongation of the geometry.
+        - bendingE: Bending energy of the geometry.
+        """
         placeholder =  placeholder.to_crs(3857)
         convexHull = placeholder.loc[:, "geometry"].convex_hull
         convex_area = shapely.area(convexHull)
@@ -193,11 +291,30 @@ class engineer(collect):
     # https://gis.stackexchange.com/questions/297076/how-to-calculate-mean-value-of-a-raster-for-each-polygon-in-a-shapefile
     @staticmethod
     def _CoV(x):
+        """
+        Calculate the Coefficient of Variation (CoV) for a given array.
+        The Coefficient of Variation is a measure of relative variability and is 
+        defined as the ratio of the standard deviation to the mean, expressed as a percentage.
+        Parameters:
+        x (array-like): Input array or object that can be converted to an array.
+        Returns:
+        float: The Coefficient of Variation of the input array.
+        """
+
         # Coefficient of Determination
         return np.ma.std(x) / np.ma.mean(x) * 100
 
     @staticmethod
     def _detStats(x, geometry):
+        """
+        Calculate zonal statistics for a given geometry and raster data.
+        Parameters:
+        x (xarray.DataArray): The raster data array.
+        geometry (geopandas.GeoDataFrame): The geometry for which to calculate the statistics.
+        Returns:
+        pandas.DataFrame: A DataFrame containing the calculated zonal statistics (mean).
+        """
+
         geometry = geometry.to_crs(x.rio.crs)
         #nodata = x.rio.nodata
         affine = x.rio.transform()
@@ -215,6 +332,15 @@ class engineer(collect):
     # TODO: Select a better statistic mean/median/mode/max/etc.
     # TODO: Speed up zonal statistics
     def zonalStatistics(self, placeholder, spectral):
+        """
+        Computes zonal statistics for various spectral features and adds them to the placeholder DataFrame.
+        Parameters:
+        placeholder (pandas.DataFrame): DataFrame containing geometries for which the statistics are computed.
+        spectral (dict): Dictionary containing spectral data arrays with keys such as 'dem', 'nir', 'ndre', 'ndvi', 'gndvi', 'savi', 'evi', and 'osavi'.
+        Returns:
+        pandas.DataFrame: Updated DataFrame with computed mean values for each spectral feature.
+        """
+
         # Spectral Features
         geom = placeholder.loc[:,"geometry"]
 
@@ -237,6 +363,17 @@ class engineer(collect):
 
     # TODO: https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
     def distanceFeatures(self, placeholder):
+        """
+        Generates distance-based features for the given placeholder DataFrame.
+        This method calculates the distances to the k-nearest neighbors for each point
+        in the placeholder DataFrame based on their latitude and longitude coordinates.
+        The distances are then added as new columns to the DataFrame.
+        Parameters:
+        placeholder (GeoDataFrame): A GeoDataFrame containing at least 'latitude' and 'longitude' columns.
+        Returns:
+        GeoDataFrame: The input GeoDataFrame with additional columns for the distances to the k-nearest neighbors.
+        """
+
         # Distance Based Features
         # the reason that it is k + 1 is because the first neighbour is the point itself
         k = 4
@@ -251,14 +388,42 @@ class engineer(collect):
     @staticmethod
     def _scaleData(x):
         """
-        
+        Scales the input data using the RobustScaler.
+        Parameters:
+            x (array-like): The data to be scaled.
+        Returns:
+            array-like: The scaled data.
         """
+                
         scaler = RobustScaler()
         # scaler = StandardScaler()
         return(scaler.fit_transform(x))
 
 
     def scaleData(self, placeholder, spectral, scale):
+        """
+        Scales and processes spatial data with various feature engineering techniques.
+        Parameters:
+        -----------
+        placeholder : GeoDataFrame
+            A GeoDataFrame containing spatial data with a 'geometry' column.
+        spectral : dict
+            A dictionary containing spectral data, including 'rgb' key for RGB image data.
+        scale : bool
+            A boolean flag indicating whether to apply feature scaling.
+        Returns:
+        --------
+        None
+            The processed data is stored in the instance variable `self.data` and delineations in `self.delineations`.
+        Notes:
+        ------
+        - The method calculates centroids, latitude, and longitude for the geometries.
+        - Spatial features are processed first, followed by shape descriptors and zonal statistics.
+        - The coordinate reference system (CRS) is converted to 4326 for zonal statistics.
+        - Additional analysis features are computed using the `imageA` method.
+        - If `scale` is True, robust scaling is applied to the features starting from 'confidence' column.
+        """
+        
         placeholder["centroid"] = shapely.centroid(placeholder.loc[:,"geometry"])
         placeholder["latitude"] = placeholder["centroid"].y
         placeholder["longitude"] = placeholder["centroid"].x
@@ -272,7 +437,7 @@ class engineer(collect):
         placeholder = self.zonalStatistics(placeholder, spectral)
 
         # print(self.spectralData['rgb'])
-        analysis = ["z" + str(x) for x in range(25)] + ['contrast', 'correlation', 'energy', 'homogeneity', 'ASM', "dissimilarity"]
+        analysis = ["z" + str(x) for x in range(25)] + ['Contrast', 'Corr', 'ASM']#, homogeneity,diss]#, energy]
         placeholder[analysis] = placeholder["geometry"].apply(lambda x: self.imageA(x, spectral['rgb']))
         #placeholder[['contrast', 'correlation', 'energy', 'homogeneity', 'ASM', "dissimilarity"]] = placeholder["geometry"].apply(lambda x: self._texture(x, spectral['rgb']))
 

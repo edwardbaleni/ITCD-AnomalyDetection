@@ -18,6 +18,26 @@ class collect:
 
     @staticmethod
     def _retrieveData(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped):
+        """
+        Retrieve and load various geospatial datasets from provided file paths.
+        Parameters:
+        data_paths_tif (list of str): List of file paths to .tif files containing different raster data.
+        data_paths_geojson (list of str): List of file paths to .geojson files containing vector data.
+        data_paths_geojson_zipped (list of str): List of file paths to zipped .geojson files containing vector data.
+        Returns:
+        tuple: A tuple containing the following elements:
+            - dem (rasterio.io.DatasetReader): Digital Elevation Model raster data.
+            - nir (rasterio.io.DatasetReader): Near-Infrared raster data.
+            - red (rasterio.io.DatasetReader): Red band raster data.
+            - reg (rasterio.io.DatasetReader): Red Edge raster data.
+            - rgb (rasterio.io.DatasetReader): RGB raster data.
+            - points (geopandas.GeoDataFrame): GeoDataFrame containing points data from mask_rcnn.geojson.
+            - mask (geopandas.GeoDataFrame): GeoDataFrame containing survey polygon data.
+            - ref_Data (geopandas.GeoDataFrame): GeoDataFrame containing orchard validation data.
+        Raises:
+        FileNotFoundError: If any of the specified files are not found.
+        """
+        
         nir = rio.open_rasterio([j for j in data_paths_tif if "nir_native" in j][0])
         red = rio.open_rasterio([j for j in data_paths_tif if "red_native" in j][0])
         reg = rio.open_rasterio([j for j in data_paths_tif if "reg_native" in j][0])
@@ -34,11 +54,29 @@ class collect:
     # remove points that aren't in mask
     @staticmethod
     def _removePoints(geom, mask):
+        """
+        Determine if the given geometry points are within the specified mask.
+        Parameters:
+        geom (shapely.geometry): The geometry object containing the points to be checked.
+        mask (shapely.geometry): The geometry object representing the mask area.
+        Returns:
+        bool: True if the points in geom are within the mask, False otherwise.
+        """
+
         # find points within mask
         return mask.contains(geom)
 
     @staticmethod
     def _recursivePointRemoval(geoms, mask):
+        """
+        Recursively removes points from geometries that touch a given mask.
+        Args:
+            geoms (GeoDataFrame): A GeoDataFrame containing geometries.
+            mask (Geometry): A geometry used as a mask to determine which points to remove.
+        Returns:
+            list: A list of indices of the geometries that had points removed.
+        """
+
         # remove points that touch the mask
         hold = []
         for i in range(0, len(geoms)):
@@ -48,15 +86,44 @@ class collect:
 
     @staticmethod
     def _repprojectData(data, xds_match):
-            data = data.rio.reproject_match(xds_match, resampling = Resampling.nearest) # Resampling.bilinear
-            data = data.assign_coords({
-                "x": xds_match.x,
-                "y": xds_match.y,})
-            return data
+        """
+        Reprojects the given data to match the spatial resolution and coordinates of the provided xarray dataset.
+        Parameters:
+        data (xarray.DataArray or xarray.Dataset): The data to be reprojected.
+        xds_match (xarray.DataArray or xarray.Dataset): The xarray object whose spatial resolution and coordinates will be matched.
+        Returns:
+        xarray.DataArray or xarray.Dataset: The reprojected data with updated coordinates.
+        """    
+        data = data.rio.reproject_match(xds_match, resampling = Resampling.nearest) # Resampling.bilinear
+        data = data.assign_coords({
+            "x": xds_match.x,
+            "y": xds_match.y,})
+        return data
 
     # TODO: should be sped up from 20 seconds to less than 2 seconds
     # TODO: Something is wrong with blue and green bands, don't come out the same as others
     def fixData(self, tif, geojson, zipped):
+        """
+        Processes and fixes the input data by resampling and removing irrelevant points.
+        Args:
+            tif (str): Path to the TIFF file containing raster data.
+            geojson (str): Path to the GeoJSON file containing vector data.
+            zipped (str): Path to the zipped file containing additional data.
+        Returns:
+            tuple: A tuple containing:
+                - data (dict): A dictionary with the following keys:
+                    - "dem": Digital Elevation Model (DEM) raster data.
+                    - "nir": Near-Infrared (NIR) raster data.
+                    - "red": Red band raster data.
+                    - "reg": Red Edge band raster data.
+                    - "rgb": RGB raster data.
+                    - "green": Green band raster data extracted from RGB.
+                    - "blue": Blue band raster data extracted from RGB.
+                - delineations (DataFrame): A DataFrame containing the relevant points after mask intersection.
+                - mask (array): The mask array used for point removal.
+                - ref_data (any): Reference data retrieved from the input files.
+        """
+
         # Resamples data and removes irrelevant points
         dem, nir, red, reg, rgb, points, mask, ref_data = collect._retrieveData(tif, geojson, zipped)
 
@@ -102,6 +169,25 @@ class collect:
 
     # TODO: select better vegetative indices 
     def _vegIndices(self, data):
+        """
+        Calculate various vegetation indices from the provided spectral data.
+        This method computes several vegetation indices, which are useful for analyzing
+        vegetation health and characteristics from spectral data. The indices calculated include:
+        - NDVI (Normalized Difference Vegetation Index)
+        - NDRE (Normalized Difference Red Edge)
+        - GNDVI (Green Normalized Difference Vegetation Index)
+        - ENDVI (Enhanced Normalized Difference Vegetation Index)
+        - SAVI (Soil Adjusted Vegetation Index)
+        - EVI (Enhanced Vegetation Index)
+        - CI (Chlorophyll Index)
+        - OSAVI (Optimized Soil Adjusted Vegetation Index)
+        - SR_REG (Simple Ratio using Red Edge)
+        Parameters:
+        data (pandas.DataFrame): A DataFrame containing the spectral data with columns for 'nir', 'red', 'reg', 'green', and 'blue' bands.
+        Returns:
+        None: The method updates the input DataFrame in place by adding new columns for each vegetation index.
+        """
+        
             # reg stands for red edge
         
         data["ndvi"] = (data["nir"] - data["red"]) / (data["nir"] + data["red"])
@@ -157,6 +243,21 @@ class collect:
 # This init is just to handle unzipping geojsons
 # We can make it in terms of just geojsons
 def _dCollect(size, file_type):
+    """
+    Collects a specified number of file paths of a given type from a directory.
+    This function changes the current working directory to 'Data/', lists all files
+    in the directory, and then selects a random sample of files if the specified size
+    is less than the total number of files. It then collects the paths of files of the
+    specified type from the sampled directories.
+    Args:
+        size (int): The number of directories to sample. If size is greater than or equal
+                    to the total number of directories, all directories are used.
+        file_type (str): The file extension/type to look for within the sampled directories.
+    Returns:
+        list: A list of lists, where each inner list contains the paths of files of the
+              specified type from a sampled directory.
+    """
+
     # For now unzip all jsons
     # From current directory get 
     os.chdir('Data/')
@@ -194,6 +295,20 @@ def _dCollect(size, file_type):
 # TODO: https://www.merge.dev/blog/get-folders-google-drive-api 
 
 def collectFiles(sampleSize = 20):
+    """
+    Collects file paths for different file types and returns them.
+    This function collects file paths for TIFF, GeoJSON, and zipped GeoJSON files.
+    It uses a helper function `_dCollect` to gather the file paths. The function
+    also sets a random seed for reproducibility.
+    Parameters:
+    sampleSize (int): The number of file paths to collect for each file type. Default is 20.
+    Returns:
+    tuple: A tuple containing three lists:
+        - data_paths_tif (list): List of file paths for TIFF files.
+        - data_paths_geojson (list): List of file paths for GeoJSON files.
+        - data_paths_geojson_zipped (list): List of file paths for zipped GeoJSON files.
+    """
+
     # Collect file paths
     # for trial implementation
     # for final implementation, need to ask user to input file paths of 
