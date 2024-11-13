@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shapely.plotting
-import h2o
-from h2o.estimators import H2OExtendedIsolationForestEstimator
 import networkx as nx
 import utils.plotAnomaly as plotA
 
@@ -31,53 +29,6 @@ tryout = tryout/255
 # remove non-robust features - Doesn't help yet
 # data = data[list(data.columns)[:5] + list(data.columns)[10:]]
 # data.drop(['dist1', 'dist2', 'dist3', 'dist4'], axis = 1, inplace=True)
-
-# %%
-
-                    # Extended Isolation Forest
-
-# %%
-# https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/eif.html#examples
-# https://github.com/sahandha/eif/blob/master/Notebooks/TreeVisualization.ipynb 
-# Set the predictors
-h2o.init()
-h2o_df = h2o.H2OFrame(data[list(data.columns)[4:]])
-predictors = list(data.columns)[4:]
-# https://github.com/sahandha/eif/blob/master/Notebooks/EIF.ipynb
-    # Maybe this may help with plotting but I am uncertain
-# %%
-# Extended Isolation Forest is a great unsupervised method for anomaly detection
-# however, it does not allow for the use of spatial features
-
-# Define an Extended Isolation forest model
-eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
-                                          ntrees = 1000,
-                                          sample_size = int(data.shape[0] * 0.8),
-                                          extension_level = 6)#len(predictors) - 1)
-
-# Train Extended Isolation Forest
-eif.train(x = predictors,
-          training_frame = h2o_df)
-
-# Calculate score
-eif_result = eif.predict(h2o_df)
-
-# Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
-# or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
-anomaly_score = eif_result["anomaly_score"]
-
-# Average path length  of the point in Isolation Trees from root to the leaf
-mean_length = eif_result["mean_length"]
-
-# %%
-b = eif_result.as_data_frame()
-
-    # 0.5 is a good threshold, for a weak one go <= 0.4
-    # for a tight one go >= 0.5 
-anomaly = data[b["anomaly_score"] > 0.4]
-nominal = data[b["anomaly_score"] <= 0.4]
-
-plotA.plot(tryout, nominal, anomaly)
 
 
 

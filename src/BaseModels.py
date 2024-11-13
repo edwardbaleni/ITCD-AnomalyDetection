@@ -3,7 +3,9 @@ import utils
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.cluster import HDBSCAN
+import h2o
+from h2o.estimators import H2OExtendedIsolationForestEstimator
+import utils.plotAnomaly as plotA
 
 sampleSize = 20
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
@@ -46,32 +48,9 @@ tryout = tryout/255
 	# and different species of trees.
 data.loc[:,"confidence":] = utils.engineer._scaleData(data.loc[:,"confidence":])
 
-
-# %%
-# DBSCAN
-# https://scikit-learn.org/stable/modules/generated/sklearn.cluster.HDBSCAN.html
-# https://dinhanhthi.com/note/dbscan-hdbscan-clustering/
 X = np.array(data.loc[:, "confidence":])  # Number of clusters
 
-hdb = HDBSCAN(min_cluster_size=20)
-hdb.fit(X)
-hdb.labels_
-
-# # Compute the inverse covariance matrix of X
-# VI = np.linalg.inv(np.cov(X.T))
-
-# # Initialize HDBSCAN with the 'mahalanobis' metric
-# hdb = HDBSCAN(metric='mahalanobis', metric_params={'VI': VI}, min_cluster_size=5)
-
-
-anomaly_1 = data[hdb.labels_ <= 0] 
-nominal_1 = data[hdb.labels_ > 0] 
-
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
-
+contam = 0.05
 
 # %%
 # https://www.geeksforgeeks.org/novelty-detection-with-local-outlier-factor-lof-in-scikit-learn/
@@ -87,26 +66,11 @@ tryout.plot.imshow(ax=ax)
 anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 
-
-# %%
-    # Elliptic Envelope
-from sklearn.covariance import EllipticEnvelope
-X = np.array(data.loc[:, "confidence":])  
-outlier_scores = EllipticEnvelope(random_state=0).fit_predict(X)
-
-anomaly_1 = data[outlier_scores == -1]
-nominal_1 = data[outlier_scores != -1]
-
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
-
 # %%
 #     ABOD
 from pyod.models.abod import ABOD
 
-clf = ABOD(contamination=0.01)
+clf = ABOD(contamination=contam, n_neighbors=50)
 
 clf.fit(X)
 outlier_scores = clf.labels_
@@ -119,10 +83,11 @@ fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
 anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+
 # %%
     # KPCA Reconstruction
 from pyod.models.kpca import KPCA
-clf = KPCA()
+clf = KPCA(contamination=0.05)
 
 clf.fit(X)
 outlier_scores = clf.labels_
@@ -135,7 +100,6 @@ fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
 anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
-
 
 # %%
 from pyod.models.lunar import LUNAR
@@ -153,7 +117,6 @@ tryout.plot.imshow(ax=ax)
 anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 
-
 # %%
 
 from pyod.models.mcd import MCD
@@ -170,10 +133,11 @@ fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
 anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+
 # %%
 
 from pyod.models.hbos import HBOS
-clf = HBOS(n_bins="auto")
+clf = HBOS(n_bins="auto", contamination=contam)
 
 clf.fit(X)
 outlier_scores = clf.labels_
@@ -187,41 +151,46 @@ tryout.plot.imshow(ax=ax)
 anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 
-# %% 
+# %%
+# https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/eif.html#examples
+# https://github.com/sahandha/eif/blob/master/Notebooks/TreeVisualization.ipynb 
+# Set the predictors
+h2o.init()
+h2o_df = h2o.H2OFrame(data[list(data.columns)[4:]])
+predictors = list(data.columns)[4:]
+# https://github.com/sahandha/eif/blob/master/Notebooks/EIF.ipynb
+    # Maybe this may help with plotting but I am uncertain
+# Extended Isolation Forest is a great unsupervised method for anomaly detection
+# however, it does not allow for the use of spatial features
 
-from pyod.models.vae import VAE
+# Define an Extended Isolation forest model
+eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
+                                          ntrees = 1000,
+                                          sample_size = int(data.shape[0] * 0.8),
+                                          extension_level = 6)#len(predictors) - 1)
 
-clf = VAE()
+# Train Extended Isolation Forest
+eif.train(x = predictors,
+          training_frame = h2o_df)
 
-clf.fit(X)
-outlier_scores = clf.labels_
-outlierness = clf.decision_scores_
+# Calculate score
+eif_result = eif.predict(h2o_df)
 
-anomaly_1 = data[outlier_scores == 1]
-nominal_1 = data[outlier_scores == 0]
+# Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
+# or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
+anomaly_score = eif_result["anomaly_score"]
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+# Average path length  of the point in Isolation Trees from root to the leaf
+mean_length = eif_result["mean_length"]
 
-# %% 
+b = eif_result.as_data_frame()
 
-from pyod.models.dif import DIF
+    # 0.5 is a good threshold, for a weak one go <= 0.4
+    # for a tight one go >= 0.5 
+anomaly = data[b["anomaly_score"] > 0.48]
+nominal = data[b["anomaly_score"] <= 0.48]
 
-clf = DIF()
-
-clf.fit(X)
-outlier_scores = clf.labels_
-outlierness = clf.decision_scores_
-
-anomaly_1 = data[outlier_scores == 1]
-nominal_1 = data[outlier_scores == 0]
-
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+plotA.plot(tryout, nominal, anomaly)
 
 # %%
 from  pyod.models.auto_encoder import AutoEncoder
@@ -242,8 +211,8 @@ nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 
 # %% 
 
-from pyod.models.iforest import IForest
-clf = IForest()
+from pyod.models.copod import COPOD
+clf = COPOD(contamination=contam)
 
 clf.fit(X)
 outlier_scores = clf.labels_
@@ -259,15 +228,9 @@ nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 
 # %%
 
-	# Semi-supervised approach
-	# So we need to do outlier detection to split anomalies from inliers
-	# then we do novelty detection to see if an observation in the anomalies group is 
-	# actually an anomaly
-from pyod.models.copod import COPOD
-from pyod.models.vae import VAE
-from pyod.models.cof import COF
+from pyod.models.cblof import CBLOF
 
-clf = COPOD()
+clf = CBLOF(contamination=contam)
 X = np.array(data.loc[:, "confidence":])
 clf.fit(X)
 outlier_scores = clf.labels_
@@ -280,45 +243,6 @@ fig, ax = plt.subplots(figsize=(15, 15))
 tryout.plot.imshow(ax=ax)
 anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
 nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
-
-# TODO: try a combination of semi-supervised approaches.
-#		Reconstruction does not work. But neighbourhood approach does
-#		Worth trying a couple
-# 		Problem with this method is that it takes everything as not an outlier
-
-lof = LocalOutlierFactor(novelty=True)
-lof.fit(np.array(nominal_1.loc[:, "confidence":]))
-
-	# Other method
-# clf = COF()
-
-# clf.fit(np.array(nominal_1.loc[:, "confidence":]))
-# outlier_scores = clf.labels_
-# outlierness = clf.decision_scores_
-
-	# Doesn't work
-# from sklearn.svm import OneClassSVM
-# clf = OneClassSVM(gamma='auto').fit(nominal_1.loc[:, "confidence":])
-# y_test_pred = clf.predict(anomaly_1.loc[:, "confidence":])
-
-# %%
-y_test_pred = lof.predict(anomaly_1.loc[:, "confidence":])
-
-# # get the prediction on the test data
-# y_test_pred = clf.predict(anomaly_1.loc[:, "confidence":])  # outlier labels (0 or 1)
-# #y_test_scores = clf.decision_function(anomaly_1.loc[:, "confidence":])  # outlier scores
-
-anomaly_2 = anomaly_1[y_test_pred == -1]
-nominal_2 = anomaly_1[y_test_pred == 1]
-
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_2.plot(ax=ax, facecolor='none', edgecolor='red')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='white')
-nominal_2.plot(ax=ax, facecolor='none', edgecolor='blue')
-
-
-
 
 
 # %% 
@@ -389,7 +313,7 @@ random_state = 42
 
 # Define the number of inliers and outliers
 n_samples = 200
-outliers_fraction = 0.1
+outliers_fraction = 0.05
 clusters_separation = [0]
 
 # Compare given detectors under given settings
