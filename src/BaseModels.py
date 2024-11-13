@@ -44,7 +44,7 @@ tryout = tryout/255
 	# we also start to pick up ill trees
 	# trees that may be burnt by sun
 	# and different species of trees.
-data.loc[:,"confidence":] = dataHandler.engineer._scaleData(data.loc[:,"confidence":])
+data.loc[:,"confidence":] = utils.engineer._scaleData(data.loc[:,"confidence":])
 
 
 # %%
@@ -106,7 +106,7 @@ nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
 #     ABOD
 from pyod.models.abod import ABOD
 
-clf = ABOD()
+clf = ABOD(contamination=0.01)
 
 clf.fit(X)
 outlier_scores = clf.labels_
