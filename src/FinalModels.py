@@ -148,13 +148,15 @@ import matplotlib.pyplot as plt
 from shapely.geometry import Point
 
 df = data
-wq = knn_w#d_w#lps.weights.Rook.from_dataframe(df)
+wq = knn_w #d_w#lps.weights.Rook.from_dataframe(df)
 wq.transform = 'r'
 
+# should compare knn weights to delauney weights
+# but we already know that delauney is better!
 w = d_w
 x1 = data["confidence"]
 x2 = data["NDVI_mean"]
-x3 = data["elongation"]
+x3 = data["eccentricity"]
 x4 = data["roundness"]
 # x5 = data["z0"]
 # x6 = data["z1"]
@@ -194,18 +196,34 @@ plt.title("Geary C Multivariate P-Value")
 plt.show()
 # observed multivariate Local Geary values. 
 
-anomaly_1 = data[np.log(lG_mv.localG) >= 2.2]
-nominal_1 = data[np.log(lG_mv.localG) < 2.2]
+anomaly = data[np.log(lG_mv.localG) >= 2.2]
+nominal = data[np.log(lG_mv.localG) < 2.2]
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+plotA.plot(tryout, nominal, anomaly)
 
 
 
+# %%
+# above method suffers from high dimensionality!
+# import numpy as np
+
+# from sklearn.decomposition import PCA
+# X = np.array(data.loc[:, "confidence":]) 
+# pca = PCA(n_components=10)
+
+# pca.fit(X)
+# PCA(n_components=10)
+
+# plt.scatter(list(range(0,10)), pca.explained_variance_ratio_)
+
+# import umap
+# fit = umap.UMAP(n_components=10)
+# u = fit.fit_transform(X)
+# dat = pd.DataFrame(u)
 
 
+# %%
+# Grouping of anomalies into individual categories!
 
 # %%
 # For Correction purposes
