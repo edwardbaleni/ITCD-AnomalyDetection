@@ -1,14 +1,14 @@
 # %%
-import dataHandler
+import utils
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.cluster import HDBSCAN
 
 sampleSize = 20
-data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = dataHandler.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
+data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
 num = 0
-myData = dataHandler.engineer(num, 
+myData = utils.engineer(num, 
                               data_paths_tif, 
                               data_paths_geojson, 
                               data_paths_geojson_zipped,

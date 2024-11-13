@@ -11,8 +11,7 @@ import pandas as pd
 
 
 def KNNGraph(data, nn = 3):
-    def KNNGraph(data, nn=3):
-        """
+    """
         Constructs a k-nearest neighbor (KNN) graph from the given geographic data.
         Parameters:
         data (GeoDataFrame): A GeoDataFrame containing geographic data with a 'centroid' column.
@@ -23,7 +22,7 @@ def KNNGraph(data, nn = 3):
             - knn_graph (networkx.Graph): The KNN graph as a NetworkX object.
             - positions (dict): A dictionary mapping node IDs to their geographic coordinates.
             - cases (GeoDataFrame): The modified GeoDataFrame with 'geometry' column.
-        """
+    """
 
     # read in example data from a geopackage file. Geopackages
     # are a format for storing geographic data that is backed

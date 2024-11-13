@@ -21,7 +21,7 @@ from sklearn.neighbors import NearestNeighbors as KNN
 import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator
 # parent class
-from dataHandler.dataCollect import collect
+from utils.dataCollect import collect
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import RobustScaler
 
