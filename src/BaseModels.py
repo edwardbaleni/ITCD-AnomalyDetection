@@ -55,16 +55,14 @@ contam = 0.05
 # %%
 # https://www.geeksforgeeks.org/novelty-detection-with-local-outlier-factor-lof-in-scikit-learn/
 from sklearn.neighbors import LocalOutlierFactor
-lof_outlier  = LocalOutlierFactor(n_neighbors=50)
-outlier_scores  = lof_outlier.fit_predict( data.loc[:, 'confidence':])
+clf  = LocalOutlierFactor(n_neighbors=50)
+outlier_scores  = clf.fit_predict( data.loc[:, 'confidence':])
+outlierness = clf.negative_outlier_factor_
 
-anomaly_1 = data[outlier_scores == -1]
-nominal_1 = data[outlier_scores != -1]
+anomaly = data[outlier_scores == -1]
+nominal = data[outlier_scores != -1]
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+plotA.plot(tryout, nominal, anomaly)
 
 # %%
 #     ABOD
@@ -76,13 +74,10 @@ clf.fit(X)
 outlier_scores = clf.labels_
 outlierness = clf.decision_scores_
 
-anomaly_1 = data[outlier_scores == 1]
-nominal_1 = data[outlier_scores == 0]
+anomaly = data[outlier_scores == 1]
+nominal = data[outlier_scores == 0]
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+plotA.plot(tryout, nominal, anomaly)
 
 # %%
     # KPCA Reconstruction
@@ -93,13 +88,10 @@ clf.fit(X)
 outlier_scores = clf.labels_
 outlierness = clf.decision_scores_
 
-anomaly_1 = data[outlier_scores == 1]
-nominal_1 = data[outlier_scores == 0]
+anomaly = data[outlier_scores == 1]
+nominal = data[outlier_scores == 0]
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+plotA.plot(tryout, nominal, anomaly)
 
 # %%
 from pyod.models.lunar import LUNAR
@@ -109,13 +101,10 @@ clf.fit(X)
 outlier_scores = clf.labels_
 outlierness = clf.decision_scores_
 
-anomaly_1 = data[outlier_scores == 1]
-nominal_1 = data[outlier_scores == 0]
+anomaly = data[outlier_scores == 1]
+nominal = data[outlier_scores == 0]
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+plotA.plot(tryout, nominal, anomaly)
 
 # %%
 
@@ -126,13 +115,10 @@ clf.fit(X)
 outlier_scores = clf.labels_
 outlierness = clf.decision_scores_
 
-anomaly_1 = data[outlier_scores == 1]
-nominal_1 = data[outlier_scores == 0]
+anomaly = data[outlier_scores == 1]
+nominal = data[outlier_scores == 0]
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+plotA.plot(tryout, nominal, anomaly)
 
 # %%
 
@@ -143,13 +129,10 @@ clf.fit(X)
 outlier_scores = clf.labels_
 outlierness = clf.decision_scores_
 
-anomaly_1 = data[outlier_scores == 1]
-nominal_1 = data[outlier_scores == 0]
+anomaly = data[outlier_scores == 1]
+nominal = data[outlier_scores == 0]
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+plotA.plot(tryout, nominal, anomaly)
 
 # %%
 # https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/eif.html#examples
@@ -160,35 +143,26 @@ h2o_df = h2o.H2OFrame(data[list(data.columns)[4:]])
 predictors = list(data.columns)[4:]
 # https://github.com/sahandha/eif/blob/master/Notebooks/EIF.ipynb
     # Maybe this may help with plotting but I am uncertain
-# Extended Isolation Forest is a great unsupervised method for anomaly detection
-# however, it does not allow for the use of spatial features
 
 # Define an Extended Isolation forest model
 eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
                                           ntrees = 1000,
                                           sample_size = int(data.shape[0] * 0.8),
                                           extension_level = 6)#len(predictors) - 1)
-
 # Train Extended Isolation Forest
 eif.train(x = predictors,
           training_frame = h2o_df)
-
 # Calculate score
 eif_result = eif.predict(h2o_df)
-
-# Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
-# or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
 anomaly_score = eif_result["anomaly_score"]
-
-# Average path length  of the point in Isolation Trees from root to the leaf
 mean_length = eif_result["mean_length"]
 
-b = eif_result.as_data_frame()
+outlierness = eif_result.as_data_frame()
 
     # 0.5 is a good threshold, for a weak one go <= 0.4
     # for a tight one go >= 0.5 
-anomaly = data[b["anomaly_score"] > 0.48]
-nominal = data[b["anomaly_score"] <= 0.48]
+anomaly = data[outlierness["anomaly_score"] > 0.48]
+nominal = data[outlierness["anomaly_score"] <= 0.48]
 
 plotA.plot(tryout, nominal, anomaly)
 
@@ -201,13 +175,10 @@ clf.fit(X)
 outlier_scores = clf.labels_
 outlierness = clf.decision_scores_
 
-anomaly_1 = data[outlier_scores == 1]
-nominal_1 = data[outlier_scores == 0]
+anomaly = data[outlier_scores == 1]
+nominal = data[outlier_scores == 0]
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+plotA.plot(tryout, nominal, anomaly)
 
 # %% 
 
@@ -218,13 +189,10 @@ clf.fit(X)
 outlier_scores = clf.labels_
 outlierness = clf.decision_scores_
 
-anomaly_1 = data[outlier_scores == 1]
-nominal_1 = data[outlier_scores == 0]
+anomaly = data[outlier_scores == 1]
+nominal = data[outlier_scores == 0]
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+plotA.plot(tryout, nominal, anomaly)
 
 # %%
 
@@ -236,13 +204,14 @@ clf.fit(X)
 outlier_scores = clf.labels_
 outlierness = clf.decision_scores_
 
-anomaly_1 = data[outlier_scores == 1]
-nominal_1 = data[outlier_scores == 0]
+anomaly = data[outlier_scores == 1]
+nominal = data[outlier_scores == 0]
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-anomaly_1.plot(ax=ax, facecolor='none', edgecolor='blue')
-nominal_1.plot(ax=ax, facecolor='none', edgecolor='red')
+plotA.plot(tryout, nominal, anomaly)
+
+
+
+
 
 # %%
 
