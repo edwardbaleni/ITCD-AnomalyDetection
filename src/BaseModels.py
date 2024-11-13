@@ -35,6 +35,8 @@ tryout = tryout/255
 # are sometimes anomalies when they should not be
 # data.drop(['dist1', 'dist2', 'dist3', 'dist4'], axis = 1, inplace=True)
 
+# These features don't seem to improve AD at all
+# data.drop(["crown_projection_area", "crown_perimeter", "radius_of_gyration", "minor_axis", "major_axis"], axis = 1, inplace=True)
 # %%
 
 	# when looking at colour specs only in AD, there is a problem. 
@@ -51,9 +53,16 @@ data.loc[:,"confidence":] = dataHandler.engineer._scaleData(data.loc[:,"confiden
 # https://dinhanhthi.com/note/dbscan-hdbscan-clustering/
 X = np.array(data.loc[:, "confidence":])  # Number of clusters
 
-hdb = HDBSCAN(min_cluster_size=5)
+hdb = HDBSCAN(min_cluster_size=20)
 hdb.fit(X)
 hdb.labels_
+
+# # Compute the inverse covariance matrix of X
+# VI = np.linalg.inv(np.cov(X.T))
+
+# # Initialize HDBSCAN with the 'mahalanobis' metric
+# hdb = HDBSCAN(metric='mahalanobis', metric_params={'VI': VI}, min_cluster_size=5)
+
 
 anomaly_1 = data[hdb.labels_ <= 0] 
 nominal_1 = data[hdb.labels_ > 0] 

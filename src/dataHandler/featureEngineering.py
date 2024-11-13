@@ -157,8 +157,27 @@ class engineer(collect):
         The radius is calculated as half of the maximum bounding box dimension of the labeled image.
         The center of mass of the image is used as the center for the Zernike moments calculation.
         """
-        zernike_moments = mh.features.zernike_moments(im, radius = (mh.labeled.bbox(im).max()/2),#(data["major_axis"][0]/2),
-                                                        cm=mh.center_of_mass(im))
+        ret, thresh = cv.threshold(im, 127, 255, 0)
+        contours, _ = cv.findContours(thresh, 
+                                      cv.RETR_TREE,
+                                      cv.CHAIN_APPROX_SIMPLE) 
+        count = contours[0] 
+
+        
+        (x_axis,y_axis),radius = cv.minEnclosingCircle(count) 
+        
+        center = (int(x_axis),int(y_axis)) 
+        radius = int(radius) 
+        
+        # cv.circle(im,center,radius,(0,255,0),2) 
+        # cv.imshow("Image",im) 
+        # cv.waitKey(0) 
+        # cv.destroyAllWindows()
+
+
+        zernike_moments = mh.features.zernike_moments(im, 
+                                                      radius = (mh.labeled.bbox(im).max()/2)#(data["major_axis"][0]/2),
+                                                      )#mh.center_of_mass(im))
         return list(zernike_moments)
         # plt.imshow(im, interpolation='nearest')
         # plt.show()
@@ -264,7 +283,7 @@ class engineer(collect):
         placeholder["radius_of_gyration"] = placeholder[["centroid", "geometry"]].apply(lambda x: engineer._radiusOfGyration(x.iloc[0], x.iloc[1].exterior.coords.xy[0], x.iloc[1].exterior.coords.xy[1]), axis=1)
         # Robust Shape Descriptors
         placeholder[["minor_axis", "major_axis"]] = placeholder["geometry"].apply(lambda x: engineer._major_minor(x))
-        placeholder["roundness"] = (4 * math.pi * placeholder["crown_projection_area"]) / (convex_perimeter**2)#(4 * placeholder["crown_projection_area"]) / (math.pi * placeholder["major_axis"]**2)
+        placeholder["roundness"] = (4 * placeholder["crown_projection_area"]) / (math.pi * placeholder["major_axis"]**2)
         # Circularity is NB for some reason
         placeholder["circularity"] = (placeholder["crown_perimeter"]**2) / (4 * math.pi * placeholder["crown_projection_area"])
         placeholder["shape_index"] = (placeholder["crown_perimeter"]**2) / placeholder["crown_projection_area"]
@@ -274,7 +293,7 @@ class engineer(collect):
         placeholder["compactness"] = (4 * math.pi * placeholder["crown_projection_area"]) / (placeholder["crown_perimeter"]**2)
         placeholder["convexity"] = placeholder["crown_perimeter"] / convex_perimeter
         placeholder["solidity"] = placeholder["crown_projection_area"] / placeholder["geometry"].convex_hull.area # convex hull score
-        placeholder["elongation"] = placeholder["major_axis"] / placeholder["minor_axis"]
+        placeholder["eccentricity"] = placeholder["major_axis"] / placeholder["minor_axis"]
 
         # TODO: Add in Bending energy, first and second order invariant moment
         placeholder["bendingE"] = list(map(engineer._bendingEnergy, placeholder["geometry"], placeholder["radius_of_gyration"]))
@@ -284,8 +303,8 @@ class engineer(collect):
         # Removing the bottom features makes detection slightly worse. So will keep them
         # for EDA and decide from there.
         # # Drop useless/repeat/non-robust items
-        #placeholder.drop(["circularity", "form_factor", "minor_axis", "major_axis", "radius_of_gyration", "crown_perimeter", "crown_projection_area"], axis=1, inplace = True)
-        #placeholder.drop(["minor_axis", "major_axis", "radius_of_gyration", "crown_perimeter", "crown_projection_area"], axis=1, inplace = True)
+        #r", "minor_axis", "major_axis", "radius_of_gyration", "crown_perimeter", "crown_projection_area"], axis=1, inplace = True)
+        placeholder.drop(["form_factor", "shape_index", "minor_axis", "major_axis", "radius_of_gyration", "crown_perimeter", "crown_projection_area"], axis=1, inplace = True)
         return placeholder
 
     # https://gis.stackexchange.com/questions/297076/how-to-calculate-mean-value-of-a-raster-for-each-polygon-in-a-shapefile
@@ -344,7 +363,7 @@ class engineer(collect):
         # Spectral Features
         geom = placeholder.loc[:,"geometry"]
 
-        placeholder[["DEM_mean"]] = engineer._detStats(spectral["dem"], geom)
+        placeholder[["DEM_mean"]] = np.log(engineer._detStats(spectral["dem"], geom))
         placeholder[["NIR_mean"]] = engineer._detStats(spectral["nir"], geom)
         # placeholder[["Red_mean"]] = engineer._detStats(spectral["red"], geom)
         # placeholder[["Reg_mean"]] = engineer._detStats(spectral["reg"], geom)

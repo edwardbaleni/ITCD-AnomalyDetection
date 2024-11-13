@@ -60,10 +60,11 @@ tryout = tryout/255
 
 # %% 
 
-shape = data.loc[:, "crown_projection_area":"bendingE"]
+shape = data.loc[:, "roundness":"bendingE"]
 # dist = data.loc[:, "dist1":"dist4"]
-spec = data.loc[:, "DEM_mean":"z24"]
-tex = data.loc[:, "contrast":]
+spec = data.loc[:, "DEM_mean":"OSAVI_mean"]
+# we already know that Zernke polynomials are independent
+tex = data.loc[:, "Contrast":]
 
 from pypalettes import get_hex
 palette = get_hex("VanGogh3", keep_first_n=8)
