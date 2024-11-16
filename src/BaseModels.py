@@ -46,6 +46,11 @@ tryout = tryout/255
 	# we also start to pick up ill trees
 	# trees that may be burnt by sun
 	# and different species of trees.
+
+# TODO: It is important to individually test the data
+#       because it seems that these 4 data points are able to perform anomaly detection 
+#       well enough!
+# data = data.loc[:, ['geometry', 'centroid', 'latitude', 'longitude',"confidence", "NDVI_mean", "eccentricity", "roundness"]]
 data.loc[:,"confidence":] = utils.engineer._scaleData(data.loc[:,"confidence":])
 
 X = np.array(data.loc[:, "confidence":])  # Number of clusters
@@ -196,7 +201,7 @@ plotA.plot(tryout, nominal, anomaly)
 
 # %%
 
-from pyod.models.cblof import CBLOF
+from pyod.models.cblof import CBLOF # this is apparently the best unsupervised method for AD.
 
 clf = CBLOF(contamination=contam)
 X = np.array(data.loc[:, "confidence":])

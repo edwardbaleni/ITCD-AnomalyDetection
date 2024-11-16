@@ -113,15 +113,6 @@ plotA.plot(tryout, nominal, anomaly)
 #        https://scikit-learn.org/stable/auto_examples/miscellaneous/plot_outlier_detection_bench.html#sphx-glr-auto-examples-miscellaneous-plot-outlier-detection-bench-py
 
 
-
-
-# %%
-
-    # https://onlinelibrary.wiley.com/doi/epdf/10.1111/tgis.12725?saml_referrer
-
-
-
-
 # %%
 
 # local Geary C Statistic
