@@ -80,7 +80,7 @@ class collect:
         # remove points that touch the mask
         hold = []
         for i in range(0, len(geoms)):
-            if collect._removePoints(geoms.iloc[i,1], mask)[0]:
+            if collect._removePoints(geoms.loc[i,"geometry"], mask)[0]:
                 hold.append(i)
         return hold
 

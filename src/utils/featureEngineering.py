@@ -363,7 +363,10 @@ class engineer(collect):
         # Spectral Features
         geom = placeholder.loc[:,"geometry"]
 
-        placeholder[["DEM_mean"]] = np.log(engineer._detStats(spectral["dem"], geom))
+        # TODO: The log of DEM is more helpful than the actual DEM
+        #       however, need to demonstrate this before acting upon this!
+        
+        placeholder[["DEM_mean"]] = engineer._detStats(spectral["dem"], geom)#np.log(engineer._detStats(spectral["dem"], geom))
         placeholder[["NIR_mean"]] = engineer._detStats(spectral["nir"], geom)
         # placeholder[["Red_mean"]] = engineer._detStats(spectral["red"], geom)
         # placeholder[["Reg_mean"]] = engineer._detStats(spectral["reg"], geom)

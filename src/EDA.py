@@ -18,7 +18,7 @@ import plotly.express as px
 # os.chdir("..")
 sampleSize = 20
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
-num = 1
+num = 0
 
 # start = timer()
 myData = utils.engineer(num, data_paths_tif, 
@@ -41,6 +41,151 @@ tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values,
                                            drop=True, 
                                            invert=False)
 tryout = tryout/255
+
+# %%
+
+# TODO: Add y values from refData to front of data
+# TODO: group refData
+
+# Get center of refData
+
+# Need to mask refData
+refData.to_crs(data.crs, inplace=True)
+index_mask_intersect = utils.collect._recursivePointRemoval(refData, mask)
+refData = refData.iloc[index_mask_intersect]
+refData.reset_index(drop=True, inplace=True)
+
+# Get the center of refData polygons
+refData['centroid'] = refData['geometry'].centroid
+
+# Plot reference data geometries and color them differently based on label
+fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+refData.plot(column='label', categorical=True, legend=True, ax=ax, cmap='plasma')
+plt.title("Reference Data Geometries Colored by Label")
+plt.show()
+
+# Compare center of estimate to boundary of refData
+
+# Define a function to count centers within each geometry
+def countCentres(y, z):
+    # y is the data holding the geom
+    # z is the data holding the centroids
+    return y["geometry"].apply(lambda x: z["centroid"].within(x).sum()) 
+
+
+# if the center of the estimated delineation = 0, then it is not within the refData - false positive
+# if the center of the estimated delineation > 1, then it is a over-segmentation
+# if the center of the estimated delineation = 1, then it is a true positive
+# if there are > 1 reference centers within a estimated delineation, then it is a under-segmentation
+
+
+# Check the number of ref in estimated delineations
+# Checking for under-segmentation
+# if count > 1, then under-segmentation
+dat0 = countCentres(data, refData)
+
+# TODO: There is a problem with dat2. We need to loop over the centers of data not refData
+#       This is because we are trying to find the number of centers of data within refData
+
+# Checking for over-segmentation and false positives
+# if count = 0, then false positive
+# if count = 1, then true positive
+# if count > 1, then over-segmentation
+# Count number of centers within each refData geometry
+
+# this gets the number of centers of data within refData but the output has to be in reference to the data dataset
+dat2 = []
+for index, row in data.iterrows():
+    count = refData["geometry"].apply(lambda x: row["centroid"].within(x)).sum()
+    dat2.append(count)
+
+# dat2 = countCentres_Loop(refData, data)
+data['Y'] = "TP"
+
+for i, key in enumerate(dat0):
+    if key > 1:
+        # print(i, "Under-segmentation")
+        data.loc[i, 'Y'] = "Under"
+
+for i, key in enumerate(dat2):
+    if key == 0:
+        data.loc[i, 'Y'] = "FP"
+    elif key > 1:
+        #print(i, "Over-segmentation")
+        data.loc[i, 'Y'] = "Over"
+    # else:
+    #     # print(i, "True Positive")
+    #     data.loc[i, 'Y'] = "TP"
+
+
+# Relocate Y to a position after centroid in the data dataframe
+cols = list(data.columns)
+cols.insert(cols.index('centroid') + 1, cols.pop(cols.index('Y')))
+data = data[cols]
+
+fig, ax = plt.subplots( figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+data.plot(column='Y', categorical=True, legend=True, ax=ax, cmap='rainbow', facecolor='none')
+plt.title("Data Geometries Colored by Y")
+plt.show()
+
+
+# I think intersects will work better than contain Because there are some geometries that 
+
+# reference intersects data, we want to know how many reference data are within a single data
+# this will demonstrate under-segmentation
+underSeg = []
+for index, row in data.iterrows():
+    count = refData["geometry"].apply(lambda x: x.intersects(row["geometry"])).sum()
+    underSeg.append(count)
+
+# Check if the data intersects the reference, want to know how many data are within a single reference data
+# this will demonstrate over-segmentation and false positives
+overSeg = np.array([0]*len(data))
+for index, row in refData.iterrows():
+    count = data["geometry"].apply(lambda x: x.intersects(row["geometry"]))
+    overSeg = np.add(overSeg, count)
+
+data['Y'] = "TP"
+
+for i, key in enumerate(underSeg):
+    if key > 1:
+        # print(i, "Under-segmentation")
+        data.loc[i, 'Y'] = "Under"
+
+for i, key in enumerate(overSeg):
+    if key == 0:
+        data.loc[i, 'Y'] = "FP"
+    elif key > 1:
+        #print(i, "Over-segmentation")
+        data.loc[i, 'Y'] = "Over"
+
+
+# Relocate Y to a position after centroid in the data dataframe
+cols = list(data.columns)
+cols.insert(cols.index('centroid') + 1, cols.pop(cols.index('Y')))
+data = data[cols]
+
+
+
+# Plot the geometries of data and color them according to Y
+
+
+fig, ax = plt.subplots( figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+data.plot(column='Y', categorical=True, legend=True, ax=ax, cmap='rainbow', facecolor='none')
+plt.title("Data Geometries Colored by Y")
+plt.show()
+
+
+
+
+
+
+
+
+
+
 
 # %%
 
@@ -99,7 +244,9 @@ boxplot(shape[["bendingE"]])
 
 # %%
 
-
+#
+# TODO: log DEM_mean after demonstrating that it should be logged here!
+#       however, does transforming the data stutter detection or improve it?
 g = sns.PairGrid(shape, diag_sharey=False, corner=False)
 g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
 g.map_diag(plt.hist, alpha = 1, bins=30, color = palette[3])
