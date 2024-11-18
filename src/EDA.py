@@ -139,6 +139,21 @@ for index, row in data.iterrows():
     count = refData["geometry"].apply(lambda x: x.intersects(row["geometry"])).sum()
     underSeg.append(count)
 
+# # if over a single estimate has more than one reference data, then it is an under-segmentation
+# # if a single estimate has one reference data
+# underSeg = np.array([0] *len(data))
+# for index, row in data.iterrows():
+#     for i, r in refData.iterrows():
+#         if r["geometry"].intersects(row["geometry"]):
+#             underSeg[index] += 1
+
+# overSeg = np.array([0] * len(data))
+# for index, row in refData.iterrows():
+#     for i, r in data.iterrows():
+#         if r["geometry"].intersects(row["geometry"]):
+#             overS
+
+
 # Check if the data intersects the reference, want to know how many data are within a single reference data
 # this will demonstrate over-segmentation and false positives
 overSeg = np.array([0]*len(data))
@@ -149,14 +164,14 @@ for index, row in refData.iterrows():
 data['Y'] = "TP"
 
 for i, key in enumerate(underSeg):
-    if key > 1:
+    if key == 0:
+        data.loc[i, 'Y'] = "FP"
+    elif key > 1:
         # print(i, "Under-segmentation")
         data.loc[i, 'Y'] = "Under"
 
 for i, key in enumerate(overSeg):
-    if key == 0:
-        data.loc[i, 'Y'] = "FP"
-    elif key > 1:
+    if key > 1:
         #print(i, "Over-segmentation")
         data.loc[i, 'Y'] = "Over"
 
@@ -417,7 +432,7 @@ plt.show()
 # https://www.jstor.org/stable/143141?origin=crossref
     # suffers from the curse of dimensionality so pick features wisely. 
 # 
-data.loc[:,"confidence":] = dataHandler.engineer._scaleData(data.loc[:,"confidence":])
+data.loc[:,"confidence":] = utils.engineer._scaleData(data.loc[:,"confidence":])
 
 w = d_w
 x1 = data["confidence"]
@@ -460,34 +475,3 @@ ax.set_axis_off()
 plt.title("Geary C Multivariate P-Value")
 
 plt.show()
-
-
-# %%
-
-# TODO: Go through networkx and see if there are any more 
-#       Network analysis tools that would be helpful in EDA
-
-# graph plots well even with attributes added in
-G_delauney = tri.setEdgeAttributes(tri.setNodeAttributes(d_g, data), 
-                                   data)
-
-# https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.centrality.degree_centrality.html#networkx.algorithms.centrality.degree_centrality
-print(nx.degree_centrality(G_delauney))
-
-# TODO: Assortivity as part of an analysis, used to understand local structure of networks
-    # https://doi.org/10.1038/s41598-020-78336-9
-        # https://networkx.org/documentation/stable/reference/algorithms/assortativity.html 
-print(nx.numeric_assortativity_coefficient(G_delauney, "confidence"))
-print(nx.degree_pearson_correlation_coefficient(G_delauney))
-# TODO: Read more into this one
-# https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.assortativity.average_neighbor_degree.html#networkx.algorithms.assortativity.average_neighbor_degree
-print(nx.average_neighbor_degree(G_delauney))#, weight="weight")
-
-
-# %%
-
-# TODO: Analyse the structure of our graphs
-    # https://www.nature.com/articles/s41598-020-69795-1?fromPaywallRec=false
-    # https://www.nature.com/articles/srep31708 - code below can also be used to find sub-graphs (neighbourhoods)
-        # https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.core.onion_layers.html#networkx.algorithms.core.onion_layers
-

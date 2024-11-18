@@ -194,6 +194,54 @@ plotA.plot(tryout, nominal, anomaly)
 
 
 
+
+
+
+
+# %%
+
+
+# but we already know that delauney is better!
+w = d_w
+xx = data.loc[:, "confidence":].values.tolist()
+lG_mv = esda.Geary_Local_MV(connectivity=w).fit(xx)
+
+# observed multivariate Local Geary values.
+lG_mv.localG[0:5] 
+# array containing the simulated p-values for each unit.
+# significance level of statistic
+lG_mv.p_sim[0:5]
+
+df = data
+f, ax = plt.subplots(1, figsize=(20, 20))
+tryout.plot.imshow(ax=ax)
+df.assign(cl= np.log10(lG_mv.localG)).plot(column='cl', categorical=False,
+        k=5, cmap='viridis', linewidth=0.1, ax=ax,
+        edgecolor='white', legend=True, alpha=0.7)
+ax.set_axis_off()
+plt.title("Geary C Multivariate Spatial Autocorrelation")
+
+plt.show()
+# observed multivariate Local Geary values. 
+
+anomaly = data[np.log(lG_mv.localG) >= 0.99 * np.log(lG_mv.localG.max())]
+nominal = data[np.log(lG_mv.localG) < 0.99 * np.log(lG_mv.localG.max())]
+
+plotA.plot(tryout, nominal, anomaly)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # %%
 # above method suffers from high dimensionality!
 # import numpy as np
