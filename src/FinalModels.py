@@ -145,52 +145,52 @@ wq.transform = 'r'
 # should compare knn weights to delauney weights
 # but we already know that delauney is better!
 w = d_w
-x1 = data["confidence"]
-x2 = data["NDVI_mean"]
-x3 = data["eccentricity"]
-x4 = data["roundness"]
-# x5 = data["z0"]
-# x6 = data["z1"]
-# x7 = data["z2"]
-# x8 = data["contrast"]
-# x9 = data["energy"]
-# x10 = data["bendingE"]
-xx = [x1,x2,x3,x4]#,x5,x6,x7,x10]
-lG_mv = esda.Geary_Local_MV(connectivity=w).fit(xx)
+# x1 = data["confidence"]
+# x2 = data["NDVI_mean"]
+# x3 = data["eccentricity"]
+# x4 = data["roundness"]
+# # x5 = data["z0"]
+# # x6 = data["z1"]
+# # x7 = data["z2"]
+# # x8 = data["contrast"]
+# # x9 = data["energy"]
+# # x10 = data["bendingE"]
+# xx = [x1,x2,x3,x4]#,x5,x6,x7,x10]
+# lG_mv = esda.Geary_Local_MV(connectivity=w).fit(xx)
 
-# observed multivariate Local Geary values.
-lG_mv.localG[0:5] 
-# array containing the simulated p-values for each unit.
-# significance level of statistic
-lG_mv.p_sim[0:5]
+# # observed multivariate Local Geary values.
+# lG_mv.localG[0:5] 
+# # array containing the simulated p-values for each unit.
+# # significance level of statistic
+# lG_mv.p_sim[0:5]
 
-df = data
-f, ax = plt.subplots(1, figsize=(20, 20))
-tryout.plot.imshow(ax=ax)
-df.assign(cl= np.log10(lG_mv.localG)).plot(column='cl', categorical=False,
-        k=5, cmap='viridis', linewidth=0.1, ax=ax,
-        edgecolor='white', legend=True, alpha=0.7)
-ax.set_axis_off()
-plt.title("Geary C Multivariate Spatial Autocorrelation")
+# df = data
+# f, ax = plt.subplots(1, figsize=(20, 20))
+# tryout.plot.imshow(ax=ax)
+# df.assign(cl= np.log10(lG_mv.localG)).plot(column='cl', categorical=False,
+#         k=5, cmap='viridis', linewidth=0.1, ax=ax,
+#         edgecolor='white', legend=True, alpha=0.7)
+# ax.set_axis_off()
+# plt.title("Geary C Multivariate Spatial Autocorrelation")
 
-plt.show()
+# plt.show()
 
-# p-value point
-f, ax = plt.subplots(1, figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-df.assign(cl= lG_mv.p_sim > 0.05).plot(column='cl', categorical=True,
-        k=5, cmap='viridis', linewidth=0.1, ax=ax,
-        edgecolor='black', legend=True, alpha=0.7)
-ax.set_axis_off()
-plt.title("Geary C Multivariate P-Value")
+# # p-value point
+# f, ax = plt.subplots(1, figsize=(15, 15))
+# tryout.plot.imshow(ax=ax)
+# df.assign(cl= lG_mv.p_sim > 0.05).plot(column='cl', categorical=True,
+#         k=5, cmap='viridis', linewidth=0.1, ax=ax,
+#         edgecolor='black', legend=True, alpha=0.7)
+# ax.set_axis_off()
+# plt.title("Geary C Multivariate P-Value")
 
-plt.show()
-# observed multivariate Local Geary values. 
+# plt.show()
+# # observed multivariate Local Geary values. 
 
-anomaly = data[np.log(lG_mv.localG) >= 2.2]
-nominal = data[np.log(lG_mv.localG) < 2.2]
+# anomaly = data[np.log(lG_mv.localG) >= 2.2]
+# nominal = data[np.log(lG_mv.localG) < 2.2]
 
-plotA.plot(tryout, nominal, anomaly)
+# plotA.plot(tryout, nominal, anomaly)
 
 
 
@@ -203,7 +203,8 @@ plotA.plot(tryout, nominal, anomaly)
 
 # but we already know that delauney is better!
 w = d_w
-xx = data.loc[:, "confidence":].values.tolist()
+xx = data.loc[:, "confidence":].values.T.tolist()
+xx = [pd.Series(x) for x in xx]
 lG_mv = esda.Geary_Local_MV(connectivity=w).fit(xx)
 
 # observed multivariate Local Geary values.
@@ -224,8 +225,8 @@ plt.title("Geary C Multivariate Spatial Autocorrelation")
 plt.show()
 # observed multivariate Local Geary values. 
 
-anomaly = data[np.log(lG_mv.localG) >= 0.99 * np.log(lG_mv.localG.max())]
-nominal = data[np.log(lG_mv.localG) < 0.99 * np.log(lG_mv.localG.max())]
+anomaly = data[np.log(lG_mv.localG) >= 0.5 * np.log(lG_mv.localG.max())]
+nominal = data[np.log(lG_mv.localG) < 0.5 * np.log(lG_mv.localG.max())]
 
 plotA.plot(tryout, nominal, anomaly)
 
