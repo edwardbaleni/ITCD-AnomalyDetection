@@ -7,7 +7,7 @@ import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator
 import utils.plotAnomaly as plotA
 
-sampleSize = 20
+sampleSize = 30
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
 num = 0
 myData = utils.engineer(num, 
@@ -20,6 +20,7 @@ delineations = myData.delineations.copy(deep=True)
 mask = myData.mask.copy(deep=True)
 spectralData = myData.spectralData
 erf_num = myData.erf
+refData = myData.ref_data.copy(deep=True)
 # For plotting
 tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
 tryout = tryout/255

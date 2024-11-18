@@ -19,6 +19,7 @@ data = myData.data
 delineations = myData.delineations
 mask = myData.mask
 spectralData = myData.spectralData
+refData = myData.ref_data.copy(deep=True)
 # For plotting
 mask = mask
 tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)

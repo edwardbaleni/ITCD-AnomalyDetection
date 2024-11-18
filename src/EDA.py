@@ -60,6 +60,7 @@ tryout = tryout/255
     # TODO: What we can do for the EDA is look at morphological and image properties separately
     #       Then look at the most significant of these together
 
+
 # %% 
 
 shape = data.loc[:, "roundness":"bendingE"]
