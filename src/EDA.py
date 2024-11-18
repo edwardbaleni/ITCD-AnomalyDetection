@@ -18,7 +18,7 @@ import plotly.express as px
 # os.chdir("..")
 sampleSize = 20
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
-num = 0
+num = 2
 
 # start = timer()
 myData = utils.engineer(num, data_paths_tif, 

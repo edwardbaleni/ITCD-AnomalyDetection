@@ -18,3 +18,20 @@ def plot(erf, normal, anomaly):
     erf.plot.imshow(ax=ax)
     normal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
     anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
+
+def plotRef(erf, data):
+    """
+    Plots the given Earth Relief File (ERF) along with data regions colored by the 'Y' column.
+    Parameters:
+    erf : GeoDataFrame
+        The Earth Relief File to be plotted as the base layer.
+    data : GeoDataFrame
+        The GeoDataFrame containing the data regions to be plotted and colored by the 'Y' column.
+    Returns:
+    None
+    """
+    fig, ax = plt.subplots( figsize=(15, 15))
+    erf.plot.imshow(ax=ax)
+    data.plot(column='Y', categorical=True, legend=True, ax=ax, cmap='rainbow', facecolor='none')
+    plt.title("Data Geometries Colored by Y")
+    plt.show()
