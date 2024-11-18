@@ -37,6 +37,7 @@ class engineer(collect):
     def __init__(self, num, tifs, geojsons, zips, scale = True):
         super().__init__(num, tifs, geojsons, zips)
         self.scaleData(self.delineations, self.spectralData, scale)
+        self.labelRefData(self.data, self.ref_data, self.mask)
         
 
                         # Feature Engineering
@@ -55,6 +56,76 @@ class engineer(collect):
     # the line should not exit the polygon.
     # I want to calculate the distance between two points within a concave shape, 
     # and the distance line between these points cannot exit the polygon.
+
+    
+    def labelRefData(self, data, refData, mask):
+        """
+        Labels the reference data based on the provided data.
+        Parameters:
+        data (GeoDataFrame): The estimated delineations with geometries.
+        refData (GeoDataFrame): The reference data with geometries.
+        mask (GeoDataFrame): The mask to apply on the reference data.
+        Returns:
+        None: The function updates the 'data' attribute with labeled data and 'ref_data' attribute with masked reference data.
+        The function performs the following steps:
+        1. Masks the reference data using the provided mask.
+        2. Converts the CRS of the reference data to match the data CRS.
+        3. Computes the centroid of the reference data polygons.
+        4. Checks for under-segmentation and false positives by counting the number of reference centers within estimated delineations.
+        5. Checks for over-segmentation by counting the number of estimated centers within the reference delineations.
+        6. Labels the data as "TP" (True Positive) by default.
+        7. Updates the labels to "Outlier" for over-segmented and under-segmented/false positive cases.
+        8. Relocates the 'Y' column to a position after the 'centroid' column in the data dataframe.
+        """
+        
+                    # Need to mask refData
+        refData.to_crs(data.crs, inplace=True)
+        index_mask_intersect = collect._recursivePointRemoval(refData, mask)
+        refData = refData.iloc[index_mask_intersect]
+        refData.reset_index(drop=True, inplace=True)
+
+        # Get the center of refData polygons
+        refData['centroid'] = refData['geometry'].centroid
+        # Check the number of reference centers in estimated delineations
+        # Check for under-segmentation amd false positives
+
+        underSeg_Fp = data['geometry'].apply(lambda x: refData["centroid"].within(x).sum())
+
+        # Check how many estimated centres are within the reference delineation
+        # Check for over-segmentation
+        overSeg = []
+        for _, row in data.iterrows():
+            count = refData["geometry"].apply(lambda x: row["centroid"].within(x)).sum()
+            overSeg.append(count)
+
+        data['Y'] = "TP"
+
+        # Problem here is that sometimes over-segmented estimates are
+        # not overlapping with the reference data therefore they are false-positives
+        # in this case, they will be false-positives!
+
+        # Over-segmentation
+        for i, key in enumerate(overSeg):
+            if key > 1:
+                # Over
+                data.loc[i, 'Y'] = "Outlier"
+        # Under-segmentation and False Positives
+        for i, key in enumerate(underSeg_Fp):
+            if key == 0:
+                # Fp
+                data.loc[i, 'Y'] = "Outlier"
+            if key > 1:
+                # Under
+                data.loc[i, 'Y'] = "Outlier"
+
+
+        # Relocate Y to a position after centroid in the data dataframe
+        cols = list(data.columns)
+        cols.insert(cols.index('centroid') + 1, cols.pop(cols.index('Y')))
+        data = data[cols]
+
+        self.data = data
+        self.ref_data = refData
 
     @staticmethod
     def _radiusOfGyration(xx_centre, xx, yy):
@@ -472,4 +543,3 @@ class engineer(collect):
         
         self.data = placeholder
         self.delineations = placeholder[["geometry"]]
-        #return placeholder

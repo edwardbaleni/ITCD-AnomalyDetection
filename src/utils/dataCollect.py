@@ -227,19 +227,6 @@ class collect:
         self.spectralData = data
         #return data
 
-
-# These are methods that called in the main script
-# they are not needed to be in this clcass but work well here
-
-
-# init method or constructor
-# def __init__(self, sampleSize):
-#     data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = self.collectFiles(sampleSize)
-#     self.num = 0
-#     self.data_paths_tif = data_paths_tif
-#     self.data_paths_geojson = data_paths_geojson
-#     self.data_paths_geojson_zipped = data_paths_geojson_zipped
-
 # This init is just to handle unzipping geojsons
 # We can make it in terms of just geojsons
 def _dCollect(size, file_type):
