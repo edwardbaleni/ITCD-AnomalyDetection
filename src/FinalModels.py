@@ -6,6 +6,7 @@ import pandas as pd
 import utils.plotAnomaly as plotA
 import utils.Triangulation as tri
 import esda
+import Model
 
 sampleSize = 20
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
@@ -71,7 +72,19 @@ plotA.plot(tryout, nominal, anomaly)
 
 
 
+# %%
 
+from Model import Geary
+# have to specify geometries and centroids
+clf = Geary(contamination=0.5, 
+            geom=data["geometry"], 
+            centroid=data["centroid"])
+
+test_scores = clf.fit(data)
+anomaly = data[test_scores == 1]
+nominal = data[test_scores == 0]
+
+plotA.plot(tryout, nominal, anomaly)
 
 
 

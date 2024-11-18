@@ -42,6 +42,8 @@ import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator
 import utils.plotAnomaly as plotA
 
+import Model
+
 sampleSize = 4
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
 num = 0
@@ -64,11 +66,11 @@ tryout = tryout/255
 
 # define the number of iterations
 n_ite = 10
-n_classifiers = 11
+n_classifiers = 12
 
 df_columns = ['Data', '# Samples', '# Dimensions', 'Outlier Perc',
               'ABOD', 'CBLOF', 'HBOS', 'IForest', 'KNN', 'MCD',
-              'LOF', 'ECOD', 'KPCA', 'INNE', 'COPOD']
+              'LOF', 'ECOD', 'KPCA', 'INNE', 'COPOD', 'Geary']
 
 
 # initialize the container for saving the results
@@ -157,7 +159,8 @@ for j in range(sampleSize):
             'Kernal Principal Component Analysis (KPCA)': KPCA(
                 contamination=outliers_fraction, random_state=random_state),
             'Isolation-based anomaly detection using nearest-neighbor ensembles (iNNE)': INNE(contamination=outliers_fraction),
-            'Copula-Based Outlier Detection (COPOD)': COPOD(contamination=outliers_fraction)
+            'Copula-Based Outlier Detection (COPOD)': COPOD(contamination=outliers_fraction),
+            'Geary Multivariate Spatial Autocorrelation (Geary)': Model.Mods.gearyMulti(data, 0.5)
         }
         classifiers_indices = {
             'Angle-based Outlier Detector (ABOD)': 0,
@@ -170,7 +173,8 @@ for j in range(sampleSize):
             'Empirical Cumulative Distribution Functions (ECOD)': 7,
             'Kernal Principal Component Analysis (KPCA)': 8,
             'Isolation-based anomaly detection using nearest-neighbor ensembles (iNNE)': 9,
-            'Copula-Based Outlier Detection (COPOD)': 10
+            'Copula-Based Outlier Detection (COPOD)': 10,
+            'Geary Multivariate Spatial Autocorrelation (Geary)': 11
         }
 
         for clf_name, clf in classifiers.items():
@@ -221,6 +225,17 @@ for j in range(sampleSize):
     ap_df.to_csv('ap.csv', index=False, float_format='%.3f')
 
 # %%
+
+
+
+t1 = time_df.copy(deep=True)
+r1 = roc_df.copy(deep=True)
+p1 = prn_df.copy(deep=True)
+a1 = ap_df.copy(deep=True)
+
+
+
+
 
 
 

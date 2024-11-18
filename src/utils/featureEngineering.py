@@ -85,7 +85,7 @@ class engineer(collect):
         refData.reset_index(drop=True, inplace=True)
 
         # Get the center of refData polygons
-        refData['centroid'] = refData['geometry'].centroid
+        refData["centroid"] = refData['geometry'].centroid
         # Check the number of reference centers in estimated delineations
         # Check for under-segmentation amd false positives
 
