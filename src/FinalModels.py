@@ -30,89 +30,6 @@ tryout = tryout/255
 # data = data[list(data.columns)[:5] + list(data.columns)[10:]]
 # data.drop(['dist1', 'dist2', 'dist3', 'dist4'], axis = 1, inplace=True)
 
-
-
-# %% 
-                    # Delauney Paper
-
-import utils.Triangulation as tri
-
-d_w, d_g, d_p, v_cells = tri.delauneyTriangulation(data)
-
-knn_w, knn_g, knn_p, knn_centroids = tri.KNNGraph(data)
-
-
-
-# %%
-    # Plot Triangulations
-tri.delauneyPlot(d_g, d_p, v_cells, tryout, True)
-
-tri.KNNPlot(knn_g, knn_p, knn_centroids, tryout, True)
-
-
-# %%
-# check if any nodes have no neighbours
-# delaunay.islands
-
-# %%
-G = tri.setNodeAttributes(d_g, data)
-G = tri.setEdgeAttributes(G, data)
-
-
-# %%
-# TODO: https://stackoverflow.com/questions/70452465/how-to-load-in-graph-from-networkx-into-pytorch-geometric-and-set-node-features
-#       https://stackoverflow.com/questions/71011514/converting-a-pyg-graph-to-a-networkx-graph
-import torch
-from torch_geometric.utils.convert import from_networkx
-
-pyg_graph = from_networkx(G, 
-                          group_node_attrs = "all", 
-                          group_edge_attrs= "distances")
-
-# %%
-# TODO: AD with just graph structure
-# TODO: AD with graph structure plus attributes
-    # TODO: https://docs.pygod.org/en/latest/tutorials/1_intro.html#sphx-glr-tutorials-1-intro-py
-    # TODO: https://pytorch-geometric.readthedocs.io/en/latest/index.html
-
-# train a dominant detector
-from pygod.detector import CoLA
-
-model = CoLA(gpu=0)  # hyperparameters can be set here # gpu = 0, uses gpu # gpu = 1 uses cpu
-model.fit(pyg_graph)  # input data is a PyG data object
-
-# get outlier scores on the training data (transductive setting)
-label = model.label_
-labels = label.detach().cpu().numpy()
-score = model.decision_score_
-
-anomaly = data[labels == 1]
-nominal = data[labels == 0]
-
-plotA.plot(tryout, nominal, anomaly)
-# %%
-# train a dominant detector
-from pygod.detector import DMGD
-
-model = DMGD()  # hyperparameters can be set here # gpu = 0, uses gpu # gpu = 1 uses cpu
-model.fit(pyg_graph)  # input data is a PyG data object
-
-# get outlier scores on the training data (transductive setting)
-label = model.label_
-labels = label.detach().cpu().numpy()
-score = model.decision_score_
-
-anomaly = data[labels == 1]
-nominal = data[labels == 0]
-
-plotA.plot(tryout, nominal, anomaly)
-
-
-# %%
-# TODO: performance metrics for outlier detection
-#        https://scikit-learn.org/stable/auto_examples/miscellaneous/plot_outlier_detection_bench.html#sphx-glr-auto-examples-miscellaneous-plot-outlier-detection-bench-py
-
-
 # %%
 
 # local Geary C Statistic
@@ -122,6 +39,10 @@ import networkx as nx
 
 d_w, d_g, d_p, v_cells = tri.delauneyTriangulation(data)
 knn_w, knn_g, knn_p, knn_centroids = tri.KNNGraph(data)
+
+    # Plot Triangulations
+tri.delauneyPlot(d_g, d_p, v_cells, tryout, True)
+tri.KNNPlot(knn_g, knn_p, knn_centroids, tryout, True)
 
 # TODO: Only pass in necessary attributes
 # TODO: do this in FinalModels as well
