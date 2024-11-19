@@ -42,7 +42,7 @@ import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator
 import utils.plotAnomaly as plotA
 
-import Model
+from Model import Geary
 
 sampleSize = 4
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
@@ -134,7 +134,9 @@ for j in range(sampleSize):
 
         # standardizing data for processing
         # TODO: use robust scaler in engineer class
-        X_train_norm, X_test_norm = standardizer(X_train, X_test)
+        # X_train_norm, X_test_norm = standardizer(X_train, X_test)
+        X_train_norm = utils.engineer._scaleData(X_train)
+        X_test_norm = utils.engineer._scaleData(X_test)
 
 
 
@@ -160,7 +162,9 @@ for j in range(sampleSize):
                 contamination=outliers_fraction, random_state=random_state),
             'Isolation-based anomaly detection using nearest-neighbor ensembles (iNNE)': INNE(contamination=outliers_fraction),
             'Copula-Based Outlier Detection (COPOD)': COPOD(contamination=outliers_fraction),
-            'Geary Multivariate Spatial Autocorrelation (Geary)': Model.Mods.gearyMulti(data, 0.5)
+            'Geary Multivariate Spatial Autocorrelation (Geary)': Geary(contamination=outliers_fraction, 
+                                                                        geometry=data[["geometry"]], 
+                                                                        centroid=data[["centroid"]])
         }
         classifiers_indices = {
             'Angle-based Outlier Detector (ABOD)': 0,
@@ -179,8 +183,14 @@ for j in range(sampleSize):
 
         for clf_name, clf in classifiers.items():
             t0 = time()
-            clf.fit(X_train_norm)
-            test_scores = clf.decision_function(X_test_norm)
+            if clf_name == 'Geary Multivariate Spatial Autocorrelation (Geary)':
+                X1 = utils.engineer._scaleData(X)
+                clf.fit(X1)
+                test_scores = clf.labels_
+                y_test = y
+            else:
+                clf.fit(X_train_norm)
+                test_scores = clf.decision_function(X_test_norm)
             t1 = time()
             duration = round(t1 - t0, ndigits=4)
             test_scores = np.nan_to_num(test_scores)
@@ -192,6 +202,27 @@ for j in range(sampleSize):
             print('{clf_name} AUCROC:{roc}, precision @ rank n:{prn}, AP:{ap}, \
               execution time: {duration}s'.format(
                 clf_name=clf_name, roc=roc, prn=prn, ap=ap, duration=duration))
+            
+            if j == sampleSize - 1:
+                X = utils.engineer._scaleData(X)
+
+                fig, ax = plt.subplots(1, 1, figsize=(20, 15))
+                count = 0
+                y_true = y_test
+                y_pred = test_scores
+
+                display = RocCurveDisplay.from_predictions(
+                    y_true,
+                    y_pred,
+                    pos_label=1,
+                    name=clf_name,
+                    ax=ax,
+                    plot_chance_level=(11 == count - 1),
+                    chance_level_kw={"linestyle": ":"},
+                    linewidth=5
+                )
+
+                fig.savefig("test.png", dpi=fig.dpi)
 
             time_mat[i, classifiers_indices[clf_name]] = duration
             roc_mat[i, classifiers_indices[clf_name]] = roc
@@ -227,102 +258,61 @@ for j in range(sampleSize):
 # %%
 
 
-
+from sklearn.metrics import RocCurveDisplay
 t1 = time_df.copy(deep=True)
 r1 = roc_df.copy(deep=True)
 p1 = prn_df.copy(deep=True)
 a1 = ap_df.copy(deep=True)
 
 
+random_state = np.random.RandomState(i)
+
+#         # 60% data for training and 40% for testing
+# X_train, X_test, y_train, y_test = train_test_split(X,
+#                                                             y,
+#                                                             test_size=0.4,
+#                                                             stratify=y,
+#                                                             random_state=random_state)
+
+# X_train_norm, X_test_norm = standardizer(X_train, X_test)
 
 
+X = utils.engineer._scaleData(X)
 
+fig, ax = plt.subplots(1, 1, figsize=(20, 15))
+count = 0
+plt.rcParams.update({'font.size': 15})
+for clf_name, clf in classifiers.items():
+    count += 1
+    t0 = time()
+    if clf_name == 'Geary Multivariate Spatial Autocorrelation (Geary)':
+        clf.fit(X)
+        test_scores = clf.labels_
+        y_test = y
+    else:
+        clf.fit(X)
+        test_scores = clf.decision_function(X)
+    t1 = time()
+    duration = round(t1 - t0, ndigits=4)
+    test_scores = np.nan_to_num(test_scores)
 
+    y_true = y_test
+    y_pred = test_scores
 
-
-
-from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import IsolationForest
-from sklearn.neighbors import LocalOutlierFactor
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import (
-    OneHotEncoder,
-    OrdinalEncoder,
-    RobustScaler,
-)
-
-
-def make_estimator(name, categorical_columns=None, iforest_kw=None, lof_kw=None):
-    """Create an outlier detection estimator based on its name."""
-    if name == "LOF":
-        outlier_detector = LocalOutlierFactor(**(lof_kw or {}))
-        if categorical_columns is None:
-            preprocessor = RobustScaler()
-        else:
-            preprocessor = ColumnTransformer(
-                transformers=[("categorical", OneHotEncoder(), categorical_columns)],
-                remainder=RobustScaler(),
-            )
-    elif name == "IForest"
-        outlier_detector = IsolationForest(**(iforest_kw or {}))
-        if categorical_columns is None:
-            preprocessor = None
-        else:
-            ordinal_encoder = OrdinalEncoder(
-                handle_unknown="use_encoded_value", unknown_value=-1
-            )
-            preprocessor = ColumnTransformer(
-                transformers=[
-                    ("categorical", ordinal_encoder, categorical_columns),
-                ],
-                remainder="passthrough",
-            )
-
-    return make_pipeline(preprocessor, outlier_detector)
-
-
-
-
-
-
-
-
-import numpy as np
-
-from sklearn.datasets import fetch_kddcup99
-from sklearn.model_selection import train_test_split
-
-# just use train test from last loop!
-# X, _, y, _ = train_test_split(X, y, test_size=0.4, stratify=y, random_state=42)
-
-n_samples, anomaly_frac = X.shape[0], outliers_fraction
-print(f"{n_samples} datapoints with {y.sum()} anomalies ({anomaly_frac:.02%})")
-
-
-
-
-
-import math
-
-from sklearn.metrics import RocCurveDisplay
-
-cols = 2
-pos_label = 0  # mean 0 belongs to positive class
-datasets_names = y_true.keys()
-rows = math.ceil(len(datasets_names) / cols)
-
-fig, axs = plt.subplots(nrows=rows, ncols=cols, squeeze=False, figsize=(10, rows * 4))
-
-for ax, dataset_name in zip(axs.ravel(), datasets_names):
-    for model_idx, model_name in enumerate(model_names):
-        display = RocCurveDisplay.from_predictions(
-            y_true[dataset_name],
-            y_pred[model_name][dataset_name],
-            pos_label=pos_label,
-            name=model_name,
+    display = RocCurveDisplay.from_predictions(
+            y_true,
+            y_pred,
+            pos_label=1,
+            name=clf_name,
             ax=ax,
-            plot_chance_level=(model_idx == len(model_names) - 1),
+            plot_chance_level=(11 == count - 1),
             chance_level_kw={"linestyle": ":"},
+            linewidth=5
         )
-    ax.set_title(dataset_name)
-_ = plt.tight_layout(pad=2.0)  # spacing between subplots
+
+# fig.savefig("test.png", dpi=fig.dpi)
+
+# %%
+roc_df.T
+
+# %%

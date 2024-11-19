@@ -1,19 +1,15 @@
-import utils
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import utils.plotAnomaly as plotA
 import utils.Triangulation as tri
 import esda
 
 
 class Geary:
-    def __init__(self, contamination=0.5, geom=None, centroid=None):
+    def __init__(self, contamination=0.5, geometry=None, centroid=None):
         self.labels_ = None
         self.decision_scores_ = None
-        self.contamination = contamination  
-        self.geom = geom
-        self.centroid = centroid
+        self.contamination = 1 - contamination  
+        self.w , _, _, _ = tri.delauneyTriangulation(pd.concat([geometry, centroid], axis=1))
 
     def fit(self, X):
         """
@@ -28,13 +24,14 @@ class Geary:
         """
         # local Geary C Statistic
 
-        X["geometry"], X["centroid"] = self.geom, self.centroid
+        # X["geometry"] = self.geometry
+        # X["centroid"] = self.centroid
 
-        d_w, _, _, _ = tri.delauneyTriangulation(X)
+        # w, _, _, _ = tri.delauneyTriangulation(X)
 
-        # but we already know that delauney is better!
-        w = d_w
-        xx = X.loc[:, :"geometry"].values.T.tolist()
+        # X.drop(columns=["geometry", "centroid"], inplace=True)
+        w = self.w
+        xx = X.T
         xx = [pd.Series(x) for x in xx]
         lG_mv = esda.Geary_Local_MV(connectivity=w).fit(xx)
 

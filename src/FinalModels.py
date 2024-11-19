@@ -15,14 +15,14 @@ myData = utils.engineer(num,
                               data_paths_tif, 
                               data_paths_geojson, 
                               data_paths_geojson_zipped,
-                              scale=True)
-data = myData.data
-delineations = myData.delineations
-mask = myData.mask
+							  False)
+data = myData.data.copy(deep=True)
+delineations = myData.delineations.copy(deep=True)
+mask = myData.mask.copy(deep=True)
 spectralData = myData.spectralData
+erf_num = myData.erf
 refData = myData.ref_data.copy(deep=True)
 # For plotting
-mask = mask
 tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
 tryout = tryout/255
 
@@ -74,13 +74,29 @@ plotA.plot(tryout, nominal, anomaly)
 
 # %%
 
+# import utils
+# import matplotlib.pyplot as plt
+# import numpy as np
+# import pandas as pd
+# import utils.plotAnomaly as plotA
+# import utils.Triangulation as tri
+# import esda
+# import Model
+# import geopandas as gpd
+
+# data = gpd.read_file("data.geojson")  
+
+# data["centroid"] = data.centroid
+
 from Model import Geary
 # have to specify geometries and centroids
 clf = Geary(contamination=0.5, 
-            geom=data["geometry"], 
-            centroid=data["centroid"])
+            geometry=data[["geometry"]], 
+            centroid=data[["centroid"]])
 
-test_scores = clf.fit(data)
+clf.fit(data.loc[:, "confidence":])
+
+test_scores = clf.labels_
 anomaly = data[test_scores == 1]
 nominal = data[test_scores == 0]
 
