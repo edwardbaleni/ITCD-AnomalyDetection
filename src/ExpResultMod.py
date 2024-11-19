@@ -41,6 +41,7 @@ import pandas as pd
 import h2o
 from h2o.estimators import H2OExtendedIsolationForestEstimator
 import utils.plotAnomaly as plotA
+from sklearn.metrics import RocCurveDisplay
 
 from Model import Geary
 
@@ -162,7 +163,7 @@ for j in range(sampleSize):
                 contamination=outliers_fraction, random_state=random_state),
             'Isolation-based anomaly detection using nearest-neighbor ensembles (iNNE)': INNE(contamination=outliers_fraction),
             'Copula-Based Outlier Detection (COPOD)': COPOD(contamination=outliers_fraction),
-            'Geary Multivariate Spatial Autocorrelation (Geary)': Geary(contamination=outliers_fraction, 
+            'Geary Multivariate Spatial Autocorrelation (Geary)': Geary(contamination=0.5, 
                                                                         geometry=data[["geometry"]], 
                                                                         centroid=data[["centroid"]])
         }
@@ -181,6 +182,8 @@ for j in range(sampleSize):
             'Geary Multivariate Spatial Autocorrelation (Geary)': 11
         }
 
+        fig, ax = plt.subplots(1, 1, figsize=(20, 15))
+        count = 0
         for clf_name, clf in classifiers.items():
             t0 = time()
             if clf_name == 'Geary Multivariate Spatial Autocorrelation (Geary)':
@@ -204,10 +207,7 @@ for j in range(sampleSize):
                 clf_name=clf_name, roc=roc, prn=prn, ap=ap, duration=duration))
             
             if j == sampleSize - 1:
-                X = utils.engineer._scaleData(X)
-
-                fig, ax = plt.subplots(1, 1, figsize=(20, 15))
-                count = 0
+                count += 1
                 y_true = y_test
                 y_pred = test_scores
 
@@ -217,7 +217,7 @@ for j in range(sampleSize):
                     pos_label=1,
                     name=clf_name,
                     ax=ax,
-                    plot_chance_level=(11 == count - 1),
+                    plot_chance_level=( count - 1 == 11),
                     chance_level_kw={"linestyle": ":"},
                     linewidth=5
                 )
@@ -258,7 +258,7 @@ for j in range(sampleSize):
 # %%
 
 
-from sklearn.metrics import RocCurveDisplay
+
 t1 = time_df.copy(deep=True)
 r1 = roc_df.copy(deep=True)
 p1 = prn_df.copy(deep=True)
