@@ -189,7 +189,7 @@ for j in range(sampleSize):
             if clf_name == 'Geary Multivariate Spatial Autocorrelation (Geary)':
                 X1 = utils.engineer._scaleData(X)
                 clf.fit(X1)
-                test_scores = clf.labels_
+                test_scores = clf.decision_scores_
                 y_test = y
             else:
                 clf.fit(X_train_norm)
@@ -287,7 +287,7 @@ for clf_name, clf in classifiers.items():
     t0 = time()
     if clf_name == 'Geary Multivariate Spatial Autocorrelation (Geary)':
         clf.fit(X)
-        test_scores = clf.labels_
+        test_scores = clf.decision_scores_
         y_test = y
     else:
         clf.fit(X)

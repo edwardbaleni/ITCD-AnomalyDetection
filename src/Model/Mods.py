@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import utils.Triangulation as tri
 import esda
+from scipy.special import expit
 
 
 class Geary:
@@ -21,19 +22,18 @@ class Geary:
             The GeoDataFrame containing the data to be plotted.
         Returns:
         None
+        Notes:
+            Need to center scores about zero
+            then use invrese logit transformation to get scores between 0 and 1
+            otherwise, scores will be from 0.5 to 1
         """
-        # local Geary C Statistic
-
-        # X["geometry"] = self.geometry
-        # X["centroid"] = self.centroid
-
-        # w, _, _, _ = tri.delauneyTriangulation(X)
-
-        # X.drop(columns=["geometry", "centroid"], inplace=True)
         w = self.w
         xx = X.T
         xx = [pd.Series(x) for x in xx]
         lG_mv = esda.Geary_Local_MV(connectivity=w).fit(xx)
 
-        self.decision_scores_ = np.log(lG_mv.localG)
-        self.labels_ = np.where(np.log(lG_mv.localG) >= self.contamination * np.log(lG_mv.localG.max()), 1, 0)
+        centerScore = lG_mv.localG - np.mean(lG_mv.localG)
+        probs = expit(centerScore)
+
+        self.decision_scores_ = probs
+        self.labels_ = np.where(probs >= (1 - self.contamination), 1, 0)
