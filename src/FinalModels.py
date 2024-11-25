@@ -27,18 +27,6 @@ tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=
 tryout = tryout/255
 
 # %%
-from scipy.special import expit
-from Model import Geary
-check = Geary(contamination=0.5, geometry=data[["geometry"]], centroid=data[["centroid"]])
-check.fit(np.array(data.loc[:, "confidence":]))
-
-from scipy.special import expit
-check1 = check.decision_scores_ - np.mean(check.decision_scores_)
-expit(check1.decision_scores_)
-
-
-
-# %%
 # local Geary C Statistic
 
 d_w, d_g, d_p, v_cells = tri.delauneyTriangulation(data)
@@ -60,65 +48,19 @@ lG_mv.localG[0:5]
 # significance level of statistic
 lG_mv.p_sim[0:5]
 
+from scipy.special import expit
+
 centerScore = lG_mv.localG - np.mean(lG_mv.localG)
 probs = expit(centerScore)
 
-df = data
-f, ax = plt.subplots(1, figsize=(20, 20))
-tryout.plot.imshow(ax=ax)
-df.assign(cl= probs).plot(column='cl', categorical=False,
-        k=5, cmap='viridis', linewidth=0.1, ax=ax,
-        edgecolor='white', legend=True, alpha=0.7)
-ax.set_axis_off()
-plt.title("Geary C Multivariate Spatial Autocorrelation")
 
-plt.show()
-# observed multivariate Local Geary values. 
-
-# anomaly = data[np.log(lG_mv.localG) >= 0.5 * np.log(lG_mv.localG.max())]
-# nominal = data[np.log(lG_mv.localG) < 0.5 * np.log(lG_mv.localG.max())]
 
 anomaly = data[probs >= 0.98]
 nominal = data[probs < 0.98]
 
 plotA.plot(tryout, nominal, anomaly)
 
-
-
-
-
-
-
-# %%
-
-# import utils
-# import matplotlib.pyplot as plt
-# import numpy as np
-# import pandas as pd
-# import utils.plotAnomaly as plotA
-# import utils.Triangulation as tri
-# import esda
-# import Model
-# import geopandas as gpd
-
-# data = gpd.read_file("data.geojson")  
-
-# data["centroid"] = data.centroid
-
-from Model import Geary
-# have to specify geometries and centroids
-clf = Geary(contamination=0.5, 
-            geometry=data[["geometry"]], 
-            centroid=data[["centroid"]])
-
-clf.fit(data.loc[:, "confidence":])
-
-test_scores = clf.labels_
-anomaly = data[test_scores == 1]
-nominal = data[test_scores == 0]
-
-plotA.plot(tryout, nominal, anomaly)
-
+plotA.plotScores(tryout, data, probs)
 
 
 

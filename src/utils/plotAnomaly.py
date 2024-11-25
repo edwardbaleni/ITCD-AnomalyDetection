@@ -35,3 +35,14 @@ def plotRef(erf, data):
     data.plot(column='Y', categorical=True, legend=True, ax=ax, cmap='rainbow', facecolor='none')
     plt.title("Data Geometries Colored by Y")
     plt.show()
+
+def plotScores(erf, data, scores):
+    
+    _, ax = plt.subplots(1, figsize=(20, 20))
+    erf.plot.imshow(ax=ax)
+    data.assign(cl= scores).plot(column='cl', categorical=False,
+            k=5, cmap='viridis', linewidth=0.1, ax=ax,
+            edgecolor='white', legend=True, alpha=0.7)
+    ax.set_axis_off()
+    plt.title("Anomaly Scores")
+    plt.show()

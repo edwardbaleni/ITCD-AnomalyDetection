@@ -2,16 +2,6 @@
 
 import shapely.plotting
 import shapely
-# import geopandas as gpd
-# import rasterio as rio
-# from rasterio.plot import show
-# from osgeo import ogr, gdal
-# from osgeo import gdalconst
-# from rasterio.mask import mask
-# import earthpy.spatial as es
-# import earthpy.plot as ep
-# import earthpy as et
-# import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import math
@@ -30,6 +20,9 @@ from rasterstats import zonal_stats
 import cv2 as cv
 import mahotas as mh
 import skimage
+
+import warnings
+warnings.filterwarnings("ignore")
 
 
 class engineer(collect):
@@ -77,20 +70,19 @@ class engineer(collect):
         7. Updates the labels to "Outlier" for over-segmented and under-segmented/false positive cases.
         8. Relocates the 'Y' column to a position after the 'centroid' column in the data dataframe.
         """
-        
-                    # Need to mask refData
+        # Need to mask refData
         refData.to_crs(data.crs, inplace=True)
         index_mask_intersect = collect._recursivePointRemoval(refData, mask)
         refData = refData.iloc[index_mask_intersect]
         refData.reset_index(drop=True, inplace=True)
-
+        refData.to_crs("3857", inplace=True)
         # Get the center of refData polygons
-        refData["centroid"] = refData['geometry'].centroid
+        refData.loc[:,"centroid"] = refData["geometry"].centroid
         # Check the number of reference centers in estimated delineations
         # Check for under-segmentation amd false positives
-
+        refData.to_crs(data.crs, inplace=True)
+        refData.loc[:, "centroid"] = refData.loc[:,"centroid"].to_crs(data.crs)
         underSeg_Fp = data['geometry'].apply(lambda x: refData["centroid"].within(x).sum())
-
         # Check how many estimated centres are within the reference delineation
         # Check for over-segmentation
         overSeg = []
