@@ -33,12 +33,6 @@ class engineer(collect):
         self.labelRefData(self.data, self.ref_data, self.mask)
         
 
-                        # Feature Engineering
-
-        # TODO: Need to remove radius, major and minor axis, crown projection area, crown perimeter,
-        #       radius of gyration, short, long as they are not robust features
-        #       Small trees are still trees and should be identified as such
-
         # can remove confidence but don't necessarily have to as it is a feature
         # that we can expext most datasets to have. Aerobotics provides this feature
         # with every dataset.
@@ -131,7 +125,6 @@ class engineer(collect):
         Returns:
         pd.Series: The radius of gyration.
         """
-
         rad = 0
         for i in range(len(xx)):
             dist = xx_centre.distance(shapely.Point(xx[i], yy[i]))
@@ -149,8 +142,6 @@ class engineer(collect):
         Returns:
             pd.Series: A pandas Series containing the lengths of the minor and major axes.
         """
-
-        # major and minor axis
         mbr_points = list(zip(*xx.minimum_rotated_rectangle.exterior.xy))
         mbr_lengths = [shapely.LineString([mbr_points[i], mbr_points[i + 1]]).length for i in range(len(mbr_points) - 1)]
         minor_axis = min(mbr_lengths)
@@ -174,8 +165,6 @@ class engineer(collect):
         """
         dx_dt = np.gradient(xx[:, 0])
         dy_dt = np.gradient(xx[:, 1])
-        ds_dt = np.sqrt(dx_dt * dx_dt + dy_dt * dy_dt)
-        d2s_dt2 = np.gradient(ds_dt)
         d2x_dt2 = np.gradient(dx_dt)
         d2y_dt2 = np.gradient(dy_dt)
         curvature = np.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / (dx_dt * dx_dt + dy_dt * dy_dt)**1.5
@@ -205,8 +194,6 @@ class engineer(collect):
         L = xx.shape[0]
         return max( (2 * math.pi)/r , 1/L * sum( engineer._curvature(xx)**2 ))
 
-    # TODO: Zernicke Moments
-
     @staticmethod
     def _zernickeMoments(im):
         """
@@ -220,30 +207,10 @@ class engineer(collect):
         The radius is calculated as half of the maximum bounding box dimension of the labeled image.
         The center of mass of the image is used as the center for the Zernike moments calculation.
         """
-        ret, thresh = cv.threshold(im, 127, 255, 0)
-        contours, _ = cv.findContours(thresh, 
-                                      cv.RETR_TREE,
-                                      cv.CHAIN_APPROX_SIMPLE) 
-        count = contours[0] 
-
-        
-        (x_axis,y_axis),radius = cv.minEnclosingCircle(count) 
-        
-        center = (int(x_axis),int(y_axis)) 
-        radius = int(radius) 
-        
-        # cv.circle(im,center,radius,(0,255,0),2) 
-        # cv.imshow("Image",im) 
-        # cv.waitKey(0) 
-        # cv.destroyAllWindows()
-
-
         zernike_moments = mh.features.zernike_moments(im, 
-                                                      radius = (mh.labeled.bbox(im).max()/2)#(data["major_axis"][0]/2),
-                                                      )#mh.center_of_mass(im))
+                                                      radius = (mh.labeled.bbox(im).max()/2)
+                                                      )
         return list(zernike_moments)
-        # plt.imshow(im, interpolation='nearest')
-        # plt.show()
 
 
     @staticmethod
@@ -269,6 +236,7 @@ class engineer(collect):
                 # we can use this to get texture properties
                 # Pyfeat library is good. But this one is more trusted
                 # Need to play around with 
+                #         # https://scikit-image.org/docs/stable/api/skimage.feature.html#skimage.feature.graycomatrix
         """
         co_matrix = skimage.feature.graycomatrix(im, 
                                                  # I changed the distances from 5 -> 2
@@ -278,8 +246,6 @@ class engineer(collect):
                                             symmetric=True, 
                                             normed=True)
         
-        # Calculate texture features from the co-occurrence matrix
-        # https://scikit-image.org/docs/stable/api/skimage.feature.html#skimage.feature.graycomatrix
         contrast = skimage.feature.graycoprops(co_matrix, 'contrast')[0][0]
         correlation = skimage.feature.graycoprops(co_matrix, 'correlation')[0][0]
             # energy = sqrt(ASM) # so we can just remove it!
@@ -310,9 +276,6 @@ class engineer(collect):
         zernicke = self._zernickeMoments(im)
         return pd.Series(zernicke + text)
 
-
-
-    # TODO: https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
     def shapeDescriptors(self, placeholder):
         """
         Calculate various shape descriptors for a given GeoDataFrame.
@@ -335,6 +298,7 @@ class engineer(collect):
         - solidity: Solidity of the geometry.
         - elongation: Elongation of the geometry.
         - bendingE: Bending energy of the geometry.
+        Notes: https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
         """
         placeholder =  placeholder.to_crs(3857)
         convexHull = placeholder.loc[:, "geometry"].convex_hull
@@ -370,22 +334,6 @@ class engineer(collect):
         placeholder.drop(["form_factor", "shape_index", "minor_axis", "major_axis", "radius_of_gyration", "crown_perimeter", "crown_projection_area"], axis=1, inplace = True)
         return placeholder
 
-    # https://gis.stackexchange.com/questions/297076/how-to-calculate-mean-value-of-a-raster-for-each-polygon-in-a-shapefile
-    @staticmethod
-    def _CoV(x):
-        """
-        Calculate the Coefficient of Variation (CoV) for a given array.
-        The Coefficient of Variation is a measure of relative variability and is 
-        defined as the ratio of the standard deviation to the mean, expressed as a percentage.
-        Parameters:
-        x (array-like): Input array or object that can be converted to an array.
-        Returns:
-        float: The Coefficient of Variation of the input array.
-        """
-
-        # Coefficient of Determination
-        return np.ma.std(x) / np.ma.mean(x) * 100
-
     @staticmethod
     def _detStats(x, geometry):
         """
@@ -401,14 +349,10 @@ class engineer(collect):
         #nodata = x.rio.nodata
         affine = x.rio.transform()
         array = np.array(x)[0]
-        # return pd.DataFrame(zonal_stats(geometry, array, 
-        #             affine=affine, 
-        #             stats="max majority mean",
-        #             add_stats={"CoV":CoV}))
+
         return pd.DataFrame(zonal_stats(geometry, array, nodata=np.nan,
                     affine=affine,
-                    stats="mean"))#,
-                    #add_stats={"CoV":engineer._CoV}))   
+                    stats="mean"))
         
 
     # TODO: Select a better statistic mean/median/mode/max/etc.
@@ -446,7 +390,6 @@ class engineer(collect):
         
         return placeholder
 
-    # TODO: https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
     def distanceFeatures(self, placeholder):
         """
         Generates distance-based features for the given placeholder DataFrame.
@@ -457,10 +400,10 @@ class engineer(collect):
         placeholder (GeoDataFrame): A GeoDataFrame containing at least 'latitude' and 'longitude' columns.
         Returns:
         GeoDataFrame: The input GeoDataFrame with additional columns for the distances to the k-nearest neighbors.
+        Notes:
+            https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
+            This actually makes the model worse. So will not use it.
         """
-
-        # Distance Based Features
-        # the reason that it is k + 1 is because the first neighbour is the point itself
         k = 4
         neigh = KNN(n_neighbors= k + 1)
         neigh.fit(placeholder[["latitude","longitude"]])

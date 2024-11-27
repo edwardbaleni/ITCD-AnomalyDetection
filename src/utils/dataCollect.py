@@ -51,7 +51,6 @@ class collect:
         
         return dem, nir, red, reg, rgb, points, mask, ref_Data
 
-    # remove points that aren't in mask
     @staticmethod
     def _removePoints(geom, mask):
         """
@@ -127,24 +126,8 @@ class collect:
         # Resamples data and removes irrelevant points
         dem, nir, red, reg, rgb, points, mask, ref_data = collect._retrieveData(tif, geojson, zipped)
 
-        # Need this to match the resolution of the data
-                # print_raster(dem)
-                # print_raster(nir)
-                # print_raster(red)
-                # print_raster(reg)
-                # print_raster(rgb)
-            # rgb has the highest resolution
-            # nir most mid range resolution
-            # dem has the lowest resolution 
-            # To speed up the process, method
-            # reproject using dem and nearest neighbour for fastest processing
-            # then reproject using rgb and bilinear for standard processing
-            # then reproject using rgb and gaussian for best processing
         xds_match = dem
-        #xds_match = rgb
 
-        # don't reproject xds_match, speed up x2
-        # dem = repprojectData(dem, xds_match)
         nir = collect._repprojectData(nir, xds_match)
         red = collect._repprojectData(red, xds_match)
         reg = collect._repprojectData(reg, xds_match)
@@ -167,7 +150,6 @@ class collect:
 
         return data, delineations, mask, ref_data
 
-    # TODO: select better vegetative indices 
     def _vegIndices(self, data):
         """
         Calculate various vegetation indices from the provided spectral data.
@@ -188,7 +170,7 @@ class collect:
         None: The method updates the input DataFrame in place by adding new columns for each vegetation index.
         """
         
-            # reg stands for red edge
+        # reg stands for red edge
         
         data["ndvi"] = (data["nir"] - data["red"]) / (data["nir"] + data["red"])
         data["ndre"] = (data["nir"] - data["reg"]) / (data["nir"] + data["reg"])
@@ -227,8 +209,6 @@ class collect:
         self.spectralData = data
         #return data
 
-# This init is just to handle unzipping geojsons
-# We can make it in terms of just geojsons
 def _dCollect(size, file_type):
     """
     Collects a specified number of file paths of a given type from a directory.
@@ -245,13 +225,10 @@ def _dCollect(size, file_type):
               specified type from a sampled directory.
     """
 
-    # For now unzip all jsons
     # From current directory get 
     os.chdir('Data/')
     pop_erf = os.listdir()
 
-    # for now obtain a small subset of data from list of 316 files to test
-    # Try 20 folders
     if size < 316:
         # obtain a random sample
         random.seed(2024)
@@ -274,13 +251,6 @@ def _dCollect(size, file_type):
 
     return path_holder
 
-    # Collect file paths
-# for trial implementation
-# for final implementation, need to ask user to input file paths of 
-# interest
-# TODO: https://www.youtube.com/watch?v=YTOUBGHEgZg
-# TODO: https://www.merge.dev/blog/get-folders-google-drive-api 
-
 def collectFiles(sampleSize = 20):
     """
     Collects file paths for different file types and returns them.
@@ -296,18 +266,9 @@ def collectFiles(sampleSize = 20):
         - data_paths_geojson_zipped (list): List of file paths for zipped GeoJSON files.
     """
 
-    # Collect file paths
-    # for trial implementation
-    # for final implementation, need to ask user to input file paths of 
-    # interest
     data_paths_tif = _dCollect(size=sampleSize, file_type="tif")
     data_paths_geojson = _dCollect(size=sampleSize, file_type="geojson")
     data_paths_geojson_zipped = _dCollect(size=sampleSize, file_type="gz")
     random.seed(2024)
-    # Create raster stack in 
-    # this is a safe way to open zipped files without extracting them
-    # import gzip
-    # file = "C:/Users/balen/OneDrive/Desktop/Git/Dissertation-AnomalyDetection/Dissertation-AnomalyDetection/src/Data/93001/orchard_validation.geojson.gz"
-    # with gzip.open(file, 'rb') as f:
-    #     trys = gpd.read_file(f)
+
     return data_paths_tif, data_paths_geojson, data_paths_geojson_zipped
