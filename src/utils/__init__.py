@@ -6,3 +6,5 @@ from utils import plotAnomaly
 from utils.featureEngineering import engineer
 from utils.dataCollect import collectFiles
 from utils.dataCollect import collect
+
+from utils import cdDiagram
