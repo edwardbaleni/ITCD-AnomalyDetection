@@ -63,57 +63,57 @@ def getAverageROC(y_true, y_pred, mean_fpr):
     
 def estimators(outliers_fraction, random_state):
     return {
-        'Angle-based Outlier Detector (ABOD)': 
+        'ABOD': 
             ABOD(contamination=outliers_fraction),
             
-        'Cluster-based Local Outlier Factor (CBLOF)': 
+        'CBLOF': 
             CBLOF(n_clusters=10,
                     contamination=outliers_fraction,
                     check_estimator=False,
                     random_state=random_state),
     
-        'Histogram-base Outlier Detection (HBOS)': 
+        'HBOS': 
             HBOS(contamination=outliers_fraction),
                 
-        'Isolation Forest (IF)': 
+        'IF': 
             IForest(contamination=outliers_fraction,
                     random_state=random_state),
                         
-        'K Nearest Neighbors (KNN)': 
+        'KNN': 
             KNN(contamination=outliers_fraction),
                 
-        'Minimum Covariance Determinant (MCD)': 
+        'MCD': 
             MCD(contamination=outliers_fraction),
     
-        'Local Outlier Factor (LOF)': 
+        'LOF': 
             LOF(contamination=outliers_fraction),
 
-        'Empirical Cumulative Distribution Functions (ECOD)': 
+        'ECOD': 
             ECOD(contamination=outliers_fraction),
     
-        'Kernal Principal Component Analysis (KPCA)': 
+        'KPCA': 
             KPCA(contamination=outliers_fraction, random_state=random_state),
 
-        'Isolation-based anomaly detection using nearest-neighbor ensembles (iNNE)': 
+        'iNNE': 
             INNE(contamination=outliers_fraction),
                 
-        'Copula-Based Outlier Detection (COPOD)': 
+        'COPOD': 
             COPOD(contamination=outliers_fraction)
         }
 
 def indices():
     return {
-        'Angle-based Outlier Detector (ABOD)': 0,
-        'Cluster-based Local Outlier Factor (CBLOF)': 1,
-        'Histogram-base Outlier Detection (HBOS)': 2,
-        'Isolation Forest (IF)': 3,
-        'K Nearest Neighbors (KNN)': 4,
-        'Minimum Covariance Determinant (MCD)': 5,
-        'Local Outlier Factor (LOF)': 6,
-        'Empirical Cumulative Distribution Functions (ECOD)': 7,
-        'Kernal Principal Component Analysis (KPCA)': 8,
-        'Isolation-based anomaly detection using nearest-neighbor ensembles (iNNE)': 9,
-        'Copula-Based Outlier Detection (COPOD)': 10
+        'ABOD': 0,
+        'CBLOF': 1,
+        'HBOS': 2,
+        'IF': 3,
+        'KNN': 4,
+        'MCD': 5,
+        'LOF': 6,
+        'ECOD': 7,
+        'KPCA': 8,
+        'iNNE': 9,
+        'COPOD': 10
     }
 
 def init_results(keys, experiments, pop_size):
@@ -141,7 +141,7 @@ def inductionResults(data, erf_num):
     time_df = pd.DataFrame(columns=df_columns)
 
     # placeholder to hold the results
-    fpr_pop = 200
+    fpr_pop = 100
     mean_fpr = np.linspace(0, 1, fpr_pop)
 
     X = np.array(data.loc[:, "confidence":])

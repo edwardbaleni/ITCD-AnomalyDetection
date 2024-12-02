@@ -31,22 +31,29 @@ tpr_lower_df = tpr_lower.melt(var_name='Estimator', value_name='TPR_Lower')
 df = pd.concat([tpr_df, fpr_df, tpr_upper_df, tpr_lower_df], axis=1)
 df = df.loc[:, ~df.columns.duplicated()]
 
-abbreviations = {
-    'Angle': 'E1',
-    'Estimator2': 'E2',
-    'Estimator3': 'E3',
-    # Add more mappings as needed
-}
+df['Type'] = None
 
-df['Estimator'] = df['Estimator'].map(abbreviations)
+for i in df["Estimator"].unique():
+    if i == 'ABOD' or i == 'COPOD' or i == 'ECOD' or i == 'HBOS':
+        df.loc[df['Estimator'] == i, 'Type'] = 'Probabilistic'
+    elif i == 'CBLOF':
+        df.loc[df['Estimator'] == i, 'Type'] = 'Cluster'
+    elif i == 'IF' or i == 'KNN':
+        df.loc[df['Estimator'] == i, 'Type'] = 'Distance'
+    elif i == 'KPCA':
+        df.loc[df['Estimator'] == i, 'Type'] = 'Reconstruction'
+    else:
+        df.loc[df['Estimator'] == i, 'Type'] = 'Density'
 
 # %%
-from plotnine import ggplot, aes, geom_line, geom_ribbon, theme, theme_minimal, labs
+from plotnine import ggplot, aes, geom_line, geom_ribbon, facet_wrap, facet_grid,theme, theme_minimal, labs
 
+# instead use facet grid, of type against orchard
 (
     ggplot(df, aes(x='FPR', y='TPR', color='Estimator')) +
+    geom_ribbon(aes(ymin='TPR_Lower', ymax='TPR_Upper'), alpha=0.5) +
     geom_line() +
-    geom_ribbon(aes(ymin='TPR_Lower', ymax='TPR_Upper'), alpha=0.2) +
+    facet_wrap('Type', ncol=5) +
     labs(title='ROC Curve', x='False Positive Rate', y='True Positive Rate') +
     theme_minimal()
 )
