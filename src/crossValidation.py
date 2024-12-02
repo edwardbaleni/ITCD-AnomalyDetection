@@ -16,7 +16,6 @@ def getDataNames(sampleSize = 40):
 def process(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped):
     # Your code goes here
     # num = 0
-    print("Hello")
     # Do not scale data here because it will be split into training and testing data
     myData = utils.engineer(0,
                             [data_paths_tif], 
@@ -34,12 +33,12 @@ def process(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped):
 
 if __name__ == "__main__":
     # Get sample size from user
-    sampleSize = 20
+    sampleSize = 4
 
     data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = getDataNames(sampleSize)
     
     # I have 20 cores!
-    with Pool(cpu_count() - 12) as pool:
+    with Pool(cpu_count() - 16) as pool:
         args = zip(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped)
         results = pool.starmap(process, list(args))
 

@@ -43,6 +43,9 @@ from sklearn.metrics import RocCurveDisplay
 
 from Model import Geary
 
+# TODO: Save plots of full orchards with anomalies highlighted (Can't actually do this at induction because of train test!!!)
+
+
 sampleSize = 3
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)
 
