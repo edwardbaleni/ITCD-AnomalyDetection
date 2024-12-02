@@ -5,6 +5,12 @@
 #         Pierre-Alain Muller <pierre-alain.muller@uha.fr>
 # License: GPL3
 
+# check out: https://github.com/hfawaz/cd-diagram/blob/master/example.csv
+# for how dataset must look
+# check out:  https://github.com/hfawaz/cd-diagram/tree/master
+# to see full critial difference code.
+# ADBENCH uses this code!!
+
 import numpy as np
 import pandas as pd
 import matplotlib
