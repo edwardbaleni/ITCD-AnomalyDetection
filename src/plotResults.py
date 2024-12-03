@@ -23,10 +23,6 @@ df_auc_4["Orchard"] = "Orchard-124018"
 
 df_auc = pd.concat([df_auc_1, df_auc_2, df_auc_3, df_auc_4])
 
-
-
-
-
 palette = sns.color_palette("tab20", n_colors=11)
 g = sns.relplot(
     data=df,
@@ -56,10 +52,10 @@ for ax in g.axes.flat:
             ax.text(0.6, y_pos, f"AUC: {row['AUC']} ± {row['std']}", transform=ax.transAxes, fontsize=12, verticalalignment='top', color=color)
             y_pos += 0.05
             # Add confidence intervals (not really CI but the range of the TPR)
-            ax.fill_between(df[(df['Estimator'] == row['Estimator']) & (df['Orchard'] == row['Orchard']) ]['TPR'], 
+            ax.fill_between(df[(df['Estimator'] == row['Estimator']) & (df['Orchard'] == row['Orchard']) ]['FPR'], 
                             df[(df['Estimator'] == row['Estimator']) & (df['Orchard'] == row['Orchard']) ]['TPR_Lower'], 
                             df[(df['Estimator'] == row['Estimator']) & (df['Orchard'] == row['Orchard']) ]['TPR_Upper'], 
-                            color='grey', alpha=0.2)
+                            alpha=0.2)
     
     # Set the title of each axis to the shared learn_approach
     ax.set_title("")

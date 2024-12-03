@@ -34,12 +34,12 @@ def process(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped):
 
 if __name__ == "__main__":
     # Get sample size from user
-    sampleSize = 4
+    sampleSize = 2
 
     data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = getDataNames(sampleSize)
     
     # I have 20 cores!
-    with Pool(cpu_count() - 16) as pool:
+    with Pool(cpu_count() - 18) as pool:
         args = zip(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped)
         results = pool.starmap(process, list(args))
 
