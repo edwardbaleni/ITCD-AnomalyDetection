@@ -1,61 +1,70 @@
-# https://www.statology.org/plot-roc-curve-python/
-# https://stackoverflow.com/questions/66505014/how-to-add-auc-to-a-multiple-roc-graph-with-procs-ggroc
-# https://www.geeksforgeeks.org/working-with-multiple-plots-faceting/
-# https://stackoverflow.com/questions/67810248/in-ggplot2-specify-a-confidence-interval-95-ci-around-geom-smooth-or-any-tr
+
 # %%
 import pickle
-
-favorite_color = pickle.load(open("results/inductive/110021.pkl", "rb"))
-
-
-# %%
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt 
 
-tprs = pd.DataFrame(favorite_color[0])
-fprs = pd.DataFrame(favorite_color[1])
-aucs = favorite_color[2]
-tpr_std = pd.DataFrame(favorite_color[3])
-tpr_upper = pd.DataFrame(favorite_color[4])
-tpr_lower = pd.DataFrame(favorite_color[5])
-std_auc = favorite_color[6]
+df_1, df_auc_1 = pickle.load(open("results/inductive/110021.pkl", "rb"))
+df_2, df_auc_2 = pickle.load(open("results/inductive/114348.pkl", "rb"))
+df_3, df_auc_3 = pickle.load(open("results/inductive/122075.pkl", "rb"))
+df_4, df_auc_4 = pickle.load(open("results/inductive/124018.pkl", "rb"))
 
-# %%
-tpr_df = tprs.melt(var_name='Estimator', value_name='TPR')
+df_1['Orchard'] = '110021'
+df_2['Orchard'] = '114348'
+df_3['Orchard'] = '122075'
+df_4['Orchard'] = '124018'
 
-fpr_df = fprs.melt(var_name='Estimator', value_name='FPR')
+df = pd.concat([df_1, df_2, df_3, df_4])
 
-tpr_upper_df = tpr_upper.melt(var_name='Estimator', value_name='TPR_Upper')
+df_auc_1["Orchard"] = "110021"
+df_auc_2["Orchard"] = "114348"
+df_auc_3["Orchard"] = "122075"
+df_auc_4["Orchard"] = "124018"
 
-tpr_lower_df = tpr_lower.melt(var_name='Estimator', value_name='TPR_Lower')
+df_auc = pd.concat([df_auc_1, df_auc_2, df_auc_3, df_auc_4])
 
-df = pd.concat([tpr_df, fpr_df, tpr_upper_df, tpr_lower_df], axis=1)
-df = df.loc[:, ~df.columns.duplicated()]
 
-df['Type'] = None
 
-for i in df["Estimator"].unique():
-    if i == 'ABOD' or i == 'COPOD' or i == 'ECOD' or i == 'HBOS':
-        df.loc[df['Estimator'] == i, 'Type'] = 'Probabilistic'
-    elif i == 'CBLOF':
-        df.loc[df['Estimator'] == i, 'Type'] = 'Cluster'
-    elif i == 'IF' or i == 'KNN':
-        df.loc[df['Estimator'] == i, 'Type'] = 'Distance'
-    elif i == 'KPCA':
-        df.loc[df['Estimator'] == i, 'Type'] = 'Reconstruction'
-    else:
-        df.loc[df['Estimator'] == i, 'Type'] = 'Density'
 
-# %%
-from plotnine import ggplot, aes, geom_line, geom_ribbon, facet_wrap, facet_grid,theme, theme_minimal, labs
 
-# instead use facet grid, of type against orchard
-(
-    ggplot(df, aes(x='FPR', y='TPR', color='Estimator')) +
-    geom_ribbon(aes(ymin='TPR_Lower', ymax='TPR_Upper'), alpha=0.5) +
-    geom_line() +
-    facet_wrap('Type', ncol=5) +
-    labs(title='ROC Curve', x='False Positive Rate', y='True Positive Rate') +
-    theme_minimal()
+palette = sns.color_palette("tab20", n_colors=11)
+
+g = sns.relplot(
+    data=df,
+    x="FPR", y="TPR",
+    hue="Estimator", col="Type", row="Orchard",
+    kind="line", palette=palette,
+    height=5, aspect=1, facet_kws=dict(sharex=True), linewidth=5, zorder=5
 )
 
+# Add chance line
+pad = 5
 
+for ax in g.axes.flat:
+    # Go into each axis and add the chance line
+    ax.plot([0, 1], [0, 1], linestyle='--', color='grey', label='Chance')
+    # Obtain axis title, e.g. Prob., Recon., Clust. etc. 
+    learn_approach = ax.get_title().split(' = ')[-1]
+    # Obtain orchard number
+    orchard_number = ax.get_title().split(' = ')[1].split(' ')[0]
+    y_pos = 0.1
+    # now we want to add an auc value for each estimator in each orchard
+    for _, row in df_auc.iterrows():
+        # if 
+        if row['Estimator'] in df[df['Type'] == learn_approach]['Estimator'].unique() and row['Orchard'] == orchard_number:
+            color = palette[df['Estimator'].unique().tolist().index(row['Estimator'])]
+            ax.text(0.6, y_pos, f"AUC: {row['AUC']} ± {row['std']}", transform=ax.transAxes, fontsize=12, verticalalignment='top', color=color)
+            y_pos += 0.05
+    ax.title("")
+    # Set Headers nicely!
+    ax.annotate(learn_approach,xy=(0.5, 1), xytext=(0, pad),
+                xycoords='axes fraction', textcoords='offset points',
+                size='large', ha='center', va='baseline')
+    ax.annotate(orchard_number, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
+                xycoords=ax.yaxis.label, textcoords='offset points',
+                size='large', ha='right', va='center')
+
+plt.show()
+
+# %%

@@ -43,7 +43,9 @@ if __name__ == "__main__":
         results = pool.starmap(process, list(args))
 
     # This is to separate the results
-    auroc, ap, time = zip(*results)
+    # TODO: The last result is std. deviation for each classifier over each orchard
+
+    auroc, ap, time, std = zip(*results)
     auroc_df = pd.DataFrame()
     ap_df = pd.DataFrame()
     time_df = pd.DataFrame()

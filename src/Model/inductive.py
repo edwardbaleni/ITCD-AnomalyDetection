@@ -51,6 +51,50 @@ import pickle
 #         linewidth=5
 #         )
 
+def transformData(data):
+    tprs = pd.DataFrame(data[0])
+    fprs = pd.DataFrame(data[1])
+
+    aucs = pd.DataFrame.from_dict({ keys: str(i) for keys, i in data[2].items() }, orient='index')
+
+    tpr_std = pd.DataFrame(data[3])
+    tpr_upper = pd.DataFrame(data[4])
+    tpr_lower = pd.DataFrame(data[5])
+
+    std_auc = pd.DataFrame.from_dict({ keys: str(i) for keys, i in data[6].items() }, orient='index')
+
+    tpr_df = tprs.melt(var_name='Estimator', value_name='TPR')
+
+    fpr_df = fprs.melt(var_name='Estimator', value_name='FPR')
+
+    tpr_upper_df = tpr_upper.melt(var_name='Estimator', value_name='TPR_Upper')
+
+    tpr_lower_df = tpr_lower.melt(var_name='Estimator', value_name='TPR_Lower')
+
+    df = pd.concat([tpr_df, fpr_df, tpr_upper_df, tpr_lower_df], axis=1)
+    df = df.loc[:, ~df.columns.duplicated()]
+
+    df['Type'] = None
+
+    for i in df["Estimator"].unique():
+        if i == 'ABOD' or i == 'COPOD' or i == 'ECOD' or i == 'HBOS':
+            df.loc[df['Estimator'] == i, 'Type'] = 'Probabilistic'
+        elif i == 'CBLOF':
+            df.loc[df['Estimator'] == i, 'Type'] = 'Cluster'
+        elif i == 'IF' or i == 'KNN':
+            df.loc[df['Estimator'] == i, 'Type'] = 'Distance'
+        elif i == 'KPCA':
+            df.loc[df['Estimator'] == i, 'Type'] = 'Reconstruction'
+        else:
+            df.loc[df['Estimator'] == i, 'Type'] = 'Density'
+
+    df_auc = aucs.merge(std_auc, left_index=True, right_index=True)
+    df_auc.reset_index(inplace=True)
+    df_auc.columns = ['Estimator','AUC', 'std']
+
+    return (df, df_auc)
+    
+
 def getAverageROC(y_true, y_pred, mean_fpr):
     fpr, tpr, _ = roc_curve(y_true, y_pred)
     
@@ -212,8 +256,8 @@ def inductionResults(data, erf_num):
             # for now we assume that average precision is the area under the precision recall curve
             # https://towardsdatascience.com/what-is-average-precision-in-object-detection-localization-algorithms-and-how-to-calculate-it-3f330efe697b
 
-            aucroc = round(roc_auc_score(y_test, test_scores), ndigits=4)
-            ap = round(average_precision_score(y_test, test_scores), ndigits=4)
+            aucroc = round(roc_auc_score(y_test, test_scores), ndigits=3)
+            ap = round(average_precision_score(y_test, test_scores), ndigits=3)
             
             print('{clf_name} AUCROC:{aucroc}, AP:{ap}, \
             execution time: {duration}s'.format(
@@ -246,13 +290,14 @@ def inductionResults(data, erf_num):
     for key in tpr_results.keys():
         mean_tpr_out[key] = np.mean(tpr_results[key], axis=0)
         mean_fpr_out[key] = mean_fpr
-        mean_auc_out[key] = np.mean(auc[key])
-        std_auc[key] = np.std(auc[key])
+        mean_auc_out[key] = round(np.mean(auc[key]), ndigits=3)
+        std_auc[key] = round(np.std(auc[key]), ndigits=3)
         tpr_std[key] = np.std(tpr_results[key], axis=0)
-        tpr_upper[key] = np.minimum(mean_tpr_out[key] + std[key], 1)
-        tpr_lower[key] = mean_tpr_out[key] - std[key]
+        tpr_upper[key] = np.minimum(mean_tpr_out[key] + tpr_std[key], 1)
+        tpr_lower[key] = np.maximum(mean_tpr_out[key] - tpr_std[key], 0)
     
-    pickle.dump((mean_tpr_out, mean_fpr_out, mean_auc_out, tpr_std, tpr_upper, tpr_lower, std_auc),
+    output = transformData((mean_tpr_out, mean_fpr_out, mean_auc_out, tpr_std, tpr_upper, tpr_lower, std_auc))
+    pickle.dump(output,
                 open("results/inductive/" + erf_num + ".pkl", "wb"))
 
-    return (aucroc_df.T, ap_df.T, time_df.T)
+    return (aucroc_df.T, ap_df.T, time_df.T, std_auc)
