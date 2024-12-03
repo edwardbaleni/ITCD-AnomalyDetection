@@ -286,6 +286,9 @@ def inductionResults(data, erf_num):
     temp_df.columns = df_columns
     ap_df = pd.concat([ap_df, temp_df], axis=0)
 
+    # Std. across iterations
+    std_ap = np.std(ap_mat, axis=0)
+
     # Save mean tpr, fpr, auc, std for each classifier
     for key in tpr_results.keys():
         mean_tpr_out[key] = np.mean(tpr_results[key], axis=0)
@@ -300,4 +303,4 @@ def inductionResults(data, erf_num):
     pickle.dump(output,
                 open("results/inductive/" + erf_num + ".pkl", "wb"))
 
-    return (aucroc_df.T, ap_df.T, time_df.T, std_auc)
+    return (aucroc_df, ap_df, time_df, std_auc, std_ap)

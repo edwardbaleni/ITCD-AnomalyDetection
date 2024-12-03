@@ -10,6 +10,7 @@ from Model import Geary
 from Model import inductive
 from multiprocessing import cpu_count, Pool
 
+
 def getDataNames(sampleSize = 40):
     return utils.collectFiles(sampleSize)
 
@@ -45,25 +46,31 @@ if __name__ == "__main__":
     # This is to separate the results
     # TODO: The last result is std. deviation for each classifier over each orchard
 
-    auroc, ap, time, std = zip(*results)
+    auroc, ap, time, std_auc, std_auc = zip(*results)
+
     auroc_df = pd.DataFrame()
     ap_df = pd.DataFrame()
     time_df = pd.DataFrame()
     # turn these tuples into dataframes
     for i in range(sampleSize):
-        auroc_df = pd.concat([auroc_df, auroc[i]], axis=1)
-        ap_df = pd.concat([ap_df, ap[i]], axis=1)
-        time_df = pd.concat([time_df, time[i]], axis=1)
+        auroc_df = pd.concat([auroc_df, auroc[i]], axis=0)
+        ap_df = pd.concat([ap_df, ap[i]], axis=0)
+        time_df = pd.concat([time_df, time[i]], axis=0)
+
+    # standard deviations can be found in pickle files
+    time_df.to_csv('results/inductive/time.csv', index=False, float_format='%.3f')
+    auroc_df.to_csv('results/inductive/auc.csv', index=False, float_format='%.3f')
+    ap_df.to_csv('results/inductive/ap.csv', index=False, float_format='%.3f')
 
     # These dataframes need to be in long format for the CD diagram
 
-    auroc_long = pd.melt(auroc_df.T, 
+    auroc_long = pd.melt(auroc_df, 
                          id_vars=["Data"], 
                          value_vars= ['ABOD', 'CBLOF', 'HBOS', 'IForest', 'KNN', 'MCD', 'LOF', 'ECOD', 'KPCA', 'INNE', 'COPOD'])
-    ap_long = pd.melt(ap_df.T, 
+    ap_long = pd.melt(ap_df, 
                          id_vars=["Data"], 
                          value_vars= ['ABOD', 'CBLOF', 'HBOS', 'IForest', 'KNN', 'MCD', 'LOF', 'ECOD', 'KPCA', 'INNE', 'COPOD'])
-    time_long = pd.melt(time_df.T,
+    time_long = pd.melt(time_df,
                         id_vars=["Data"], 
                         value_vars= ['ABOD', 'CBLOF', 'HBOS', 'IForest', 'KNN', 'MCD', 'LOF', 'ECOD', 'KPCA', 'INNE', 'COPOD'])
     
@@ -81,5 +88,15 @@ if __name__ == "__main__":
     ap_long = ap_long[['classifier_name', 'dataset_name', 'accuracy']]
     time_long = time_long[['classifier_name', 'dataset_name', 'accuracy']]
 
-    df_perf = ap_long
-    cdDiagram.draw_cd_diagram(df_perf=df_perf, title='Accuracy', labels=True)
+    df_perf = auroc_long
+
+    try:
+        cdDiagram.draw_cd_diagram(df_perf=ap_long, title='Average Precision', labels=True, measure = 'AP')
+    except:
+        print("Error in AP")
+
+
+    try:
+        cdDiagram.draw_cd_diagram(df_perf=auroc_long, title='Average Precision', labels=True, measure = 'AUCROC')
+    except:
+        print("Error in AUCROC")
