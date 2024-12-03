@@ -23,6 +23,7 @@ df_auc_4["Orchard"] = "Orchard-124018"
 
 df_auc = pd.concat([df_auc_1, df_auc_2, df_auc_3, df_auc_4])
 
+plt.style.use('seaborn-v0_8-darkgrid')
 palette = sns.color_palette("tab20", n_colors=11)
 g = sns.relplot(
     data=df,
