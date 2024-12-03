@@ -1,7 +1,3 @@
-# Similar to inductive, but no train and test split.
-# The whole dataset is used.
-
-
 # %%
 from __future__ import division
 from __future__ import print_function
@@ -28,62 +24,153 @@ from pyod.models.kpca import KPCA
 from pyod.models.ecod import ECOD
 from pyod.models.inne import INNE
 
-
-from pyod.utils.utility import standardizer
-from pyod.utils.utility import precision_n_scores
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_curve
 from sklearn.metrics import average_precision_score
+from sklearn.metrics import RocCurveDisplay
 
 import utils
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import utils.plotAnomaly as plotA
-from sklearn.metrics import RocCurveDisplay
 
 from Model import Geary
 
-# TODO: Save plots of full orchards with anomalies highlighted (Can't actually do this at induction because of train test!!!)
+import pickle
+
+# def plotROC(y_true, y_pred, clf_name, fig, ax, count):
+#     display = RocCurveDisplay.from_predictions(
+#         y_true,
+#         y_pred,
+#         pos_label=1,
+#         name=clf_name,
+#         ax=ax,
+#         plot_chance_level=( count - 1 == 11),
+#         chance_level_kw={"linestyle": ":"},
+#         linewidth=5
+#         )
+
+def transformData(data):
+    tprs = pd.DataFrame(data[0])
+    fprs = pd.DataFrame(data[1])
+
+    aucs = pd.DataFrame.from_dict({ keys: str(i) for keys, i in data[2].items() }, orient='index')
+
+    tpr_std = pd.DataFrame(data[3])
+    tpr_upper = pd.DataFrame(data[4])
+    tpr_lower = pd.DataFrame(data[5])
+
+    std_auc = pd.DataFrame.from_dict({ keys: str(i) for keys, i in data[6].items() }, orient='index')
+
+    tpr_df = tprs.melt(var_name='Estimator', value_name='TPR')
+
+    fpr_df = fprs.melt(var_name='Estimator', value_name='FPR')
+
+    tpr_upper_df = tpr_upper.melt(var_name='Estimator', value_name='TPR_Upper')
+
+    tpr_lower_df = tpr_lower.melt(var_name='Estimator', value_name='TPR_Lower')
+
+    df = pd.concat([tpr_df, fpr_df, tpr_upper_df, tpr_lower_df], axis=1)
+    df = df.loc[:, ~df.columns.duplicated()]
+
+    df['Type'] = None
+
+    for i in df["Estimator"].unique():
+        if i == 'ABOD' or i == 'COPOD' or i == 'ECOD' or i == 'HBOS':
+            df.loc[df['Estimator'] == i, 'Type'] = 'Probabilistic'
+        elif i == 'CBLOF':
+            df.loc[df['Estimator'] == i, 'Type'] = 'Cluster'
+        elif i == 'IF' or i == 'KNN':
+            df.loc[df['Estimator'] == i, 'Type'] = 'Distance'
+        elif i == 'KPCA':
+            df.loc[df['Estimator'] == i, 'Type'] = 'Reconstruction'
+        else:
+            df.loc[df['Estimator'] == i, 'Type'] = 'Density'
+
+    df_auc = aucs.merge(std_auc, left_index=True, right_index=True)
+    df_auc.reset_index(inplace=True)
+    df_auc.columns = ['Estimator','AUC', 'std']
+
+    return (df, df_auc)
 
 
-sampleSize = 3
-data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)
 
-# define the number of iterations
-n_ite = 10
-n_classifiers = 12
+    
+def estimators(outliers_fraction, random_state):
+    return {
+        'ABOD': 
+            ABOD(contamination=outliers_fraction),
+            
+        'CBLOF': 
+            CBLOF(n_clusters=10,
+                    contamination=outliers_fraction,
+                    check_estimator=False,
+                    random_state=random_state),
+    
+        'HBOS': 
+            HBOS(contamination=outliers_fraction),
+                
+        'IF': 
+            IForest(contamination=outliers_fraction,
+                    random_state=random_state),
+                        
+        'KNN': 
+            KNN(contamination=outliers_fraction),
+                
+        'MCD': 
+            MCD(contamination=outliers_fraction),
+    
+        'LOF': 
+            LOF(contamination=outliers_fraction),
 
-df_columns = ['Data', '# Samples', '# Dimensions', 'Outlier Perc %',
-              'ABOD', 'CBLOF', 'HBOS', 'IForest', 'KNN', 'MCD',
-              'LOF', 'ECOD', 'KPCA', 'INNE', 'COPOD', 'Geary']
+        'ECOD': 
+            ECOD(contamination=outliers_fraction),
+    
+        'KPCA': 
+            KPCA(contamination=outliers_fraction, random_state=random_state),
+
+        'iNNE': 
+            INNE(contamination=outliers_fraction),
+                
+        'COPOD': 
+            COPOD(contamination=outliers_fraction)
+        }
+
+def indices():
+    return {
+        'ABOD': 0,
+        'CBLOF': 1,
+        'HBOS': 2,
+        'IF': 3,
+        'KNN': 4,
+        'MCD': 5,
+        'LOF': 6,
+        'ECOD': 7,
+        'KPCA': 8,
+        'iNNE': 9,
+        'COPOD': 10
+    }
+
+def init_results(keys, pop_size):
+    # true positive rate, false positive rate, thresholds
+    return {key: np.zeros([pop_size]) for key in keys}, {key: np.zeros([pop_size]) for key in keys}, {key: 0 for key in keys}
 
 
-# initialize the container for saving the results
-roc_df = pd.DataFrame(columns=df_columns)
-prn_df = pd.DataFrame(columns=df_columns)
-ap_df = pd.DataFrame(columns=df_columns)
-time_df = pd.DataFrame(columns=df_columns)
+def inductionResults(data, erf_num):
 
-for j in range(sampleSize):
-    num = j
+    n_classifiers = 11
 
-    myData = utils.engineer(num, 
-                                data_paths_tif, 
-                                data_paths_geojson, 
-                                data_paths_geojson_zipped,
-                                False)
-    data = myData.data.copy(deep=True)
-    delineations = myData.delineations.copy(deep=True)
-    mask = myData.mask.copy(deep=True)
-    spectralData = myData.spectralData
-    erf_num = myData.erf
-    refData = myData.ref_data.copy(deep=True)
-    # For plotting
-    tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
-    tryout = tryout/255
+    df_columns = ['Data', '# Samples', '# Dimensions', 'Outlier Perc %',
+                'ABOD', 'CBLOF', 'HBOS', 'IForest', 'KNN', 'MCD',
+                'LOF', 'ECOD', 'KPCA', 'INNE', 'COPOD']
 
-    mat_file_list = erf_num
-    mat = data
+
+    # initialize the container for saving the results
+    aucroc_df = pd.DataFrame(columns=df_columns)
+    ap_df = pd.DataFrame(columns=df_columns)
+    time_df = pd.DataFrame(columns=df_columns)
+
     X = np.array(data.loc[:, "confidence":])
     y = np.array(data.loc[:, "Y"]).T 
     # Change outlier to 1 and inlier to 0 in data
@@ -96,207 +183,73 @@ for j in range(sampleSize):
         outliers_percentage = 0.1
 
     # construct containers for saving results
-    roc_list = [erf_num, X.shape[0], X.shape[1], outliers_percentage]
-    prn_list = [erf_num, X.shape[0], X.shape[1], outliers_percentage]
-    ap_list = [erf_num, X.shape[0], X.shape[1], outliers_percentage]
-    time_list = [erf_num, X.shape[0], X.shape[1], outliers_percentage]
+    aucroc_list = ["Orchard_"+erf_num, X.shape[0], X.shape[1], outliers_percentage]
+    ap_list = ["Orchard_"+erf_num, X.shape[0], X.shape[1], outliers_percentage]
+    time_list = ["Orchard_"+erf_num, X.shape[0], X.shape[1], outliers_percentage]
 
-    roc_mat = np.zeros([n_ite, n_classifiers])
-    prn_mat = np.zeros([n_ite, n_classifiers])
-    ap_mat = np.zeros([n_ite, n_classifiers])
-    time_mat = np.zeros([n_ite, n_classifiers])
+    # initialize the container for saving the results
+    aucroc_mat = np.zeros([n_classifiers])
+    ap_mat = np.zeros([n_classifiers])
+    time_mat = np.zeros([n_classifiers])
 
-    for i in range(n_ite):
-        print("\n... Processing", erf_num, '...', 'Iteration', i + 1)
-        random_state = np.random.RandomState(i)
+    # just to give the indices a label.
+    classifiers_indices = indices()
 
-        # 60% data for training and 40% for testing
-        X_train, X_test, y_train, y_test = train_test_split(X,
-                                                            y,
-                                                            test_size=0.4,
-                                                            stratify=y,
-                                                            random_state=random_state)
+    # TODO: create a dictionary to hold matrix of tpr, fpr, thresholds results for 
+    # each classifier and each iteration
+    tpr_results, fpr_results, auc = init_results(keys=classifiers_indices.keys())    
 
-        # standardizing data for processing
-        # TODO: use robust scaler in engineer class
-        # X_train_norm, X_test_norm = standardizer(X_train, X_test)
-        X_train_norm = utils.engineer._scaleData(X_train)
-        X_test_norm = utils.engineer._scaleData(X_test)
+    random_state = np.random.RandomState(42)
 
+    # classifiers must be reinitialized for each iteration
+    classifiers = estimators(outliers_fraction, random_state)
 
+    # standardizing data for processing
+    X = utils.engineer._scaleData(X)
 
-# ECOD
-#  INNE
-        classifiers = {'Angle-based Outlier Detector (ABOD)': ABOD(
-            contamination=outliers_fraction),
-            'Cluster-based Local Outlier Factor (CBLOF)': CBLOF(
-                n_clusters=10,
-                contamination=outliers_fraction,
-                check_estimator=False,
-                random_state=random_state),
-            'Histogram-base Outlier Detection (HBOS)': HBOS(
-                contamination=outliers_fraction),
-            'Isolation Forest (IF)': IForest(contamination=outliers_fraction,
-                                        random_state=random_state),
-            'K Nearest Neighbors (KNN)': KNN(contamination=outliers_fraction),
-            'Minimum Covariance Determinant (MCD)': MCD(contamination=outliers_fraction),
-            'Local Outlier Factor (LOF)': LOF(
-                contamination=outliers_fraction),
-            'Empirical Cumulative Distribution Functions (ECOD)': ECOD(contamination=outliers_fraction),
-            'Kernal Principal Component Analysis (KPCA)': KPCA(
-                contamination=outliers_fraction, random_state=random_state),
-            'Isolation-based anomaly detection using nearest-neighbor ensembles (iNNE)': INNE(contamination=outliers_fraction),
-            'Copula-Based Outlier Detection (COPOD)': COPOD(contamination=outliers_fraction),
-            'Geary Multivariate Spatial Autocorrelation (Geary)': Geary(contamination=outliers_fraction, 
-                                                                        geometry=data[["geometry"]], 
-                                                                        centroid=data[["centroid"]])
-        }
-        classifiers_indices = {
-            'Angle-based Outlier Detector (ABOD)': 0,
-            'Cluster-based Local Outlier Factor (CBLOF)': 1,
-            'Histogram-base Outlier Detection (HBOS)': 2,
-            'Isolation Forest (IF)': 3,
-            'K Nearest Neighbors (KNN)': 4,
-            'Minimum Covariance Determinant (MCD)': 5,
-            'Local Outlier Factor (LOF)': 6,
-            'Empirical Cumulative Distribution Functions (ECOD)': 7,
-            'Kernal Principal Component Analysis (KPCA)': 8,
-            'Isolation-based anomaly detection using nearest-neighbor ensembles (iNNE)': 9,
-            'Copula-Based Outlier Detection (COPOD)': 10,
-            'Geary Multivariate Spatial Autocorrelation (Geary)': 11
-        }
+    for clf_name, clf in classifiers.items():
+        t0 = time()
+        clf.fit(X)
+        test_scores = clf.decision_scores_
+        t1 = time()
+        duration = round(t1 - t0, ndigits=4)
+        test_scores = np.nan_to_num(test_scores)
+        
+        # for now we assume that average precision is the area under the precision recall curve
+        # https://towardsdatascience.com/what-is-average-precision-in-object-detection-localization-algorithms-and-how-to-calculate-it-3f330efe697b
 
-        fig, ax = plt.subplots(1, 1, figsize=(20, 15))
-        count = 0
-        for clf_name, clf in classifiers.items():
-            t0 = time()
-            if clf_name == 'Geary Multivariate Spatial Autocorrelation (Geary)':
-                X1 = utils.engineer._scaleData(X)
-                clf.fit(X1)
-                test_scores = clf.decision_scores_
-                y_test = y
-            else:
-                clf.fit(X_train_norm)
-                test_scores = clf.decision_function(X_test_norm)
-            t1 = time()
-            duration = round(t1 - t0, ndigits=4)
-            test_scores = np.nan_to_num(test_scores)
+        aucroc = round(roc_auc_score(y, test_scores), ndigits=3)
+        ap = round(average_precision_score(y, test_scores), ndigits=3)
+        
+        print('{clf_name} AUCROC:{aucroc}, AP:{ap}, \
+        execution time: {duration}s'.format(
+            clf_name=clf_name, aucroc=aucroc, ap=ap, duration=duration))
+        
+        tpr_results[clf_name], fpr_results[clf_name], _ = roc_curve(y, test_scores)
 
-            roc = round(roc_auc_score(y_test, test_scores), ndigits=4)
-            prn = round(precision_n_scores(y_test, test_scores), ndigits=4)
-            ap = round(average_precision_score(y_test, test_scores), ndigits=4)
+        auc[clf_name] = aucroc
 
-            print('{clf_name} AUCROC:{roc}, precision @ rank n:{prn}, AP:{ap}, \
-              execution time: {duration}s'.format(
-                clf_name=clf_name, roc=roc, prn=prn, ap=ap, duration=duration))
-            
-            if j == sampleSize - 1:
-                count += 1
-                y_true = y_test
-                y_pred = test_scores
+        time_mat[classifiers_indices[clf_name]] = duration
+        aucroc_mat[classifiers_indices[clf_name]] = aucroc
+        ap_mat[classifiers_indices[clf_name]] = ap
 
-                display = RocCurveDisplay.from_predictions(
-                    y_true,
-                    y_pred,
-                    pos_label=1,
-                    name=clf_name,
-                    ax=ax,
-                    plot_chance_level=( count - 1 == 11),
-                    chance_level_kw={"linestyle": ":"},
-                    linewidth=5
-                )
-
-                fig.savefig("test.png", dpi=fig.dpi)
-
-            time_mat[i, classifiers_indices[clf_name]] = duration
-            roc_mat[i, classifiers_indices[clf_name]] = roc
-            prn_mat[i, classifiers_indices[clf_name]] = prn
-            ap_mat[i, classifiers_indices[clf_name]] = ap
-
-    time_list = time_list + np.mean(time_mat, axis=0).tolist()
+    time_list = time_list + time_mat.tolist()
     temp_df = pd.DataFrame(time_list).transpose()
     temp_df.columns = df_columns
     time_df = pd.concat([time_df, temp_df], axis=0)
 
-    roc_list = roc_list + np.mean(roc_mat, axis=0).tolist()
-    temp_df = pd.DataFrame(roc_list).transpose()
+    aucroc_list = aucroc_list + aucroc_mat.tolist()
+    temp_df = pd.DataFrame(aucroc_list).transpose()
     temp_df.columns = df_columns
-    roc_df = pd.concat([roc_df, temp_df], axis=0)
+    aucroc_df = pd.concat([aucroc_df, temp_df], axis=0)
 
-    prn_list = prn_list + np.mean(prn_mat, axis=0).tolist()
-    temp_df = pd.DataFrame(prn_list).transpose()
-    temp_df.columns = df_columns
-    prn_df = pd.concat([prn_df, temp_df], axis=0)
-
-    ap_list = ap_list + np.mean(ap_mat, axis=0).tolist()
+    ap_list = ap_list + ap_mat.tolist()
     temp_df = pd.DataFrame(ap_list).transpose()
     temp_df.columns = df_columns
     ap_df = pd.concat([ap_df, temp_df], axis=0)
+    
+    # output = transformData((mean_tpr_out, mean_fpr_out, mean_auc_out, tpr_std, tpr_upper, tpr_lower, std_auc))
+    pickle.dump((tpr_results, fpr_results, auc),
+                open("results/inductive/" + erf_num + ".pkl", "wb"))
 
-    # Save the results for each run
-    time_df.to_csv('Results/Inductive/time.csv', index=False, float_format='%.3f')
-    roc_df.to_csv('Results/Inductive/roc.csv', index=False, float_format='%.3f')
-    prn_df.to_csv('Results/Inductive/prc.csv', index=False, float_format='%.3f')
-    ap_df.to_csv('Results/Inductive/ap.csv', index=False, float_format='%.3f')
-
-# %%
-
-
-
-t1 = time_df.copy(deep=True)
-r1 = roc_df.copy(deep=True)
-p1 = prn_df.copy(deep=True)
-a1 = ap_df.copy(deep=True)
-
-
-random_state = np.random.RandomState(i)
-
-#         # 60% data for training and 40% for testing
-# X_train, X_test, y_train, y_test = train_test_split(X,
-#                                                             y,
-#                                                             test_size=0.4,
-#                                                             stratify=y,
-#                                                             random_state=random_state)
-
-# X_train_norm, X_test_norm = standardizer(X_train, X_test)
-
-
-X = utils.engineer._scaleData(X)
-
-fig, ax = plt.subplots(1, 1, figsize=(20, 15))
-count = 0
-plt.rcParams.update({'font.size': 15})
-for clf_name, clf in classifiers.items():
-    count += 1
-    t0 = time()
-    if clf_name == 'Geary Multivariate Spatial Autocorrelation (Geary)':
-        clf.fit(X)
-        test_scores = clf.decision_scores_
-        y_test = y
-    else:
-        clf.fit(X)
-        test_scores = clf.decision_function(X)
-    t1 = time()
-    duration = round(t1 - t0, ndigits=4)
-    test_scores = np.nan_to_num(test_scores)
-
-    y_true = y_test
-    y_pred = test_scores
-
-    display = RocCurveDisplay.from_predictions(
-            y_true,
-            y_pred,
-            pos_label=1,
-            name=clf_name,
-            ax=ax,
-            plot_chance_level=(11 == count - 1),
-            chance_level_kw={"linestyle": ":"},
-            linewidth=5
-        )
-
-# fig.savefig("test.png", dpi=fig.dpi)
-
-# %%
-roc_df.T
-
-# %%
+    return (aucroc_df, ap_df, time_df, std_auc, std_ap)

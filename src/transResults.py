@@ -35,10 +35,14 @@ def process(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped):
 # %%
 if __name__ == "__main__":
     # Get sample size from user
-    sampleSize = 2
-
+    sampleSize = 70
+    testSize = 30
     data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = getDataNames(sampleSize)
     
+    data_paths_tif = data_paths_tif[-testSize:]
+    data_paths_geojson = data_paths_geojson[-testSize:]
+    data_paths_geojson_zipped = data_paths_geojson_zipped[-testSize:]
+
     # I have 20 cores!
     with Pool(cpu_count() - 18) as pool:
         args = zip(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped)
