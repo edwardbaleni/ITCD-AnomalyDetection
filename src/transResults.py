@@ -1,4 +1,3 @@
-# %%
 import utils
 
 import matplotlib.pyplot as plt
@@ -32,7 +31,6 @@ def process(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped):
     
     return results
 
-# %%
 if __name__ == "__main__":
     # Get sample size from user
     sampleSize = 70
@@ -43,15 +41,18 @@ if __name__ == "__main__":
     data_paths_geojson = data_paths_geojson[-testSize:]
     data_paths_geojson_zipped = data_paths_geojson_zipped[-testSize:]
 
+    data_paths_tif = data_paths_tif[0:2]
+    data_paths_geojson = data_paths_geojson[0:2]
+    data_paths_geojson_zipped = data_paths_geojson_zipped[0:2]
     # I have 20 cores!
-    with Pool(cpu_count() - 18) as pool:
+    with Pool(cpu_count() - 17) as pool:
         args = zip(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped)
         results = pool.starmap(process, list(args))
 
     # This is to separate the results
     # TODO: The last result is std. deviation for each classifier over each orchard
 
-    auroc, ap, time, std_auc, std_auc = zip(*results)
+    auroc, ap, time = zip(*results)
 
     auroc_df = pd.DataFrame()
     ap_df = pd.DataFrame()
@@ -63,9 +64,9 @@ if __name__ == "__main__":
         time_df = pd.concat([time_df, time[i]], axis=0)
 
     # standard deviations can be found in pickle files
-    time_df.to_csv('results/inductive/time.csv', index=False, float_format='%.3f')
-    auroc_df.to_csv('results/inductive/auc.csv', index=False, float_format='%.3f')
-    ap_df.to_csv('results/inductive/ap.csv', index=False, float_format='%.3f')
+    time_df.to_csv('results/transductive/time.csv', index=False, float_format='%.3f')
+    auroc_df.to_csv('results/transductive/auc.csv', index=False, float_format='%.3f')
+    ap_df.to_csv('results/transductive/ap.csv', index=False, float_format='%.3f')
 
     # These dataframes need to be in long format for the CD diagram
 
@@ -96,12 +97,12 @@ if __name__ == "__main__":
     df_perf = auroc_long
 
     try:
-        cdDiagram.draw_cd_diagram(df_perf=ap_long, title='Average Precision', labels=True, measure = 'AP')
+        cdDiagram.draw_cd_diagram(df_perf=ap_long, title='Average Precision', labels=True, measure = 'transductive/AP')
     except:
         print("Error in AP")
 
 
     try:
-        cdDiagram.draw_cd_diagram(df_perf=auroc_long, title='Average Precision', labels=True, measure = 'AUCROC')
+        cdDiagram.draw_cd_diagram(df_perf=auroc_long, title='Average Precision', labels=True, measure = 'transductive/AUCROC')
     except:
         print("Error in AUCROC")

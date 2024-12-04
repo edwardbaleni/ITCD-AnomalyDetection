@@ -39,39 +39,17 @@ from Model import Geary
 
 import pickle
 
-# def plotROC(y_true, y_pred, clf_name, fig, ax, count):
-#     display = RocCurveDisplay.from_predictions(
-#         y_true,
-#         y_pred,
-#         pos_label=1,
-#         name=clf_name,
-#         ax=ax,
-#         plot_chance_level=( count - 1 == 11),
-#         chance_level_kw={"linestyle": ":"},
-#         linewidth=5
-#         )
-
 def transformData(data):
     tprs = pd.DataFrame(data[0])
     fprs = pd.DataFrame(data[1])
 
     aucs = pd.DataFrame.from_dict({ keys: str(i) for keys, i in data[2].items() }, orient='index')
 
-    tpr_std = pd.DataFrame(data[3])
-    tpr_upper = pd.DataFrame(data[4])
-    tpr_lower = pd.DataFrame(data[5])
-
-    std_auc = pd.DataFrame.from_dict({ keys: str(i) for keys, i in data[6].items() }, orient='index')
-
     tpr_df = tprs.melt(var_name='Estimator', value_name='TPR')
 
     fpr_df = fprs.melt(var_name='Estimator', value_name='FPR')
 
-    tpr_upper_df = tpr_upper.melt(var_name='Estimator', value_name='TPR_Upper')
-
-    tpr_lower_df = tpr_lower.melt(var_name='Estimator', value_name='TPR_Lower')
-
-    df = pd.concat([tpr_df, fpr_df, tpr_upper_df, tpr_lower_df], axis=1)
+    df = pd.concat([tpr_df, fpr_df], axis=1)
     df = df.loc[:, ~df.columns.duplicated()]
 
     df['Type'] = None
@@ -85,19 +63,28 @@ def transformData(data):
             df.loc[df['Estimator'] == i, 'Type'] = 'Distance'
         elif i == 'KPCA':
             df.loc[df['Estimator'] == i, 'Type'] = 'Reconstruction'
+        elif i == 'Geary':
+            df.loc[df['Estimator'] == i, 'Type'] = 'Spatial'
         else:
             df.loc[df['Estimator'] == i, 'Type'] = 'Density'
 
-    df_auc = aucs.merge(std_auc, left_index=True, right_index=True)
-    df_auc.reset_index(inplace=True)
-    df_auc.columns = ['Estimator','AUC', 'std']
+    aucs.reset_index(inplace=True)
+    aucs.columns = ['Estimator','AUC']
 
-    return (df, df_auc)
+    return (df, aucs)
 
-
-
+def getROC(y_true, y_pred, mean_fpr):
+    fpr, tpr, _ = roc_curve(y_true, y_pred)
     
-def estimators(outliers_fraction, random_state):
+    tpr = np.interp(mean_fpr, fpr, tpr)
+    tpr[0] = 0.0
+
+    auc = roc_auc_score(y_true, y_pred)
+
+    return tpr, mean_fpr, round(auc, ndigits=3)
+
+    # TODO: Pick outliers factor that is common over many orchards as a default!
+def estimators(outliers_fraction, random_state, geometry=None, centroid=None):
     return {
         'ABOD': 
             ABOD(contamination=outliers_fraction),
@@ -134,7 +121,12 @@ def estimators(outliers_fraction, random_state):
             INNE(contamination=outliers_fraction),
                 
         'COPOD': 
-            COPOD(contamination=outliers_fraction)
+            COPOD(contamination=outliers_fraction),
+
+        'Geary':
+            Geary(contamination=outliers_fraction, 
+                  geometry=geometry, 
+                  centroid=centroid)
         }
 
 def indices():
@@ -149,7 +141,8 @@ def indices():
         'ECOD': 7,
         'KPCA': 8,
         'iNNE': 9,
-        'COPOD': 10
+        'COPOD': 10,
+        'Geary': 11
     }
 
 def init_results(keys, pop_size):
@@ -157,13 +150,12 @@ def init_results(keys, pop_size):
     return {key: np.zeros([pop_size]) for key in keys}, {key: np.zeros([pop_size]) for key in keys}, {key: 0 for key in keys}
 
 
-def inductionResults(data, erf_num):
-
-    n_classifiers = 11
+def transductionResults(data, erf_num):
+    n_classifiers = 12
 
     df_columns = ['Data', '# Samples', '# Dimensions', 'Outlier Perc %',
                 'ABOD', 'CBLOF', 'HBOS', 'IForest', 'KNN', 'MCD',
-                'LOF', 'ECOD', 'KPCA', 'INNE', 'COPOD']
+                'LOF', 'ECOD', 'KPCA', 'INNE', 'COPOD', 'Geary']
 
 
     # initialize the container for saving the results
@@ -192,17 +184,26 @@ def inductionResults(data, erf_num):
     ap_mat = np.zeros([n_classifiers])
     time_mat = np.zeros([n_classifiers])
 
+    fpr_pop = 100
+    mean_fpr = np.linspace(0, 1, fpr_pop)
+
     # just to give the indices a label.
     classifiers_indices = indices()
 
     # TODO: create a dictionary to hold matrix of tpr, fpr, thresholds results for 
     # each classifier and each iteration
-    tpr_results, fpr_results, auc = init_results(keys=classifiers_indices.keys())    
+    tpr_results, fpr_results, auc = init_results(keys=classifiers_indices.keys(),
+                                                 pop_size=fpr_pop)#y.shape[0])
+
+    labels = tpr_results.copy()
 
     random_state = np.random.RandomState(42)
 
     # classifiers must be reinitialized for each iteration
-    classifiers = estimators(outliers_fraction, random_state)
+    classifiers = estimators(outliers_fraction, 
+                             random_state, 
+                             data["geometry"], 
+                             data["centroid"])
 
     # standardizing data for processing
     X = utils.engineer._scaleData(X)
@@ -225,9 +226,12 @@ def inductionResults(data, erf_num):
         execution time: {duration}s'.format(
             clf_name=clf_name, aucroc=aucroc, ap=ap, duration=duration))
         
-        tpr_results[clf_name], fpr_results[clf_name], _ = roc_curve(y, test_scores)
+        # tpr_results[clf_name], fpr_results[clf_name], _ = roc_curve(y, test_scores)
+        tpr_results[clf_name], fpr_results[clf_name], auc[clf_name] = getROC(y, test_scores, mean_fpr)
 
-        auc[clf_name] = aucroc
+        # auc[clf_name] = aucroc
+
+        labels[clf_name] = clf.labels_
 
         time_mat[classifiers_indices[clf_name]] = duration
         aucroc_mat[classifiers_indices[clf_name]] = aucroc
@@ -248,8 +252,9 @@ def inductionResults(data, erf_num):
     temp_df.columns = df_columns
     ap_df = pd.concat([ap_df, temp_df], axis=0)
     
-    # output = transformData((mean_tpr_out, mean_fpr_out, mean_auc_out, tpr_std, tpr_upper, tpr_lower, std_auc))
-    pickle.dump((tpr_results, fpr_results, auc),
-                open("results/inductive/" + erf_num + ".pkl", "wb"))
+    output = transformData((tpr_results, fpr_results, auc))
+    output.append(labels)
+    pickle.dump(output, #(tpr_results, fpr_results, labels, auc),
+                open("results/transductive/" + erf_num + ".pkl", "wb"))
 
-    return (aucroc_df, ap_df, time_df, std_auc, std_ap)
+    return (aucroc_df, ap_df, time_df)

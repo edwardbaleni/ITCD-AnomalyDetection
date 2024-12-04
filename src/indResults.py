@@ -91,12 +91,12 @@ if __name__ == "__main__":
     df_perf = auroc_long
 
     try:
-        cdDiagram.draw_cd_diagram(df_perf=ap_long, title='Average Precision', labels=True, measure = 'AP')
+        cdDiagram.draw_cd_diagram(df_perf=ap_long, title='Average Precision', labels=True, measure = 'inductive/AP')
     except:
         print("Error in AP")
 
 
     try:
-        cdDiagram.draw_cd_diagram(df_perf=auroc_long, title='Average Precision', labels=True, measure = 'AUCROC')
+        cdDiagram.draw_cd_diagram(df_perf=auroc_long, title='Average Precision', labels=True, measure = 'inductive/AP')
     except:
         print("Error in AUCROC")

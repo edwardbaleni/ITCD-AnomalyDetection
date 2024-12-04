@@ -36,4 +36,4 @@ class Geary:
         probs = expit(centerScore)
 
         self.decision_scores_ = probs
-        self.labels_ = np.where(probs >= (1 - self.contamination), 1, 0)
+        self.labels_ = np.where(probs >= (1 - self.contamination), 0, 1)
