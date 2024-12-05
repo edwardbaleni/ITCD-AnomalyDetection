@@ -26,6 +26,8 @@ from pyod.models.inne import INNE
 
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
+from sklearn.metrics import auc
+from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import average_precision_score
 from sklearn.metrics import RocCurveDisplay
 
@@ -39,17 +41,22 @@ from Model import Geary
 
 import pickle
 
-def transformData(data):
-    tprs = pd.DataFrame(data[0])
-    fprs = pd.DataFrame(data[1])
+def transformData(data, PR=False):
+    # y is either precision or TPR
+    y = pd.DataFrame(data[0])
+    # x is either recall or FPR
+    x = pd.DataFrame(data[1])
+    # result is either AUC or AP
+    result = pd.DataFrame.from_dict({ keys: str(i) for keys, i in data[2].items() }, orient='index')
 
-    aucs = pd.DataFrame.from_dict({ keys: str(i) for keys, i in data[2].items() }, orient='index')
+    if PR == False:
+        y = y.melt(var_name='Estimator', value_name='TPR')
+        x = x.melt(var_name='Estimator', value_name='FPR')
+    else:
+        y = y.melt(var_name='Estimator', value_name='Precision')
+        x = x.melt(var_name='Estimator', value_name='Recall')
 
-    tpr_df = tprs.melt(var_name='Estimator', value_name='TPR')
-
-    fpr_df = fprs.melt(var_name='Estimator', value_name='FPR')
-
-    df = pd.concat([tpr_df, fpr_df], axis=1)
+    df = pd.concat([y, x], axis=1)
     df = df.loc[:, ~df.columns.duplicated()]
 
     df['Type'] = None
@@ -68,10 +75,13 @@ def transformData(data):
         else:
             df.loc[df['Estimator'] == i, 'Type'] = 'Density'
 
-    aucs.reset_index(inplace=True)
-    aucs.columns = ['Estimator','AUC']
+    result.reset_index(inplace=True)
+    if PR == False:
+        result.columns = ['Estimator','AUC']
+    else:
+        result.columns = ['Estimator','AP']
 
-    return (df, aucs)
+    return (df, result)
 
 def getROC(y_true, y_pred, mean_fpr):
     fpr, tpr, _ = roc_curve(y_true, y_pred)
@@ -82,6 +92,15 @@ def getROC(y_true, y_pred, mean_fpr):
     auc = roc_auc_score(y_true, y_pred)
 
     return tpr, mean_fpr, round(auc, ndigits=3)
+
+def getPR(y_true, y_pred, mean_recall):
+    precision, recall, _ = precision_recall_curve(y_true, y_pred)
+    ap = auc(recall, precision)
+    
+    # precision = np.interp(mean_recall, recall, precision)
+    # precision[0] = 1.0
+
+    return precision, recall, round(ap, ndigits=3) #mean_recall, round(ap, ndigits=3)
 
     # TODO: Pick outliers factor that is common over many orchards as a default!
 def estimators(outliers_fraction, random_state, geometry=None, centroid=None):
@@ -194,6 +213,8 @@ def transductionResults(data, erf_num):
     # each classifier and each iteration
     tpr_results, fpr_results, auc = init_results(keys=classifiers_indices.keys(),
                                                  pop_size=fpr_pop)#y.shape[0])
+    precision, recall, aucpr = init_results(keys=classifiers_indices.keys(),
+                                            pop_size=fpr_pop)
 
     labels = tpr_results.copy()
 
@@ -228,7 +249,8 @@ def transductionResults(data, erf_num):
         
         # tpr_results[clf_name], fpr_results[clf_name], _ = roc_curve(y, test_scores)
         tpr_results[clf_name], fpr_results[clf_name], auc[clf_name] = getROC(y, test_scores, mean_fpr)
-
+        
+        precision[clf_name], recall[clf_name], aucpr[clf_name] = getPR(y, test_scores, mean_fpr[::-1])
         # auc[clf_name] = aucroc
 
         labels[clf_name] = clf.labels_
@@ -253,7 +275,9 @@ def transductionResults(data, erf_num):
     ap_df = pd.concat([ap_df, temp_df], axis=0)
     
     output = transformData((tpr_results, fpr_results, auc))
-    output.append(labels)
+    output = output + (labels,)
+    output = output + (precision, recall, aucpr)
+
     pickle.dump(output, #(tpr_results, fpr_results, labels, auc),
                 open("results/transductive/" + erf_num + ".pkl", "wb"))
 
