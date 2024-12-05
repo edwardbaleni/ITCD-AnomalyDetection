@@ -6,19 +6,26 @@ import matplotlib.pyplot as plt
 
 AUCROC_1, AUC_1, labels, P_1,R_1, AP_1 = pickle.load(open("results/transductive/110203.pkl", "rb"))
 AUCROC_2, AUC_2, labels, P_2,R_2, AP_2 = pickle.load(open("results/transductive/111702.pkl", "rb"))
+AUCROC_3, AUC_3, labels, P_3,R_3, AP_3 = pickle.load(open("results/transductive/106346.pkl", "rb"))
+AUCROC_4, AUC_4, labels, P_4,R_4, AP_4 = pickle.load(open("results/transductive/106902.pkl", "rb"))
+AUCROC_5, AUC_5, labels, P_5,R_5, AP_5 = pickle.load(open("results/transductive/111648.pkl", "rb"))
 
 
 AUCROC_1['Orchard'] = 'Orchard-110203'
 AUCROC_2['Orchard'] = 'Orchard-111702'
+AUCROC_3['Orchard'] = 'Orchard-106346'
+AUCROC_4['Orchard'] = 'Orchard-106902'
+AUCROC_5['Orchard'] = 'Orchard-111648'
 
-AUCROC = pd.concat([AUCROC_1, AUCROC_2])
+AUCROC = pd.concat([AUCROC_1, AUCROC_2, AUCROC_3, AUCROC_4, AUCROC_5])
 
 AUC_1["Orchard"] = "Orchard-110203"
 AUC_2["Orchard"] = "Orchard-111702"
+AUC_3["Orchard"] = "Orchard-106346"
+AUC_4["Orchard"] = "Orchard-106902"
+AUC_5["Orchard"] = "Orchard-111648"
 
-AUCROC_auc = pd.concat([AUC_1, AUC_2])
-
-
+AUCROC_auc = pd.concat([AUC_1, AUC_2, AUC_3, AUC_4, AUC_5])
 
 plt.style.use('seaborn-v0_8-darkgrid')
 palette = sns.color_palette("tab20", n_colors=12)
@@ -71,7 +78,7 @@ for text in g._legend.get_texts():
     text.set_fontsize(18)
 
 # Move the legend more to the right
-g._legend.set_bbox_to_anchor((1, 0.5))
+g._legend.set_bbox_to_anchor((1.025, 0.5))
     
 plt.show()
 
@@ -101,11 +108,11 @@ for i,j in P_1.items():
 
 
 # Orchard-110203, Orchard-111702
-Orch = {0:[P_1, R_1, AP_1], 1:[P_2, R_2, AP_2]}
-Orch_index = {0:"Orchard-110203", 1:"Orchard-111702"}
+Orch = {0:[P_1, R_1, AP_1], 1:[P_2, R_2, AP_2], 2:[P_3, R_3, AP_3], 3:[P_4, R_4, AP_4], 4:[P_5, R_5, AP_5]}
+Orch_index = {0:"Orchard-110203", 1:"Orchard-111702", 2:"Orchard-106346", 3:"Orchard-106902", 4:"Orchard-111648"}
 
 plt.style.use('seaborn-v0_8-darkgrid')
-fig, ax = plt.subplots(2, 6, figsize=(40, 15), sharex=True, sharey=True)
+fig, ax = plt.subplots(5, 6, figsize=(40, 25), sharex=True, sharey=True)
 
 palette = sns.color_palette("tab20", n_colors=12)
 

@@ -41,11 +41,11 @@ if __name__ == "__main__":
     data_paths_geojson = data_paths_geojson[-testSize:]
     data_paths_geojson_zipped = data_paths_geojson_zipped[-testSize:]
 
-    data_paths_tif = data_paths_tif[0:2]
-    data_paths_geojson = data_paths_geojson[0:2]
-    data_paths_geojson_zipped = data_paths_geojson_zipped[0:2]
+    data_paths_tif = data_paths_tif[0:5]
+    data_paths_geojson = data_paths_geojson[0:5]
+    data_paths_geojson_zipped = data_paths_geojson_zipped[0:5]
     # I have 20 cores!
-    with Pool(cpu_count() - 17) as pool:
+    with Pool(cpu_count() - 14) as pool:
         args = zip(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped)
         results = pool.starmap(process, list(args))
 
