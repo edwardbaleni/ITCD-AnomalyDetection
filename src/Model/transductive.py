@@ -103,7 +103,7 @@ def getPR(y_true, y_pred, mean_recall):
     return precision, recall, round(ap, ndigits=3) #mean_recall, round(ap, ndigits=3)
 
     # TODO: Pick outliers factor that is common over many orchards as a default!
-def estimators(outliers_fraction, random_state, geometry=None, centroid=None):
+def estimators(outliers_fraction, random_state, geometry=None, centroid=None, vars=None):
     return {
         'ABOD': 
             ABOD(contamination=outliers_fraction),
@@ -224,7 +224,8 @@ def transductionResults(data, erf_num):
     classifiers = estimators(outliers_fraction, 
                              random_state, 
                              data["geometry"], 
-                             data["centroid"])
+                             data["centroid"],
+                             data.loc[:, "confidence":].columns)
 
     # standardizing data for processing
     X = utils.engineer._scaleData(X)

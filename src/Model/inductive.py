@@ -105,7 +105,7 @@ def getAverageROC(y_true, y_pred, mean_fpr):
 
     return mean_tpr, mean_fpr, roc_auc
     
-def estimators(outliers_fraction, random_state):
+def estimators(outliers_fraction, random_state, vars=None):
     return {
         'ABOD': 
             ABOD(contamination=outliers_fraction),
@@ -231,7 +231,7 @@ def inductionResults(data, erf_num):
         random_state = np.random.RandomState(i)
 
         # classifiers must be reinitialized for each iteration
-        classifiers = estimators(outliers_fraction, random_state)
+        classifiers = estimators(outliers_fraction, random_state, data.loc[:, "confidence":].columns)
 
         # 60% data for training and 40% for testing
         X_train, X_test, _, y_test = train_test_split(X,

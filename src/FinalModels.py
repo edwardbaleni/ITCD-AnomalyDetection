@@ -8,6 +8,7 @@ import utils.Triangulation as tri
 import esda
 import Model
 
+
 sampleSize = 20
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
 num = 0
@@ -25,6 +26,46 @@ refData = myData.ref_data.copy(deep=True)
 # For plotting
 tryout = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
 tryout = tryout/255
+
+
+# %%
+
+
+y = np.array(data.loc[:, "Y"]).T 
+    # Change outlier to 1 and inlier to 0 in data
+y = np.where(y == 'Outlier', 1, 0)
+
+outliers_fraction = np.count_nonzero(y) / len(y)
+ 
+X = np.array(data.loc[:, "confidence":])
+clf = Model.EIF(outliers_fraction, data.loc[:, "confidence":].columns)
+
+clf.fit(X)
+
+
+from sklearn.metrics import RocCurveDisplay
+RocCurveDisplay.from_predictions(y_true=y, 
+                                 y_pred=np.array(clf.decision_scores_))
+plt.show()
+
+
+# %%
+# Compute ROC curve and ROC area
+from sklearn.metrics import roc_curve, auc
+fpr, tpr, _ = roc_curve(y, clf.decision_scores_)
+roc_auc = auc(fpr, tpr)
+
+# Plot ROC curve
+plt.figure()
+plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic')
+plt.legend(loc="lower right")
+plt.show()
 
 # %%
 # local Geary C Statistic
@@ -49,6 +90,7 @@ lG_mv.localG[0:5]
 lG_mv.p_sim[0:5]
 
 from scipy.special import expit
+from sklearn.metrics import roc_curve, auc
 
 centerScore = lG_mv.localG - np.mean(lG_mv.localG)
 probs = expit(centerScore)

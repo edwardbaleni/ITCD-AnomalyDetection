@@ -9,7 +9,7 @@ class Geary:
     def __init__(self, contamination=0.5, geometry=None, centroid=None):
         self.labels_ = None
         self.decision_scores_ = None
-        self.contamination = 1 - contamination  
+        self.contamination = contamination  
         self.w , _, _, _ = tri.delauneyTriangulation(pd.concat([geometry, centroid], axis=1))
 
     def fit(self, X):
@@ -36,4 +36,4 @@ class Geary:
         probs = expit(centerScore)
 
         self.decision_scores_ = probs
-        self.labels_ = np.where(probs >= (1 - self.contamination), 0, 1)
+        self.labels_ = np.where(probs >= (1 - self.contamination), 1, 0)
