@@ -13,6 +13,9 @@ class EIF:
         self.contamination = contamination
         self.predictors = list(predictors)
 
+    # TODO: Check if labels are chosen based on scale from 0 to 1 
+    #       or if it is based on the percntile of the anomaly scores
+    #       Based on that will decide whether we include this method or not
     def _setLabels(self, probs):
         self.labels_ = np.where(probs >= (1 - self.contamination), 1, 0)
 

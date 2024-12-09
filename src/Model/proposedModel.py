@@ -7,6 +7,27 @@ from scipy.special import expit
 
 class Geary:
     def __init__(self, contamination=0.5, geometry=None, centroid=None):
+        """
+        Initialize the proposed model with given parameters.
+        Parameters
+        ----------
+        contamination : float, optional (default=0.5)
+            The amount of contamination of the data set, i.e., the proportion 
+            of outliers in the data set.
+        geometry : DataFrame or None, optional (default=None)
+            The geometry data to be used for the model.
+        centroid : DataFrame or None, optional (default=None)
+            The centroid data to be used for the model.
+        Attributes
+        ----------
+        labels_ : array, shape (n_samples,)
+            Labels of the data points after fitting the model.
+        decision_scores_ : array, shape (n_samples,)
+            The outlier scores of the data points after fitting the model.
+        w : array
+            The weights obtained from the Delaunay triangulation.
+        """
+
         self.labels_ = None
         self.decision_scores_ = None
         self.contamination = contamination  

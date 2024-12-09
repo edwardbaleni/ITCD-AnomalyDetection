@@ -29,31 +29,53 @@ tryout = tryout/255
 
 
 # %%
-
+from sklearn.model_selection import train_test_split
 
 y = np.array(data.loc[:, "Y"]).T 
     # Change outlier to 1 and inlier to 0 in data
 y = np.where(y == 'Outlier', 1, 0)
 
 outliers_fraction = np.count_nonzero(y) / len(y)
- 
-X = np.array(data.loc[:, "confidence":])
+
+X = np.array(data.loc[:, "confidence":]) 
+# 60% data for training and 40% for testing
+X_train, X_test, _, y_test = train_test_split(X,
+                                            y,
+                                            test_size=0.4,
+                                            stratify=y,
+                                            random_state=42)
+
+# standardizing data for processing
+X_train_norm = utils.engineer._scaleData(X_train)
+X_test_norm = utils.engineer._scaleData(X_test)
+
+
+# %%
 clf = Model.EIF(outliers_fraction, data.loc[:, "confidence":].columns)
 
-clf.fit(X)
+# %%
+clf.fit(X_train_norm)
 
+# %%
+y_pred = clf.decision_function(X_test_norm)
+
+# %%
 
 from sklearn.metrics import RocCurveDisplay
-RocCurveDisplay.from_predictions(y_true=y, 
-                                 y_pred=np.array(clf.decision_scores_))
+RocCurveDisplay.from_predictions(y_true=y_test, 
+                                 y_pred=y_pred)#np.array(clf.decision_scores_))
 plt.show()
 
 
 # %%
 # Compute ROC curve and ROC area
 from sklearn.metrics import roc_curve, auc
-fpr, tpr, _ = roc_curve(y, clf.decision_scores_)
+fpr, tpr, _ = roc_curve(y_test, y_pred)
 roc_auc = auc(fpr, tpr)
+
+from sklearn.metrics import average_precision_score
+average_precision = average_precision_score(y_test, y_pred)
+print(f'Average precision-recall score: {average_precision:.2f}')
 
 # Plot ROC curve
 plt.figure()
@@ -91,6 +113,7 @@ lG_mv.p_sim[0:5]
 
 from scipy.special import expit
 from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import average_precision_score
 
 centerScore = lG_mv.localG - np.mean(lG_mv.localG)
 probs = expit(centerScore)
