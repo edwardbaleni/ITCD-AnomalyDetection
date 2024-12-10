@@ -58,3 +58,13 @@ class Geary:
 
         self.decision_scores_ = probs
         self.labels_ = np.where(probs >= (1 - self.contamination), 1, 0)
+
+    
+    # TODO: We can make Geary interpretable
+    #       Following COPOD paper. We can demonstrate the main contributors to the outlier score
+    #       by looking at the weighted square difference of the anomolous observation
+    #       We can thereafter plot the value given for each attribute. This should illustrate quite clearly
+    #       what is causing the observation to be anomolous. High point values will be the main contributors.
+    #       This is possible due to the additive nature of the Geary C statistic.
+    #       If I copy the code from https://pysal.org/esda/_modules/esda/geary.html#Geary and not sum the values
+    #       then I should be able to get the individual contributions to the Geary C statistic. 
