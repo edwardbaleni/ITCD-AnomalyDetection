@@ -87,67 +87,59 @@ plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('Receiver Operating Characteristic')
 plt.legend(loc="lower right")
-plt.show()
+# plt.show()
+plt.savefig('foo.png')
 
 # %%
-# local Geary C Statistic
-
-d_w, d_g, d_p, v_cells = tri.delauneyTriangulation(data)
-knn_w, knn_g, knn_p, knn_centroids = tri.KNNGraph(data)
-
-    # Plot Triangulations
-tri.delauneyPlot(d_g, d_p, v_cells, tryout, True)
-tri.KNNPlot(knn_g, knn_p, knn_centroids, tryout, True)
-
-# but we already know that delauney is better!
-w = d_w
-xx = data.loc[:, "confidence":].values.T.tolist()
-xx = [pd.Series(x) for x in xx]
-lG_mv = esda.Geary_Local_MV(connectivity=w).fit(xx)
-
-# observed multivariate Local Geary values.
-lG_mv.localG[0:5] 
-# array containing the simulated p-values for each unit.
-# significance level of statistic
-lG_mv.p_sim[0:5]
-
-from scipy.special import expit
-from sklearn.metrics import roc_curve, auc
-from sklearn.metrics import average_precision_score
-
-centerScore = lG_mv.localG - np.mean(lG_mv.localG)
-probs = expit(centerScore)
-
-
-
-anomaly = data[probs >= 0.98]
-nominal = data[probs < 0.98]
-
-plotA.plot(tryout, nominal, anomaly)
-
-plotA.plotScores(tryout, data, probs)
-
 
 
 
 
 # %%
-# above method suffers from high dimensionality!
-# import numpy as np
 
-# from sklearn.decomposition import PCA
-# X = np.array(data.loc[:, "confidence":]) 
-# pca = PCA(n_components=10)
 
-# pca.fit(X)
-# PCA(n_components=10)
 
-# plt.scatter(list(range(0,10)), pca.explained_variance_ratio_)
+from Model import Geary
 
-# import umap
-# fit = umap.UMAP(n_components=10)
-# u = fit.fit_transform(X)
-# dat = pd.DataFrame(u)
+X = utils.engineer._scaleData(X)
+clf = Geary(contamination=outliers_fraction, 
+            geometry=data["geometry"], 
+            centroid=data["centroid"])
+clf.fit(X)
+
+test_scores = clf.decision_scores_
+labels = clf.labels_
+
+# %%
+
+normal = data[labels == 0]
+abnormal = data[labels == 1]
+
+plotA.plot(tryout, normal, abnormal)
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+normal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
+abnormal.plot(ax=ax, facecolor = 'none',edgecolor='blue')
+plt.savefig('foo.png')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # %%
