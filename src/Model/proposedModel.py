@@ -31,6 +31,7 @@ class Geary:
         self.labels_ = None
         self.decision_scores_ = None
         self.contamination = contamination  
+        self.threshold_ = None
         self.w , _, _, _ = tri.delauneyTriangulation(pd.concat([geometry, centroid], axis=1))
 
     def fit(self, X):
@@ -57,7 +58,30 @@ class Geary:
         probs = expit(centerScore)
 
         self.decision_scores_ = probs
-        self.labels_ = np.where(probs >= (1 - self.contamination), 1, 0)
+
+        # get the number of samples
+        samples = X.shape[0]
+        self._threshold = int(round(samples * self.contamination, 0))
+
+        self._setLabels(probs, self._threshold)
+
+        # self.labels_ = np.where(probs >= (1 - self.contamination), 1, 0)
+
+    def _setLabels(self, probs, threshold):
+
+        # Order the probabilities and assign values
+        ordered_indices = np.argsort(probs)
+
+        labels = np.zeros(len(probs))
+
+        labels[-threshold:] = 1
+
+        ordered_labels = np.zeros(len(probs))
+
+        for i in range(len(probs)):
+            ordered_labels[ordered_indices[i]] = labels[i]
+
+        self.labels_ = ordered_labels
 
     
     # TODO: We can make Geary interpretable
@@ -67,4 +91,5 @@ class Geary:
     #       what is causing the observation to be anomolous. High point values will be the main contributors.
     #       This is possible due to the additive nature of the Geary C statistic.
     #       If I copy the code from https://pysal.org/esda/_modules/esda/geary.html#Geary and not sum the values
-    #       then I should be able to get the individual contributions to the Geary C statistic. 
+    #       then I should be able to get the individual contributions to the Geary C statistic.
+    #       Can also see how it was setup to plot in this repo: https://github.com/yzhao062/pyod/blob/master/pyod/models/copod.py 

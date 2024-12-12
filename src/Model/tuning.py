@@ -1,3 +1,7 @@
+# TODO: Check out for inspiration on how to do hyperparameter tuning
+#       https://github.com/Minqi824/ADBench/blob/main/adbench/baseline/PyOD.py
+
+
 # TODO: This will be different from the CV file.
 #       Here we need to either setup a pipeline or 
 #       individually setup the models and tune them.
