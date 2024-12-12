@@ -6,7 +6,7 @@ import pandas as pd
 import utils.plotAnomaly as plotA
 import utils.Triangulation as tri
 import esda
-import Model
+from Model import EIF
 
 
 sampleSize = 20
@@ -51,7 +51,7 @@ X_test_norm = utils.engineer._scaleData(X_test)
 
 
 # %%
-clf = Model.EIF(outliers_fraction, data.loc[:, "confidence":].columns)
+clf = EIF(outliers_fraction, data.loc[:, "confidence":].columns)
 
 # %%
 clf.fit(X_train_norm)
@@ -107,6 +107,13 @@ clf = Geary(contamination=outliers_fraction,
             centroid=data["centroid"])
 clf.fit(X)
 
+test_scores = clf.decision_scores_
+labels = clf.labels_
+
+
+# %%
+clf = EIF(outliers_fraction, data.loc[:, "confidence":].columns)
+clf.fit(X)
 test_scores = clf.decision_scores_
 labels = clf.labels_
 
