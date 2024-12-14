@@ -52,7 +52,7 @@ class EIF:
 
         eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
                                                     ntrees = 100,
-                                                    sample_size = 256,#int(X.shape[0] * 0.8),
+                                                    sample_size = int(X.shape[0] * 0.5), # 256 is the defualt, but not using it just incase an orchard is small!
                                                     extension_level = 6)#len(predictors) - 1)
         
         eif.train(x = self.predictors,

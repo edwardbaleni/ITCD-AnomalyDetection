@@ -130,6 +130,26 @@ abnormal.plot(ax=ax, facecolor = 'none',edgecolor='blue')
 plt.savefig('foo.png')
 
 
+# %%
+
+# just want to see if ABOD is indeed too slow
+# default is way too slow!
+from pyod.models.pca import PCA
+
+clf = PCA(contamination=outliers_fraction)
+clf.fit(X)
+test_scores = clf.decision_scores_
+labels = clf.labels_
+
+normal = data[labels == 0]
+abnormal = data[labels == 1]
+
+fig, ax = plt.subplots(figsize=(15, 15))
+tryout.plot.imshow(ax=ax)
+normal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
+abnormal.plot(ax=ax, facecolor = 'none',edgecolor='blue')
+plt.savefig('foo2.png')
+
 
 
 
