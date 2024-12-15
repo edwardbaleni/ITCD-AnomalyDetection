@@ -153,7 +153,63 @@ plt.savefig('foo2.png')
 
 
 
+# %%
+# TODO: https://github.com/jhmadsen/DDoutlier/blob/master/R/OutlierFunctionLibrary.R
+#       Might not need to include thi just becuase it is not a popular method at all
+import numpy as np
+from sklearn.neighbors import NearestNeighbors
+from scipy.spatial.distance import pdist, squareform
 
+def RDOS(dataset, k=5, h=1):
+    dataset = np.array(dataset)
+    n, d = dataset.shape
+
+    if not isinstance(k, int):
+        raise ValueError('k input must be numeric')
+    if k >= n or k < 1:
+        raise ValueError('k input must be less than number of observations and greater than 0')
+    if not isinstance(h, (int, float)):
+        raise ValueError('h input must be numeric')
+    if not np.issubdtype(dataset.dtype, np.number):
+        raise ValueError('dataset input is not numeric')
+
+    dist_matrix = squareform(pdist(dataset))
+    nbrs = NearestNeighbors(n_neighbors=k).fit(dataset)
+    distances, indices = nbrs.kneighbors(dataset)
+
+    def func_dist(x1, x2):
+        return len(np.intersect1d(x1, x2))
+
+    sNN_matrix = np.array([[func_dist(indices[i], indices[j]) for j in range(n)] for i in range(n)])
+
+    neighborhood = []
+    for i in range(n):
+        kNN = indices[i]
+        rNN = np.where(indices == i)[0]
+        sNN = np.where(sNN_matrix[i] > 0)[0]
+        neighborhood.append(np.unique(np.concatenate((kNN, rNN, sNN))))
+
+    px = np.zeros(n)
+    for i in range(n):
+        Kgaussian = (1 / ((2 * np.pi) ** (d / 2))) * np.exp(-(dist_matrix[i, neighborhood[i]] / (2 * h ** 2)))
+        px[i] = (1 / (len(neighborhood[i]) + 1)) * np.sum((1 / (h ** d)) * Kgaussian)
+
+    RDOS = np.zeros(n)
+    for i in range(n):
+        RDOS[i] = np.sum(px[neighborhood[i]]) / (len(neighborhood[i]) * px[i])
+
+    return RDOS
+
+a = RDOS(X, k=5, h=1)
+
+_, ax = plt.subplots(1, figsize=(20, 20))
+tryout.plot.imshow(ax=ax)
+data.assign(cl= a).plot(column='cl', categorical=False,
+        k=5, cmap='viridis', linewidth=0.1, ax=ax,
+        edgecolor='white', legend=True, alpha=0.7)
+ax.set_axis_off()
+plt.title("Anomaly Scores")
+plt.savefig('foo3.png')
 
 
 
