@@ -135,13 +135,13 @@ class collect:
         green = rgb[1]
         blue = rgb[2]
 
-        data = {"dem": dem, 
-                "nir": nir, 
-                "red": red, 
-                "reg": reg, 
+        data = {"dem": dem/1000, 
+                "nir": nir/1000, 
+                "red": red/1000, 
+                "reg": reg/1000, 
                 "rgb": rgb, 
-                "green": green, 
-                "blue": blue}
+                "green": green/1000, 
+                "blue": blue/1000}
         
 
         index_mask_intersect = collect._recursivePointRemoval(points, mask)
@@ -176,10 +176,10 @@ class collect:
         data["ndre"] = (data["nir"] - data["reg"]) / (data["nir"] + data["reg"])
         data["gndvi"] = (data["nir"] - data["green"]) / (data["nir"] + data["green"])
         data["endvi"] = ((data["nir"]+ data["green"] - 2 * data["blue"]) / (data["nir"] + data["green"] + 2 * data["blue"]))
-        data["savi"] = ((data["nir"]/1000 - data["red"]/1000)/(data["nir"]/1000 + data["red"]/1000 + 0.5))*(1+0.5)
-        data["evi"] = 2.5 * ((data["nir"]/1000 - data["red"]/1000)/(data["nir"]/1000 + 6*data["red"]/1000 -7.5 * data["blue"]/1000 +1))
-        data["ci"] = (data["nir"]/1000) / (data["reg"]/1000) - 1 
-        data["osavi"] = 1.16 * (data["nir"]/1000 - data["red"]/1000) / (data["nir"]/1000+data["red"]/1000 + 0.16)
+        data["savi"] = ((data["nir"] - data["red"])/(data["nir"] + data["red"] + 0.5))*(1+0.5)
+        data["evi"] = 2.5 * ((data["nir"] - data["red"])/(data["nir"] + 6*data["red"] -7.5 * data["blue"]/ +1))
+        data["ci"] = (data["nir"]) / (data["reg"]) - 1 
+        data["osavi"] = 1.16 * (data["nir"] - data["red"]) / (data["nir"]+data["red"] + 0.16)
         data["sr_reg"] = data["nir"]/data["reg"]
         # Graveyard of unworkeable vegetative indices.
         # When plotted, they did not distinguish well between soil and 

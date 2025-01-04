@@ -14,12 +14,12 @@ def plot(erf, normal, anomaly):
     """
 
     # Plotting
-    fig, ax = plt.subplots(figsize=(15, 15))
+    fig, ax = plt.subplots(figsize=(20, 20))
     erf.plot.imshow(ax=ax)
     normal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
     anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
 
-def plotRef(erf, data):
+def plotRef(erf, data, name):
     """
     Plots the given Earth Relief File (ERF) along with data regions colored by the 'Y' column.
     Parameters:
@@ -30,11 +30,13 @@ def plotRef(erf, data):
     Returns:
     None
     """
-    fig, ax = plt.subplots( figsize=(15, 15))
+    fig, ax = plt.subplots( figsize=(20, 20))
+    ax.axis('off')
     erf.plot.imshow(ax=ax)
     data.plot(column='Y', categorical=True, legend=True, ax=ax, cmap='rainbow', facecolor='none')
-    plt.title("Data Geometries Colored by Y")
-    plt.show()
+    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    plt.title("")#Data Geometries Colored by Y")
+    fig.savefig(name)
 
 def plotScores(erf, data, scores):
     
