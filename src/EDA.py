@@ -110,7 +110,7 @@ if __name__ == '__main__':
     # Group data by groups
     spec = pd.concat([data[i].loc[:, ["orchard"] + list(data[i].loc[:, "NIR_mean":"OSAVI_mean"].columns)] for i in range(sampleSize)])
     text = pd.concat([data[i].loc[:, ["orchard"] + list(data[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
-    shape = pd.concat([data[i].loc[:, ["orchard"] + list(data[i].loc[:, "roundness":"eccentricity"].columns)] for i in range(sampleSize)])
+    shape = pd.concat([data[i].loc[:, ["orchard"] + list(data[i].loc[:, "roundness":"bendingE"].columns)] for i in range(sampleSize)])
 
     spec.reset_index(drop=True, inplace=True)
     text.reset_index(drop=True, inplace=True)
