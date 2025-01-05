@@ -15,23 +15,70 @@ from numpy import mean, median, std
 from scipy.stats import kurtosis, skew
 
 import utils.plotAnomaly as plot
+import plotly.express as px
 
 # plot boxplots for each group and separate by orchard
 def box_plot_comparison(data, feature_group=None):
     # Filter by feature group if specified
-    if feature_group:
-        data = data[data['Group'] == feature_group]
+    # if feature_group:
+    #     data = data[data['Group'] == feature_group]
 
     # Create box plots for each feature grouped by orchard
     plt.figure(figsize=(15, 8))
     sns.boxplot(x='Feature', y='Value', hue='Orchard', data=data)
     plt.xticks(rotation=90)
-    plt.title(f'Box Plot of Feature Values by Orchard ({feature_group or "All Groups"})')
+    # plt.title(f'Box Plot of Feature Values by Orchard ({feature_group or "All Groups"})')
     plt.ylabel('Value')
     plt.xlabel('Feature')
     plt.legend(loc='upper right', title='Orchard')
     plt.tight_layout()
-    plt.savefig(f"results/EDA/box_plot_comparison_{feature_group or 'all'}.png")
+    plt.savefig("results/EDA/box_plot_comparison_{}.png".format(feature_group))
+
+    # Radar Chart Plot
+def radar_chart_plot(data):
+    # Filter data for the selected group
+    radar_data = data
+
+    # Normalize data for better comparison
+    # radar_data = radar_data.div(radar_data.max(axis=1), axis=0)
+
+    # Prepare data for radar chart
+    categories = radar_data.columns.tolist()
+    num_vars = len(categories)
+
+    # Plot Radar Chart
+    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "polar"})
+
+
+    for i, (image, row) in enumerate(radar_data.iterrows()):
+        values = row.tolist()
+        values += values[:1]  # Close the radar chart
+        angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+        angles += angles[:1]
+
+        ax.plot(angles, values, label=image)
+        ax.fill(angles, values, alpha=0.25)
+
+    ax.set_theta_offset(np.pi / 2)
+    ax.set_theta_direction(-1)
+
+    # Draw feature labels
+    ax.set_xticks(np.linspace(0, 2 * np.pi, num_vars, endpoint=False))
+    ax.set_xticklabels(categories)
+
+    # Draw y-labels
+    ax.set_yticks([0.25, 0.5, 0.75, 1.0])
+    ax.set_yticklabels(["25%", "50%", "75%", "100%"])
+
+    # ax.set_title(f"Radar Chart for {group} Features", size=20, pad=20)
+    ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
+
+    plt.show()
+
+# # # Run Visualizations
+# # parallel_coordinates_plot(created_data, group="Texture")
+# radar_chart_plot(created_data, group="Texture")
+
 
 # # plot boxplots for each group and separate by orchard
 # def box_plot_comparison(data, feature_group=None):
@@ -104,13 +151,13 @@ if __name__ == '__main__':
 
     # Label orchards according to orchard
     for i in range(sampleSize):
-        data[i]["orchard"] = "Orchard {}".format(i)
+        data[i]["Orchard"] = "Orchard {}".format(i+1)
     
 
     # Group data by groups
-    spec = pd.concat([data[i].loc[:, ["orchard"] + list(data[i].loc[:, "NIR_mean":"OSAVI_mean"].columns)] for i in range(sampleSize)])
-    text = pd.concat([data[i].loc[:, ["orchard"] + list(data[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
-    shape = pd.concat([data[i].loc[:, ["orchard"] + list(data[i].loc[:, "roundness":"bendingE"].columns)] for i in range(sampleSize)])
+    spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "NIR_mean":"OSAVI_mean"].columns)] for i in range(sampleSize)])
+    text = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
+    shape = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "roundness":"bendingE"].columns)] for i in range(sampleSize)])
 
     spec.reset_index(drop=True, inplace=True)
     text.reset_index(drop=True, inplace=True)
@@ -123,138 +170,91 @@ if __name__ == '__main__':
     text.iloc[:, 1:] = scaler.fit_transform(text.iloc[:, 1:])
     shape.iloc[:, 1:] = scaler.fit_transform(shape.iloc[:, 1:])
 
-    # Prepare data for box plot comparison
-    combined_data = pd.concat([
-        pd.melt(spec, id_vars=['orchard'], var_name='Feature', value_name='Value').assign(Group='Spectral'),
-        pd.melt(text, id_vars=['orchard'], var_name='Feature', value_name='Value').assign(Group='Texture'),
-        pd.melt(shape, id_vars=['orchard'], var_name='Feature', value_name='Value').assign(Group='Shape')
-    ])
+    spec = spec.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+    text = text.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+    shape = shape.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
 
-    combined_data.rename(columns={'orchard': 'Orchard'}, inplace=True)
+    # Prepare data for box plot comparison
+    combined_data = pd.concat([spec, text, shape])
 
     # Example Usage
     box_plot_comparison(combined_data, feature_group="Texture")
     box_plot_comparison(combined_data, feature_group="Spectral")
     box_plot_comparison(combined_data, feature_group="Shape")
-    box_plot_comparison(combined_data)
+
+    # # TODO: check with supervisors if descriptive statistics are needed
+    # # Create a pivot table for the data
+    # # This is what the Radar Chart will be based off
+    # descr_spec = spec.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
+    # descr_spec.columns = descr_spec.columns.droplevel(-1)
+    # descr_spec.reset_index(inplace=True)
+
+    # descr_text = text.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
+    # descr_text.columns = descr_text.columns.droplevel(-1)
+    # descr_text.reset_index(inplace=True)
+
+    # descr_shape = shape.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
+    # descr_shape.columns = descr_shape.columns.droplevel(-1)
+    # descr_shape.reset_index(inplace=True)
 
 
-    # Create a pivot table for the data
-    # This is what the Radar Chart will be based off
-    descr = combined_data.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
+    # # import pandas as pd
+    # # from sklearn.preprocessing import RobustScaler
+    # # # Group data by groups
+    # # spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "NIR_mean":"OSAVI_mean"].columns)] for i in range(sampleSize)])
+    # # text = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
+    # # shape = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "roundness":"bendingE"].columns)] for i in range(sampleSize)])
 
-# import pandas as pd
-# import numpy as np
-# import matplotlib.pyplot as plt
-# from plotly.express import parallel_coordinates
+    # # spec.reset_index(drop=True, inplace=True)
+    # # text.reset_index(drop=True, inplace=True)
+    # # shape.reset_index(drop=True, inplace=True)
 
-# # Sample Data Creation
-# def create_sample_data():
-#     np.random.seed(42)  # For reproducibility
-#     data = {
-#         'Image': [f'Image_{i}' for i in range(1, 6) for _ in range(54)],
-#         'Feature': [f'Feature_{i}' for _ in range(5) for i in range(1, 55)],
-#         'Value': np.random.rand(54 * 5),
-#         'Group': [
-#             "Texture" if i <= 18 else "Spectral" if i <= 36 else "Shape"
-#             for _ in range(5) for i in range(1, 55)
-#         ]
-#     }
-#     return pd.DataFrame(data)
+    # # # Scale features
+    # # scaler = RobustScaler()
 
-# # Generate Data
-# created_data = create_sample_data()
+    # # spec.iloc[:, 1:] = scaler.fit_transform(spec.iloc[:, 1:])
+    # # text.iloc[:, 1:] = scaler.fit_transform(text.iloc[:, 1:])
+    # # shape.iloc[:, 1:] = scaler.fit_transform(shape.iloc[:, 1:])
 
-# # Parallel Coordinates Plot
-# def parallel_coordinates_plot(data, group):
-#         # Filter data for the selected group
-#         group_data = data[data['Group'] == group]
+    # # spec = spec.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+    # # text = text.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+    # # shape = shape.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
 
-#         # Reshape data to wide format for parallel coordinates
-#         pivot_data = group_data.pivot_table(
-#                 index='Image', columns='Feature', values='Value'
-#         ).reset_index()
+    # descr_spec = spec.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
+    # descr_spec.columns = descr_spec.columns.droplevel(-1)
+    # descr_spec.reset_index(inplace=True)
 
-#         # Use plotly for an interactive parallel plot
-#         fig = parallel_coordinates(
-#                 pivot_data,
-#                 color=pivot_data.columns[1],
-#                 title=f"Parallel Coordinates Plot of {group} Features by Image",
-#                 labels={col: col for col in pivot_data.columns},
-#                 dimensions=pivot_data.columns[1:],
-#         )
-#         fig.show()
+    # descr_text = text.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
+    # descr_text.columns = descr_text.columns.droplevel(-1)
+    # descr_text.reset_index(inplace=True)
 
+    # descr_shape = shape.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
+    # descr_shape.columns = descr_shape.columns.droplevel(-1)
+    # descr_shape.reset_index(inplace=True)
 
-# # Radar Chart Plot
-# def radar_chart_plot(data, group):
-#     # Filter data for the selected group
-#     group_data = data[data['Group'] == group]
+    # fig = px.line_polar(descr_shape, r="mean",
+    #                     theta="Feature",
+    #                     color="Orchard",
+    #                     line_close=True)
+    # fig.update_traces(fill='toself')
+    # fig.update_layout(polar = dict(
+    #   radialaxis_angle = 90,
+    #   angularaxis = dict(
+    #     direction = "clockwise",
+    #     period = 6)))
+    # # fig.update_polars(angularaxis_showgrid=False,
+    # #                   radialaxis_gridwidth=0,
+    # #                   gridshape='linear',
+    # #                   bgcolor="#494b5a",
+    # #                   radialaxis_showticklabels=False
+    # #                   )
 
-#     # Aggregate values by image and feature
-#     radar_data = group_data.groupby(['Image', 'Feature'])['Value'].mean().unstack()
-
-#     # Normalize data for better comparison
-#     radar_data = radar_data.div(radar_data.max(axis=1), axis=0)
-
-#     # Prepare data for radar chart
-#     categories = radar_data.columns.tolist()
-#     num_vars = len(categories)
-
-#     # Plot Radar Chart
-#     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "polar"})
-
-#     for i, (image, row) in enumerate(radar_data.iterrows()):
-#         values = row.tolist()
-#         values += values[:1]  # Close the radar chart
-#         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-#         angles += angles[:1]
-
-#         ax.plot(angles, values, label=image)
-#         ax.fill(angles, values, alpha=0.25)
-
-#     ax.set_theta_offset(np.pi / 2)
-#     ax.set_theta_direction(-1)
-
-#     # Draw feature labels
-#     ax.set_xticks(np.linspace(0, 2 * np.pi, num_vars, endpoint=False))
-#     ax.set_xticklabels(categories)
-
-#     # Draw y-labels
-#     ax.set_yticks([0.25, 0.5, 0.75, 1.0])
-#     ax.set_yticklabels(["25%", "50%", "75%", "100%"])
-
-#     ax.set_title(f"Radar Chart for {group} Features", size=20, pad=20)
-#     ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
-
-#     plt.show()
-
-# # # Run Visualizations
-# # parallel_coordinates_plot(created_data, group="Texture")
-# radar_chart_plot(created_data, group="Texture")
+    # # fig.update_layout(paper_bgcolor="#2c2f36")
+    # fig.show()
 
 
-# import seaborn as sns
-# import matplotlib.pyplot as plt
 
-# def box_plot_comparison(data, feature_group=None):
-#     # Filter by feature group if specified
-#     if feature_group:
-#         data = data[data['Group'] == feature_group]
 
-#     # Create box plots for each feature grouped by image
-#     plt.figure(figsize=(15, 8))
-#     sns.boxplot(x='Feature', y='Value', hue='Image', data=data)
-#     plt.xticks(rotation=90)
-#     plt.title(f'Box Plot of Feature Values by Image ({feature_group or "All Groups"})')
-#     plt.ylabel('Value')
-#     plt.xlabel('Feature')
-#     plt.legend(loc='upper right', title='Image')
-#     plt.tight_layout()
-#     plt.show()
-
-# # Example Usage
-# box_plot_comparison(data, feature_group="Texture")
 
 
     # # %%
@@ -274,40 +274,15 @@ if __name__ == '__main__':
     # # we already know that Zernke polynomials are independent
     # tex = data.loc[:, "Contrast":]
 
-    # from pypalettes import get_hex
-    # palette = get_hex("VanGogh3", keep_first_n=8)
 
 
-    # # %%
-    # # Note that the palette is set as a global variable can change this later.
-    # def boxplot(dat, lo = True):
-    #     sns.set_theme(style="darkgrid")
-    #     Props = {'boxprops':{"alpha":0.7, 'edgecolor':palette[3], 'facecolor':palette[2]},
-    #             'medianprops':{'color':palette[3]},
-    #             'whiskerprops':{'color':palette[3]},
-    #             'capprops':{'color':palette[3]},
-    #             'flierprops':{'color':palette[3]}
-    #             }
 
-    #     fig, ax = plt.subplots(figsize=(15, 10))
-    #     if (lo):
-    #         ax.set(yscale="log")
-    #     sns.boxplot(data=dat, 
-    #                 ax=ax, 
-    #                 linewidth=2,
-    #                 #color=palette[0], 
-    #                 **Props)
 
-    #     ax.tick_params("x", labelrotation=45)
 
-    # boxplot(spec)
-    # boxplot(shape.iloc[:,:-1])
-    # boxplot(shape[["bendingE"]])
-    # # boxplot(dist, False)
 
-    # # %%
+    # TODO: https://www.linkedin.com/pulse/quick-way-check-linearity-data-aditya-dutt/
+    #       Show linearity of data using PCA
 
-    # #
     # # TODO: log DEM_mean after demonstrating that it should be logged here!
     # #       however, does transforming the data stutter detection or improve it?
     # g = sns.PairGrid(shape, diag_sharey=False, corner=False)
@@ -325,9 +300,6 @@ if __name__ == '__main__':
     # g.map_diag(plt.hist, alpha = 1, bins=30,color = palette[3])
     # g.map_upper(sns.kdeplot, color=palette[2], warn_singular=False)
 
-    # # %%    
-    #                     # Feature Selection
-
     # # %%
     #     # calculate correlation values
     #     # Recognise Multicollinearities
@@ -336,6 +308,11 @@ if __name__ == '__main__':
     # sns.clustermap(shape.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
     # sns.clustermap(tex.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")# palette)
 
+
+    # # %%    
+    #                     # Feature Selection
+
+    
     # # %%
 
     # from statsmodels.stats.outliers_influence import variance_inflation_factor
