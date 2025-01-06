@@ -78,7 +78,7 @@ if __name__ == '__main__':
             z_downscaled = z[::int(1/scale_factor), ::int(1/scale_factor)]
 
             # Create the figure with downscaled data
-            fig = go.Figure(data=[go.Surface(z=z_downscaled, x=x_downscaled, y=y_downscaled, colorscale='Viridis')])
+            fig = go.Figure(data=[go.Surface(z=z_downscaled, x=x_downscaled, y=y_downscaled, colorscale='plasma')]) # plasma 
             fig.write_html(f"results/EDA/3D/Orchard_{i}_{key}.html")
     
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
             if key == "rgb":
                 continue
             fig, ax = plt.subplots(figsize=(20, 20))
-            value.plot(ax=ax, cmap="viridis")
+            value.plot(ax=ax, cmap="plasma")
             ax.set_axis_off()
             ax.set_title("")
             plt.savefig(f"results/EDA/Profiles/Orchard_{i}_{key}.png")
