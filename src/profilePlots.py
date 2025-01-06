@@ -78,7 +78,7 @@ if __name__ == '__main__':
             z_downscaled = z[::int(1/scale_factor), ::int(1/scale_factor)]
 
             # Create the figure with downscaled data
-            fig = go.Figure(data=[go.Surface(z=z_downscaled, x=x_downscaled, y=y_downscaled)])
+            fig = go.Figure(data=[go.Surface(z=z_downscaled, x=x_downscaled, y=y_downscaled, colorscale='Viridis')])
             fig.write_html(f"results/EDA/3D/Orchard_{i}_{key}.html")
     
 
