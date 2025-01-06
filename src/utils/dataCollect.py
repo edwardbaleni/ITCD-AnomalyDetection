@@ -177,7 +177,7 @@ class collect:
         data["gndvi"] = (data["nir"] - data["green"]) / (data["nir"] + data["green"])
         data["endvi"] = ((data["nir"]+ data["green"] - 2 * data["blue"]) / (data["nir"] + data["green"] + 2 * data["blue"]))
         data["savi"] = ((data["nir"] - data["red"])/(data["nir"] + data["red"] + 0.5))*(1+0.5)
-        data["evi"] = 2.5 * ((data["nir"] - data["red"])/(data["nir"] + 6*data["red"] -7.5 * data["blue"]/ +1))
+        data["evi"] = 2.5 * ((data["nir"] - data["red"])/(data["nir"] + 6 * data["red"] - 7.5 * data["blue"] + 1))
         data["ci"] = (data["nir"]) / (data["reg"]) - 1 
         data["osavi"] = 1.16 * (data["nir"] - data["red"]) / (data["nir"]+data["red"] + 0.16)
         data["sr_reg"] = data["nir"]/data["reg"]

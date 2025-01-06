@@ -1,27 +1,23 @@
 import utils
 
-from timeit import default_timer as timer
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import math
-import shapely
 
 import seaborn as sns
 import plotly.express as px
 from multiprocessing import Pool
 from sklearn.preprocessing import MinMaxScaler
-from numpy import mean, median, std
-from scipy.stats import kurtosis, skew
+from sklearn.decomposition import PCA
 
 import utils.plotAnomaly as plot
 import plotly.express as px
 
+from sklearn.feature_selection import VarianceThreshold
+
 # plot boxplots for each group and separate by orchard
 def box_plot_comparison(data, feature_group=None):
     # Filter by feature group if specified
-    # if feature_group:
-    #     data = data[data['Group'] == feature_group]
 
     # Create box plots for each feature grouped by orchard
     plt.figure(figsize=(15, 8))
@@ -32,73 +28,7 @@ def box_plot_comparison(data, feature_group=None):
     plt.xlabel('Feature')
     plt.legend(loc='upper right', title='Orchard')
     plt.tight_layout()
-    plt.savefig("results/EDA/box_plot_comparison_{}.png".format(feature_group))
-
-    # Radar Chart Plot
-def radar_chart_plot(data):
-    # Filter data for the selected group
-    radar_data = data
-
-    # Normalize data for better comparison
-    # radar_data = radar_data.div(radar_data.max(axis=1), axis=0)
-
-    # Prepare data for radar chart
-    categories = radar_data.columns.tolist()
-    num_vars = len(categories)
-
-    # Plot Radar Chart
-    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "polar"})
-
-
-    for i, (image, row) in enumerate(radar_data.iterrows()):
-        values = row.tolist()
-        values += values[:1]  # Close the radar chart
-        angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-        angles += angles[:1]
-
-        ax.plot(angles, values, label=image)
-        ax.fill(angles, values, alpha=0.25)
-
-    ax.set_theta_offset(np.pi / 2)
-    ax.set_theta_direction(-1)
-
-    # Draw feature labels
-    ax.set_xticks(np.linspace(0, 2 * np.pi, num_vars, endpoint=False))
-    ax.set_xticklabels(categories)
-
-    # Draw y-labels
-    ax.set_yticks([0.25, 0.5, 0.75, 1.0])
-    ax.set_yticklabels(["25%", "50%", "75%", "100%"])
-
-    # ax.set_title(f"Radar Chart for {group} Features", size=20, pad=20)
-    ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
-
-    plt.show()
-
-# # # Run Visualizations
-# # parallel_coordinates_plot(created_data, group="Texture")
-# radar_chart_plot(created_data, group="Texture")
-
-
-# # plot boxplots for each group and separate by orchard
-# def box_plot_comparison(data, feature_group=None):
-#     # Filter by feature group if specified
-#     if feature_group:
-#         data = data[data['Group'] == feature_group]
-
-#     # Create box plots for each feature grouped by orchard
-#     features = data['Feature'].unique()
-#     for feature in features:
-#         plt.figure(figsize=(15, 8))
-#         sns.boxplot(x='Orchard', y='Value', data=data[data['Feature'] == feature])
-#         plt.xticks(rotation=90)
-#         plt.title(f'Box Plot of {feature} Values by Orchard ({feature_group or "All Groups"})')
-#         plt.ylabel('Value')
-#         plt.xlabel('Orchard')
-#         plt.legend(loc='upper right', title='Orchard')
-#         plt.tight_layout()
-#         plt.savefig(f"results/EDA/box_plot_comparison_{feature_group or 'all'}_{feature}.png")
-#         plt.close()
+    plt.savefig("results/EDA/Boxplots/box_plot_comparison_{}.png".format(feature_group))
 
 
 def getDataNames(sampleSize):
@@ -136,6 +66,7 @@ if __name__ == '__main__':
         results = pool.starmap(process, list(args))
 
     data, img = zip(*results)
+    data = list(data)
     
     # Plot all the images as they are
     # plot reference data
@@ -145,23 +76,27 @@ if __name__ == '__main__':
         img[i].plot.imshow(ax=ax)
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
         plt.title("")
-        fig.savefig("results/EDA/orchard_{}.png".format(i))
-        plot.plotRef(img[i], data[i], "results/EDA/reference_{}.png".format(i))
+        fig.savefig("results/EDA/Orchards/orchard_{}.png".format(i))
+        plot.plotRef(img[i], data[i], "results/EDA/Orchards/reference_{}.png".format(i))
 
 
     # Label orchards according to orchard
     for i in range(sampleSize):
         data[i]["Orchard"] = "Orchard {}".format(i+1)
+        data[i] = data[i].loc[:, ["Orchard"] + list(data[i].columns[:-1])]
     
 
     # Group data by groups
-    spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "NIR_mean":"OSAVI_mean"].columns)] for i in range(sampleSize)])
+    spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "DEM_mean":"OSAVI_mean"].columns)] for i in range(sampleSize)])
     text = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
-    shape = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "roundness":"bendingE"].columns)] for i in range(sampleSize)])
+    shape = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "confidence":"bendingE"].columns)] for i in range(sampleSize)])
+    other = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "z0":"z24"].columns)] for i in range(sampleSize)])
+    
 
     spec.reset_index(drop=True, inplace=True)
     text.reset_index(drop=True, inplace=True)
     shape.reset_index(drop=True, inplace=True)
+    other.reset_index(drop=True, inplace=True)
 
     # Scale features
     scaler = MinMaxScaler()
@@ -169,91 +104,33 @@ if __name__ == '__main__':
     spec.iloc[:, 1:] = scaler.fit_transform(spec.iloc[:, 1:])
     text.iloc[:, 1:] = scaler.fit_transform(text.iloc[:, 1:])
     shape.iloc[:, 1:] = scaler.fit_transform(shape.iloc[:, 1:])
+    other.iloc[:, 1:] = scaler.fit_transform(other.iloc[:, 1:])
 
-    spec = spec.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
-    text = text.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
-    shape = shape.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
 
-    # Prepare data for box plot comparison
-    combined_data = pd.concat([spec, text, shape])
+    spec_long = spec.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+    text_long = text.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+    shape_long = shape.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+    other_long = other.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
 
     # Example Usage
-    box_plot_comparison(combined_data, feature_group="Texture")
-    box_plot_comparison(combined_data, feature_group="Spectral")
-    box_plot_comparison(combined_data, feature_group="Shape")
-
-    # # TODO: check with supervisors if descriptive statistics are needed
-    # # Create a pivot table for the data
-    # # This is what the Radar Chart will be based off
-    # descr_spec = spec.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
-    # descr_spec.columns = descr_spec.columns.droplevel(-1)
-    # descr_spec.reset_index(inplace=True)
-
-    # descr_text = text.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
-    # descr_text.columns = descr_text.columns.droplevel(-1)
-    # descr_text.reset_index(inplace=True)
-
-    # descr_shape = shape.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
-    # descr_shape.columns = descr_shape.columns.droplevel(-1)
-    # descr_shape.reset_index(inplace=True)
+    box_plot_comparison(spec_long, feature_group="Texture")
+    box_plot_comparison(text_long, feature_group="Spectral")
+    box_plot_comparison(shape_long, feature_group="Shape")
+    box_plot_comparison(other_long, feature_group="Zernike")
 
 
-    # # import pandas as pd
-    # # from sklearn.preprocessing import RobustScaler
-    # # # Group data by groups
-    # # spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "NIR_mean":"OSAVI_mean"].columns)] for i in range(sampleSize)])
-    # # text = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
-    # # shape = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "roundness":"bendingE"].columns)] for i in range(sampleSize)])
+    # Obtain number of outliers each orchard and number of delineations
+    OutlierInfo = pd.DataFrame(columns=["Orchard", "Outliers", "Delineations", "Ratio"])
+    for i in range(sampleSize):
+        new_row = {"Orchard": "Orchard {}".format(i+1), 
+                   "Outliers": data[i].loc[data[i]["Y"] == "Outlier"].shape[0], 
+                   "Delineations": data[i].shape[0]}
+        new_row["Ratio"] = new_row["Outliers"]/new_row["Delineations"]
+        OutlierInfo = pd.concat([OutlierInfo, pd.DataFrame([new_row])], ignore_index=True)
 
-    # # spec.reset_index(drop=True, inplace=True)
-    # # text.reset_index(drop=True, inplace=True)
-    # # shape.reset_index(drop=True, inplace=True)
-
-    # # # Scale features
-    # # scaler = RobustScaler()
-
-    # # spec.iloc[:, 1:] = scaler.fit_transform(spec.iloc[:, 1:])
-    # # text.iloc[:, 1:] = scaler.fit_transform(text.iloc[:, 1:])
-    # # shape.iloc[:, 1:] = scaler.fit_transform(shape.iloc[:, 1:])
-
-    # # spec = spec.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
-    # # text = text.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
-    # # shape = shape.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
-
-    # descr_spec = spec.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
-    # descr_spec.columns = descr_spec.columns.droplevel(-1)
-    # descr_spec.reset_index(inplace=True)
-
-    # descr_text = text.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
-    # descr_text.columns = descr_text.columns.droplevel(-1)
-    # descr_text.reset_index(inplace=True)
-
-    # descr_shape = shape.pivot_table("Value", index=["Orchard", "Feature"], aggfunc=[mean, median, std, kurtosis, skew])
-    # descr_shape.columns = descr_shape.columns.droplevel(-1)
-    # descr_shape.reset_index(inplace=True)
-
-    # fig = px.line_polar(descr_shape, r="mean",
-    #                     theta="Feature",
-    #                     color="Orchard",
-    #                     line_close=True)
-    # fig.update_traces(fill='toself')
-    # fig.update_layout(polar = dict(
-    #   radialaxis_angle = 90,
-    #   angularaxis = dict(
-    #     direction = "clockwise",
-    #     period = 6)))
-    # # fig.update_polars(angularaxis_showgrid=False,
-    # #                   radialaxis_gridwidth=0,
-    # #                   gridshape='linear',
-    # #                   bgcolor="#494b5a",
-    # #                   radialaxis_showticklabels=False
-    # #                   )
-
-    # # fig.update_layout(paper_bgcolor="#2c2f36")
-    # fig.show()
-
-
-
+    # Export benchmark data as a CSV
+    # TODO: Need to do for 30 samples
+    OutlierInfo.to_csv("results/EDA/benchmark_data.csv", index=False)
 
 
 
@@ -268,11 +145,22 @@ if __name__ == '__main__':
 
     # # %% 
 
-    # shape = data.loc[:, "roundness":"bendingE"]
-    # # dist = data.loc[:, "dist1":"dist4"]
-    # spec = data.loc[:, "DEM_mean":"OSAVI_mean"]
-    # # we already know that Zernke polynomials are independent
-    # tex = data.loc[:, "Contrast":]
+        # Group data by groups
+    spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "DEM_mean":"OSAVI_mean"].columns)] for i in range(sampleSize)])
+    text = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
+    shape = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "confidence":"bendingE"].columns)] for i in range(sampleSize)])
+
+    spec.reset_index(drop=True, inplace=True)
+    text.reset_index(drop=True, inplace=True)
+    shape.reset_index(drop=True, inplace=True)
+    other.reset_index(drop=True, inplace=True)
+
+    # # Scale features
+    # scaler = MinMaxScaler()
+
+    # spec.iloc[:, 1:] = scaler.fit_transform(spec.iloc[:, 1:])
+    # text.iloc[:, 1:] = scaler.fit_transform(text.iloc[:, 1:])
+    # shape.iloc[:, 1:] = scaler.fit_transform(shape.iloc[:, 1:])
 
 
 
@@ -283,91 +171,143 @@ if __name__ == '__main__':
     # TODO: https://www.linkedin.com/pulse/quick-way-check-linearity-data-aditya-dutt/
     #       Show linearity of data using PCA
 
+    for i in range(sampleSize):
+        new_data = data[i].copy(deep=True)
+        new_data.drop(columns=["Orchard", "Y"], inplace=True)
+        new_data = new_data.loc[:, "confidence":]
+        new_data = utils.engineer._scaleData(new_data)
+        
+        # Perform PCA
+        pca = PCA()
+        pca.fit(new_data)
+
+        # Transform data
+        pca_data = pca.transform(new_data)
+
+        # Plot the first 10 eigenvalues
+        plt.figure(figsize=(12, 8))
+        plt.plot(range(1, 11), pca.explained_variance_[:10], marker='o', linestyle='--')
+        plt.xlabel('Principal Component')
+        plt.ylabel('Eigenvalue')
+        plt.title(f'First 10 Eigenvalues for Orchard {i+1}')
+        plt.tight_layout()
+        plt.savefig(f"results/EDA/PCA/eigenvalues_{i+1}.png")
+        plt.show()
+
     # # TODO: log DEM_mean after demonstrating that it should be logged here!
     # #       however, does transforming the data stutter detection or improve it?
-    # g = sns.PairGrid(shape, diag_sharey=False, corner=False)
-    # g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
-    # g.map_diag(plt.hist, alpha = 1, bins=30, color = palette[3])
-    # g.map_upper(sns.kdeplot, color=palette[2], warn_singular=False)
+    g = sns.PairGrid(shape, hue="Orchard", diag_sharey=False, corner=False)
+    g.map_lower(plt.scatter, alpha=0.4)
+    g.map_diag(plt.hist, alpha=1, bins=30)
+    g.map_upper(sns.kdeplot, warn_singular=False)
+    g.add_legend()
+    plt.savefig("results/EDA/PairPlots/pairplot_shape.png")
 
-    # # g = sns.PairGrid(dist, diag_sharey=False, corner=False)
-    # # g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
-    # # g.map_diag(plt.hist, alpha = 1, bins=30,color = palette[3])
-    # # g.map_upper(sns.kdeplot, color=palette[2], warn_singular=False)
+    g = sns.PairGrid(spec, hue="Orchard", diag_sharey=False, corner=False)
+    g.map_lower(plt.scatter, alpha=0.4)
+    g.map_diag(plt.hist, alpha=1, bins=30)
+    g.map_upper(sns.kdeplot, warn_singular=False)
+    g.add_legend()
+    plt.savefig("results/EDA/PairPlots/pairplot_spec.png")
 
-    # g = sns.PairGrid(spec, diag_sharey=False, corner=False)
-    # g.map_lower(plt.scatter, alpha = 0.4, color=palette[2])
-    # g.map_diag(plt.hist, alpha = 1, bins=30,color = palette[3])
-    # g.map_upper(sns.kdeplot, color=palette[2], warn_singular=False)
+    g = sns.PairGrid(text, hue="Orchard", diag_sharey=False, corner=False)
+    g.map_lower(plt.scatter, alpha=0.4)
+    g.map_diag(plt.hist, alpha=1, bins=30)
+    g.map_upper(sns.kdeplot, warn_singular=False)
+    g.add_legend()
+    plt.savefig("results/EDA/PairPlots/pairplot_text.png")
 
-    # # %%
     #     # calculate correlation values
     #     # Recognise Multicollinearities
-    # sns.clustermap(spec.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")# palette)
-    # # sns.clustermap(dist.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
-    # sns.clustermap(shape.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")
-    # sns.clustermap(tex.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap = "plasma")# palette)
+    for i in range(sampleSize):
+        orchard_spec = data[i].loc[:, "DEM_mean":"OSAVI_mean"]
+        orchard_shape = data[i].loc[:, "confidence":"bendingE"]
+        orchard_text = data[i].loc[:, "Contrast":"ASM"]
+
+        sns.clustermap(orchard_spec.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
+        plt.savefig(f"results/EDA/ClusterMaps/clustermap_spec_orchard_{i+1}.png")
+        sns.clustermap(orchard_shape.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
+        plt.savefig(f"results/EDA/ClusterMaps/clustermap_shape_orchard_{i+1}.png")
+        sns.clustermap(orchard_text.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
+        plt.savefig(f"results/EDA/ClusterMaps/clustermap_text_orchard_{i+1}.png")
+
+    
+    # Other is not necessary as we already know that Zernicke moments are independent
+    # however, we need to compare the confidence and DEM_mean or keep these as individual features
 
 
     # # %%    
     #                     # Feature Selection
 
-    
-    # # %%
+    # It is necessary to get an idea of the variances of the features in the 
+    # scaling that will be used for the rest of the paper.
+    # In this paper, RobustScaling will be used. So first we will scale the data
+    # Then separate the data into the different groups
+    # Then obtain barplots of the variances of the features in each group over each orchard
+    # Then this will help inform how to use variance thresholding to remove low variance features
 
-    # from statsmodels.stats.outliers_influence import variance_inflation_factor
+    # TODO: Using a conservative threshold of 0.5 we can remove z0
 
-    # # the independent variables set
-    # X = data.loc[:,"confidence":]
+    # Scale features
+    data_scaled = data[:]
+    for i in range(sampleSize):
+        data_scaled[i].loc[:,'confidence':] = utils.engineer._scaleData(data_scaled[i].loc[:,'confidence':])
 
-    # # VIF dataframe
-    # vif_data = pd.DataFrame()
-    # vif_data["feature"] = X.columns
+    # Calculate variances for each feature in each orchard
+    variances = pd.DataFrame(columns=["Orchard", "Feature", "Variance"])
+    for i in range(sampleSize):
+        orchard_data = data_scaled[i].loc[:, "confidence":]
+        orchard_variances = orchard_data.var().reset_index()
+        orchard_variances.columns = ["Feature", "Variance"]
+        orchard_variances["Orchard"] = "Orchard {}".format(i+1)
+        variances = pd.concat([variances, orchard_variances], ignore_index=True)
 
-    # # calculating VIF for each feature
-    # vif_data["VIF"] = [variance_inflation_factor(X.values, i)
-    #                         for i in range(len(X.columns))]
+        spec = data_scaled[i].loc[:, "DEM_mean":"OSAVI_mean"]
+        text = data_scaled[i].loc[:, "Contrast":"ASM"]
+        shape = data_scaled[i].loc[:, "roundness":"eccentricity"]
+        zernicke = data_scaled[i].loc[:, "z0":"z24"]
+        other = pd.DataFrame(data_scaled[i].loc[:, "confidence"])
+        bend = pd.DataFrame(data_scaled[i].loc[:, "bendingE"])
 
-    # print(vif_data)
+    # Pivot the data for plotting
+    variances_pivot = variances.pivot(index="Feature", columns="Orchard", values="Variance")
+    # Plot stacked barplot for each group
+    for group_name, group_data in [("Spectral", spec), ("Texture", text), ("Shape", shape), ("Other", other), ("Bending", bend), ("Zernicke", zernicke)]:
+        group_variances = group_data.columns
+        group_variances_pivot = variances_pivot.loc[group_variances]
+        
+        group_variances_pivot.plot(kind='bar', stacked=False, figsize=(15, 8))
+        plt.ylabel('Variance')
+        # plt.title(f'Grouped Barplot of Feature Variances Across Orchards ({group_name} Group)')
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+        plt.savefig(f"results/EDA/Barplots/grouped_barplot_variances_{group_name.lower()}.png")
+        plt.show()
 
-    # # %%
 
-    # from sklearn.feature_selection import VarianceThreshold
-    # from sklearn.decomposition import PCA
 
-    # X = data.loc[:,"confidence":]
+    X = data_scaled[0].loc[:,"confidence":]
 
-    # selector = VarianceThreshold(threshold=1)
+    selector = VarianceThreshold(threshold=0.5)
 
-    # selector.fit_transform(X)
+    selector.fit_transform(X)
 
-    # # outputting low variance columns
-    # concol = [column for column in data.loc[:,"confidence":].columns 
-    #         if column not in data.loc[:,"confidence":].columns[selector.get_support()]]
+    # outputting low variance columns
+    concol = [column for column in data_scaled[0].loc[:,"confidence":].columns 
+            if column not in data_scaled[0].loc[:,"confidence":].columns[selector.get_support()]]
 
-    # for features in concol:
-    #     print(features)
+    for features in concol:
+        print(features)
 
     # # drop low variance columns
     # X.drop(concol, axis = 1)
 
-    # # %%
-
-    # # Can use PCA to exhibit linearity
-    # # conversation should be in terms of eigenvalues not principle components
-    # from sklearn.decomposition import PCA
-    # # Perform PCA
-    # pca = PCA()
-    # pca.fit(X)
-
-    # # Get eigenvalues
-    # eigenvalues = pca.explained_variance_
-
-    # # Plot eigenvalues
-    # plt.figure(figsize=(10, 6))
-    # plt.plot(range(1, len(eigenvalues) + 1), eigenvalues, marker='o', linestyle='--')
-    # plt.title('Eigenvalues of the Features')
-    # plt.xlabel('Principal Component')
-    # plt.ylabel('Eigenvalue')
-    # plt.grid(True)
-    # plt.show()
+    # # TODO: Do pairplot and clustermap for all remaining features after
+    # #       feature selection
+    # #       Only after feature selection
+    
+    # # Plot clustermap for all orchards using data_scaled
+    # for i in range(sampleSize):
+    #     orchard_data = data_scaled[i].loc[:, "confidence":]
+    #     sns.clustermap(orchard_data.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
+    #     plt.savefig(f"results/EDA/clustermap_all_features_orchard_{i+1}.png")
