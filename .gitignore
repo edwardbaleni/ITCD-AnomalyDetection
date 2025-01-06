@@ -8,6 +8,8 @@ Examples/
 *.jpg
 *.jpeg
 
+results/
+
 *.svg
 *.zip
 
