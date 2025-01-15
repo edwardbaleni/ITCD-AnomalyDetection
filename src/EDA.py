@@ -12,6 +12,7 @@ from sklearn.decomposition import PCA
 
 import utils.plotAnomaly as plot
 import plotly.express as px
+import utils.Triangulation as tri
 
 from sklearn.feature_selection import VarianceThreshold
 
@@ -299,6 +300,32 @@ if __name__ == '__main__':
     for features in concol:
         print(features)
 
+
+    
+    # Should also plot the Delauney Triangulation of the data
+    for i in range(sampleSize):
+        d_w, d_g, d_p, d_c = tri.delauneyTriangulation(data[i])
+        tri.delauneyPlot(d_g, d_p, d_c, img[i], f"results/EDA/Delauney/delauney_{i+1}.png")
+
+    
+    import networkx as nx
+    for i in range(sampleSize):
+        d_w, d_g, d_p, d_c = tri.delauneyTriangulation(data[i])
+        fig, ax = plt.subplots(figsize=(25, 25))
+        img[i].plot.imshow(ax=ax)
+        ax.axis("off")
+        ax.set_title("Delauney")
+        nx.draw(
+        d_g,
+        d_p,
+        ax=ax,
+        node_size=30,
+        node_color="lightgreen",
+        edge_color="red",
+        alpha=0.8,
+        )
+        plt.savefig(f"results/EDA/Delauney/delauney_{i+1}.png")
+        plt.show()
     # # drop low variance columns
     # X.drop(concol, axis = 1)
 

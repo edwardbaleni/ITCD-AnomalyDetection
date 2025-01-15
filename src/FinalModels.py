@@ -38,6 +38,7 @@ y = np.where(y == 'Outlier', 1, 0)
 outliers_fraction = np.count_nonzero(y) / len(y)
 
 X = np.array(data.loc[:, "confidence":]) 
+
 # 60% data for training and 40% for testing
 X_train, X_test, _, y_test = train_test_split(X,
                                             y,
