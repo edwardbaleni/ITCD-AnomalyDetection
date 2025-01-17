@@ -29,7 +29,7 @@ def box_plot_comparison(data, feature_group=None):
     plt.xlabel('Feature')
     plt.legend(loc='upper right', title='Orchard')
     plt.tight_layout()
-    plt.savefig("results/EDA/Boxplots/box_plot_comparison_{}.png".format(feature_group))
+    plt.savefig("results/EDA/Boxplots/{}.png".format(feature_group))
 
 
 def getDataNames(sampleSize):
@@ -77,8 +77,8 @@ if __name__ == '__main__':
         img[i].plot.imshow(ax=ax)
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
         plt.title("")
-        fig.savefig("results/EDA/Orchards/orchard_{}.png".format(i))
-        plot.plotRef(img[i], data[i], "results/EDA/Orchards/reference_{}.png".format(i))
+        fig.savefig("results/EDA/Orchards/orchard_{}.png".format(i+1))
+        plot.plotRef(img[i], data[i], "results/EDA/Orchards/reference_{}.png".format(i+1))
 
 
     # Label orchards according to orchard

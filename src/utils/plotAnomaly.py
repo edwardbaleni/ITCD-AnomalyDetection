@@ -30,12 +30,15 @@ def plotRef(erf, data, name):
     Returns:
     None
     """
-    fig, ax = plt.subplots( figsize=(20, 20))
+    fig, ax = plt.subplots(figsize=(20, 20))
     ax.axis('off')
     erf.plot.imshow(ax=ax)
-    data.plot(column='Y', categorical=True, legend=True, ax=ax, cmap='rainbow', facecolor='none')
+    data.plot(column='Y', categorical=True, legend=True, ax=ax, cmap='rainbow', alpha=0.7)
+    leg = ax.get_legend()
+    for text in leg.get_texts():
+        text.set_fontsize(20)  # Increase the font size of the legend
     fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-    plt.title("")#Data Geometries Colored by Y")
+    plt.title("")  # Data Geometries Colored by Y
     fig.savefig(name)
 
 def plotScores(erf, data, scores):
