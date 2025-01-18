@@ -66,8 +66,8 @@ if __name__ == '__main__':
         args = zip(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped)
         results = pool.starmap(process, list(args))
 
-    data, img = zip(*results)
-    data = list(data)
+    dataOriginal, img = zip(*results)
+    data = list(dataOriginal)[:]
     
     # Plot all the images as they are
     # plot reference data
@@ -91,40 +91,7 @@ if __name__ == '__main__':
     for i in range(sampleSize):
         data[i].drop(columns=columns_to_remove, inplace=True)
 
-    # Group data by groups
-    spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "DEM":"OSAVI"].columns)] for i in range(sampleSize)])
-    text = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
-    shape = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "confidence":"bendingE"].columns)] for i in range(sampleSize)])
-    other = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "z0":"z24"].columns)] for i in range(sampleSize)])
-    
-
-    spec.reset_index(drop=True, inplace=True)
-    text.reset_index(drop=True, inplace=True)
-    shape.reset_index(drop=True, inplace=True)
-    other.reset_index(drop=True, inplace=True)
-
-    # Scale features
-    scaler = MinMaxScaler()
-
-    spec.iloc[:, 1:] = scaler.fit_transform(spec.iloc[:, 1:])
-    text.iloc[:, 1:] = scaler.fit_transform(text.iloc[:, 1:])
-    shape.iloc[:, 1:] = scaler.fit_transform(shape.iloc[:, 1:])
-    other.iloc[:, 1:] = scaler.fit_transform(other.iloc[:, 1:])
-
-
-    spec_long = spec.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
-    text_long = text.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
-    shape_long = shape.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
-    other_long = other.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
-
-    # Example Usage
-    box_plot_comparison(spec_long, feature_group="Texture")
-    box_plot_comparison(text_long, feature_group="Spectral")
-    box_plot_comparison(shape_long, feature_group="Shape")
-    box_plot_comparison(other_long, feature_group="Zernike")
-
-
-    # Obtain number of outliers each orchard and number of delineations
+        # Obtain number of outliers each orchard and number of delineations
     OutlierInfo = pd.DataFrame(columns=["Orchard", "Outliers", "Delineations", "Ratio"])
     for i in range(sampleSize):
         new_row = {"Orchard": "Orchard {}".format(i+1), 
@@ -137,35 +104,70 @@ if __name__ == '__main__':
     # TODO: Need to do for 30 samples
     OutlierInfo.to_csv("results/EDA/benchmark_data.csv", index=False)
 
-
-
-    # # %%
-
-    #     # TODO: For the spectral indices and vegetative indices we
-    #     #       just need to do profile plots to understand relevance.
-
-    #     # TODO: What we can do for the EDA is look at morphological and image properties separately
-    #     #       Then look at the most significant of these together
-
-
-    # # %% 
-
-        # Group data by groups
+    # Group data by groups
     spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "DEM":"OSAVI"].columns)] for i in range(sampleSize)])
-    text = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
-    shape = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "confidence":"bendingE"].columns)] for i in range(sampleSize)])
+    contrast = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Contrast":"Contrast"].columns)] for i in range(sampleSize)])
+    text = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Corr":"ASM"].columns)] for i in range(sampleSize)])
+    shape = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "confidence":"eccentricity"].columns)] for i in range(sampleSize)])
+    bendingE = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "bendingE":"bendingE"].columns)] for i in range(sampleSize)])
+    other = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "z0":"z24"].columns)] for i in range(sampleSize)])
 
     spec.reset_index(drop=True, inplace=True)
     text.reset_index(drop=True, inplace=True)
     shape.reset_index(drop=True, inplace=True)
+    bendingE.reset_index(drop=True, inplace=True)
     other.reset_index(drop=True, inplace=True)
+    contrast.reset_index(drop=True, inplace=True)
 
-    # # Scale features
-    # scaler = MinMaxScaler()
+    spec_long = spec.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+    text_long = text.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+    shape_long = shape.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+    bendingE_long = bendingE.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+    other_long = other.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+    contrast_long = contrast.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
 
-    # spec.iloc[:, 1:] = scaler.fit_transform(spec.iloc[:, 1:])
-    # text.iloc[:, 1:] = scaler.fit_transform(text.iloc[:, 1:])
-    # shape.iloc[:, 1:] = scaler.fit_transform(shape.iloc[:, 1:])
+    box_plot_comparison(spec_long, feature_group="Spectral")
+    box_plot_comparison(text_long, feature_group="Texture")
+    box_plot_comparison(shape_long, feature_group="Shape")
+    box_plot_comparison(bendingE_long, feature_group="Bending Energy")
+    box_plot_comparison(other_long, feature_group="Zernike")
+    box_plot_comparison(contrast_long, feature_group="Contrast")
+
+    # Variance barplots    
+    # Calculate variances for each feature in each orchard
+    variances = pd.DataFrame(columns=["Orchard", "Feature", "Variance"])
+    for i in range(sampleSize):
+        orchard_data = data[i].loc[:, "confidence":]
+        orchard_variances = orchard_data.var().reset_index()
+        orchard_variances.columns = ["Feature", "Variance"]
+        orchard_variances["Orchard"] = "Orchard {}".format(i+1)
+        variances = pd.concat([variances, orchard_variances], ignore_index=True)
+
+        spec = orchard_data.loc[:, "DEM":"OSAVI"]
+        contrast = orchard_data.loc[:, "Contrast":"Contrast"]
+        text = orchard_data.loc[:, "Corr":"ASM"]
+        shape = orchard_data.loc[:, "roundness":"eccentricity"]
+        zernicke = orchard_data.loc[:, "z0":"z24"]
+        other = pd.DataFrame(orchard_data.loc[:, "confidence"])
+        bend = pd.DataFrame(orchard_data.loc[:, "bendingE"])
+
+    variances_pivot = variances.pivot(index="Feature", columns="Orchard", values="Variance")
+    # Plot stacked barplot for each group
+    for group_name, group_data in [("Spectral", spec), ("Texture", text), ("Shape", shape), ("Other", other), ("Bending", bend), ("Zernicke", zernicke), ("Contrast", contrast)]:
+        group_variances = group_data.columns
+        group_variances_pivot = variances_pivot.loc[group_variances]
+        group_variances_pivot.plot(kind='bar', stacked=False, figsize=(15, 8))
+        plt.ylabel('Variance')
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+        plt.savefig(f"results/EDA/Barplots/grouped_barplot_variances_{group_name.lower()}.png")
+        plt.show()
+    
+    # Should also plot the Delauney Triangulation of the data
+    for i in range(sampleSize):
+        d_w, d_g, d_p, d_c = tri.delauneyTriangulation(data[i])
+        tri.delauneyPlot(d_g, d_p, d_c, img[i], f"results/EDA/Delauney/delauney_{i+1}.png")
+
 
 
 
@@ -199,6 +201,23 @@ if __name__ == '__main__':
         plt.savefig(f"results/EDA/PCA/eigenvalues_{i+1}.png")
         plt.show()
 
+
+    data_scaled = data[:]
+    for i in range(sampleSize):
+        # data[i] = data[i].loc[:, ["Orchard"] + list(data[i].columns[:-1])]
+        data_scaled[i].loc[:,'confidence':] = utils.engineer._scaleData(data_scaled[i].loc[:,'confidence':])
+
+        # Group data by groups
+    spec = pd.concat([data_scaled[i].loc[:, ["Orchard"] + list(data_scaled[i].loc[:, "DEM":"OSAVI"].columns)] for i in range(sampleSize)])
+    text = pd.concat([data_scaled[i].loc[:, ["Orchard"] + list(data_scaled[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
+    shape = pd.concat([data_scaled[i].loc[:, ["Orchard"] + list(data_scaled[i].loc[:, "confidence":"bendingE"].columns)] for i in range(sampleSize)])
+
+    spec.reset_index(drop=True, inplace=True)
+    text.reset_index(drop=True, inplace=True)
+    shape.reset_index(drop=True, inplace=True)
+    other.reset_index(drop=True, inplace=True)
+    
+
     # # TODO: log DEM_mean after demonstrating that it should be logged here!
     # #       however, does transforming the data stutter detection or improve it?
     g = sns.PairGrid(shape, hue="Orchard", diag_sharey=False, corner=False)
@@ -225,9 +244,9 @@ if __name__ == '__main__':
     #     # calculate correlation values
     #     # Recognise Multicollinearities
     for i in range(sampleSize):
-        orchard_spec = data[i].loc[:, "DEM":"OSAVI"]
-        orchard_shape = data[i].loc[:, "confidence":"bendingE"]
-        orchard_text = data[i].loc[:, "Contrast":"ASM"]
+        orchard_spec = data_scaled[i].loc[:, "DEM":"OSAVI"]
+        orchard_shape = data_scaled[i].loc[:, "confidence":"bendingE"]
+        orchard_text = data_scaled[i].loc[:, "Contrast":"ASM"]
 
         sns.clustermap(orchard_spec.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
         plt.savefig(f"results/EDA/ClusterMaps/clustermap_spec_orchard_{i+1}.png")
@@ -236,102 +255,6 @@ if __name__ == '__main__':
         sns.clustermap(orchard_text.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
         plt.savefig(f"results/EDA/ClusterMaps/clustermap_text_orchard_{i+1}.png")
 
-    
-    # Other is not necessary as we already know that Zernicke moments are independent
-    # however, we need to compare the confidence and DEM_mean or keep these as individual features
-
-
-    # # %%    
-    #                     # Feature Selection
-
-    # It is necessary to get an idea of the variances of the features in the 
-    # scaling that will be used for the rest of the paper.
-    # In this paper, RobustScaling will be used. So first we will scale the data
-    # Then separate the data into the different groups
-    # Then obtain barplots of the variances of the features in each group over each orchard
-    # Then this will help inform how to use variance thresholding to remove low variance features
-
-    # TODO: Using a conservative threshold of 0.5 we can remove z0
-
-    # Scale features
-    data_scaled = data[:]
-    for i in range(sampleSize):
-        data_scaled[i].loc[:,'confidence':] = utils.engineer._scaleData(data_scaled[i].loc[:,'confidence':])
-
-    # Calculate variances for each feature in each orchard
-    variances = pd.DataFrame(columns=["Orchard", "Feature", "Variance"])
-    for i in range(sampleSize):
-        orchard_data = data_scaled[i].loc[:, "confidence":]
-        orchard_variances = orchard_data.var().reset_index()
-        orchard_variances.columns = ["Feature", "Variance"]
-        orchard_variances["Orchard"] = "Orchard {}".format(i+1)
-        variances = pd.concat([variances, orchard_variances], ignore_index=True)
-
-        spec = data_scaled[i].loc[:, "DEM":"OSAVI"]
-        text = data_scaled[i].loc[:, "Contrast":"ASM"]
-        shape = data_scaled[i].loc[:, "roundness":"eccentricity"]
-        zernicke = data_scaled[i].loc[:, "z0":"z24"]
-        other = pd.DataFrame(data_scaled[i].loc[:, "confidence"])
-        bend = pd.DataFrame(data_scaled[i].loc[:, "bendingE"])
-
-    # Pivot the data for plotting
-    variances_pivot = variances.pivot(index="Feature", columns="Orchard", values="Variance")
-    # Plot stacked barplot for each group
-    for group_name, group_data in [("Spectral", spec), ("Texture", text), ("Shape", shape), ("Other", other), ("Bending", bend), ("Zernicke", zernicke)]:
-        group_variances = group_data.columns
-        group_variances_pivot = variances_pivot.loc[group_variances]
-        
-        group_variances_pivot.plot(kind='bar', stacked=False, figsize=(15, 8))
-        plt.ylabel('Variance')
-        # plt.title(f'Grouped Barplot of Feature Variances Across Orchards ({group_name} Group)')
-        plt.xticks(rotation=90)
-        plt.tight_layout()
-        plt.savefig(f"results/EDA/Barplots/grouped_barplot_variances_{group_name.lower()}.png")
-        plt.show()
-
-
-
-    X = data_scaled[0].loc[:,"confidence":]
-
-    selector = VarianceThreshold(threshold=0.5)
-
-    selector.fit_transform(X)
-
-    # outputting low variance columns
-    concol = [column for column in data_scaled[0].loc[:,"confidence":].columns 
-            if column not in data_scaled[0].loc[:,"confidence":].columns[selector.get_support()]]
-
-    for features in concol:
-        print(features)
-
-
-    
-    # Should also plot the Delauney Triangulation of the data
-    for i in range(sampleSize):
-        d_w, d_g, d_p, d_c = tri.delauneyTriangulation(data[i])
-        tri.delauneyPlot(d_g, d_p, d_c, img[i], f"results/EDA/Delauney/delauney_{i+1}.png")
-
-    
-    # import networkx as nx
-    # for i in range(sampleSize):
-    #     d_w, d_g, d_p, d_c = tri.delauneyTriangulation(data[i])
-    #     fig, ax = plt.subplots(figsize=(25, 25))
-    #     img[i].plot.imshow(ax=ax)
-    #     ax.axis("off")
-    #     ax.set_title("Delauney")
-    #     nx.draw(
-    #     d_g,
-    #     d_p,
-    #     ax=ax,
-    #     node_size=30,
-    #     node_color="lightgreen",
-    #     edge_color="red",
-    #     alpha=0.8)
-    #     plt.savefig(f"results/EDA/Delauney/delauney_{i+1}.png")
-    #     plt.show()
-    
-    # # drop low variance columns
-    # X.drop(concol, axis = 1)
 
     # # TODO: Do pairplot and clustermap for all remaining features after
     # #       feature selection

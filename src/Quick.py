@@ -60,3 +60,4 @@ plt.legend()
 plt.savefig('reg_nir_data_plot.png')
 plt.show()
 # %%
+# Bending energy
