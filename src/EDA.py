@@ -160,7 +160,7 @@ if __name__ == '__main__':
         plt.ylabel('Variance')
         plt.xticks(rotation=90)
         plt.tight_layout()
-        plt.savefig(f"results/EDA/Barplots/grouped_barplot_variances_{group_name.lower()}.png")
+        plt.savefig(f"results/EDA/Barplots/{group_name}.png")
         plt.show()
     
     # Should also plot the Delauney Triangulation of the data
@@ -225,21 +225,21 @@ if __name__ == '__main__':
     g.map_diag(plt.hist, alpha=1, bins=30)
     g.map_upper(sns.kdeplot, warn_singular=False)
     g.add_legend()
-    plt.savefig("results/EDA/PairPlots/pairplot_shape.png")
+    plt.savefig("results/EDA/PairPlots/Shape.png")
 
     g = sns.PairGrid(spec, hue="Orchard", diag_sharey=False, corner=False)
     g.map_lower(plt.scatter, alpha=0.4)
     g.map_diag(plt.hist, alpha=1, bins=30)
     g.map_upper(sns.kdeplot, warn_singular=False)
     g.add_legend()
-    plt.savefig("results/EDA/PairPlots/pairplot_spec.png")
+    plt.savefig("results/EDA/PairPlots/Spec.png")
 
     g = sns.PairGrid(text, hue="Orchard", diag_sharey=False, corner=False)
     g.map_lower(plt.scatter, alpha=0.4)
     g.map_diag(plt.hist, alpha=1, bins=30)
     g.map_upper(sns.kdeplot, warn_singular=False)
     g.add_legend()
-    plt.savefig("results/EDA/PairPlots/pairplot_text.png")
+    plt.savefig("results/EDA/PairPlots/Text.png")
 
     #     # calculate correlation values
     #     # Recognise Multicollinearities
@@ -249,11 +249,11 @@ if __name__ == '__main__':
         orchard_text = data_scaled[i].loc[:, "Contrast":"ASM"]
 
         sns.clustermap(orchard_spec.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
-        plt.savefig(f"results/EDA/ClusterMaps/clustermap_spec_orchard_{i+1}.png")
+        plt.savefig(f"results/EDA/ClusterMaps/spec_orchard_{i+1}.png")
         sns.clustermap(orchard_shape.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
-        plt.savefig(f"results/EDA/ClusterMaps/clustermap_shape_orchard_{i+1}.png")
+        plt.savefig(f"results/EDA/ClusterMaps/shape_orchard_{i+1}.png")
         sns.clustermap(orchard_text.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
-        plt.savefig(f"results/EDA/ClusterMaps/clustermap_text_orchard_{i+1}.png")
+        plt.savefig(f"results/EDA/ClusterMaps/text_orchard_{i+1}.png")
 
 
     # # TODO: Do pairplot and clustermap for all remaining features after
