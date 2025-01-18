@@ -86,9 +86,13 @@ if __name__ == '__main__':
         data[i]["Orchard"] = "Orchard {}".format(i+1)
         data[i] = data[i].loc[:, ["Orchard"] + list(data[i].columns[:-1])]
     
+    # Remove specified columns from data # nir, red, reg, green and blue have already been removed
+    columns_to_remove = ["GNDVI", "NIR"]
+    for i in range(sampleSize):
+        data[i].drop(columns=columns_to_remove, inplace=True)
 
     # Group data by groups
-    spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "DEM_mean":"OSAVI_mean"].columns)] for i in range(sampleSize)])
+    spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "DEM":"OSAVI"].columns)] for i in range(sampleSize)])
     text = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
     shape = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "confidence":"bendingE"].columns)] for i in range(sampleSize)])
     other = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "z0":"z24"].columns)] for i in range(sampleSize)])
@@ -147,7 +151,7 @@ if __name__ == '__main__':
     # # %% 
 
         # Group data by groups
-    spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "DEM_mean":"OSAVI_mean"].columns)] for i in range(sampleSize)])
+    spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "DEM":"OSAVI"].columns)] for i in range(sampleSize)])
     text = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
     shape = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "confidence":"bendingE"].columns)] for i in range(sampleSize)])
 
@@ -221,7 +225,7 @@ if __name__ == '__main__':
     #     # calculate correlation values
     #     # Recognise Multicollinearities
     for i in range(sampleSize):
-        orchard_spec = data[i].loc[:, "DEM_mean":"OSAVI_mean"]
+        orchard_spec = data[i].loc[:, "DEM":"OSAVI"]
         orchard_shape = data[i].loc[:, "confidence":"bendingE"]
         orchard_text = data[i].loc[:, "Contrast":"ASM"]
 
@@ -263,7 +267,7 @@ if __name__ == '__main__':
         orchard_variances["Orchard"] = "Orchard {}".format(i+1)
         variances = pd.concat([variances, orchard_variances], ignore_index=True)
 
-        spec = data_scaled[i].loc[:, "DEM_mean":"OSAVI_mean"]
+        spec = data_scaled[i].loc[:, "DEM":"OSAVI"]
         text = data_scaled[i].loc[:, "Contrast":"ASM"]
         shape = data_scaled[i].loc[:, "roundness":"eccentricity"]
         zernicke = data_scaled[i].loc[:, "z0":"z24"]
@@ -308,24 +312,24 @@ if __name__ == '__main__':
         tri.delauneyPlot(d_g, d_p, d_c, img[i], f"results/EDA/Delauney/delauney_{i+1}.png")
 
     
-    import networkx as nx
-    for i in range(sampleSize):
-        d_w, d_g, d_p, d_c = tri.delauneyTriangulation(data[i])
-        fig, ax = plt.subplots(figsize=(25, 25))
-        img[i].plot.imshow(ax=ax)
-        ax.axis("off")
-        ax.set_title("Delauney")
-        nx.draw(
-        d_g,
-        d_p,
-        ax=ax,
-        node_size=30,
-        node_color="lightgreen",
-        edge_color="red",
-        alpha=0.8,
-        )
-        plt.savefig(f"results/EDA/Delauney/delauney_{i+1}.png")
-        plt.show()
+    # import networkx as nx
+    # for i in range(sampleSize):
+    #     d_w, d_g, d_p, d_c = tri.delauneyTriangulation(data[i])
+    #     fig, ax = plt.subplots(figsize=(25, 25))
+    #     img[i].plot.imshow(ax=ax)
+    #     ax.axis("off")
+    #     ax.set_title("Delauney")
+    #     nx.draw(
+    #     d_g,
+    #     d_p,
+    #     ax=ax,
+    #     node_size=30,
+    #     node_color="lightgreen",
+    #     edge_color="red",
+    #     alpha=0.8)
+    #     plt.savefig(f"results/EDA/Delauney/delauney_{i+1}.png")
+    #     plt.show()
+    
     # # drop low variance columns
     # X.drop(concol, axis = 1)
 

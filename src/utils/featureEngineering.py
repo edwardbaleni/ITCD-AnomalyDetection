@@ -373,20 +373,20 @@ class engineer(collect):
         # TODO: The log of DEM is more helpful than the actual DEM
         #       however, need to demonstrate this before acting upon this!
         
-        placeholder[["DEM_mean"]] = engineer._detStats(spectral["dem"], geom)#np.log(engineer._detStats(spectral["dem"], geom))
-        placeholder[["NIR_mean"]] = engineer._detStats(spectral["nir"], geom)
+        placeholder[["DEM"]] = engineer._detStats(spectral["dem"], geom)#np.log(engineer._detStats(spectral["dem"], geom))
+        placeholder[["NIR"]] = engineer._detStats(spectral["nir"], geom)
         # placeholder[["Red_mean"]] = engineer._detStats(spectral["red"], geom)
         # placeholder[["Reg_mean"]] = engineer._detStats(spectral["reg"], geom)
-        placeholder[["NDRE_mean"]] = engineer._detStats(spectral["ndre"], geom)
-        placeholder[["NDVI_mean"]] = engineer._detStats(spectral["ndvi"], geom)
-        placeholder[["GNVDI_mean"]] = engineer._detStats(spectral["gndvi"], geom)
+        placeholder[["NDRE"]] = engineer._detStats(spectral["ndre"], geom)
+        placeholder[["NDVI"]] = engineer._detStats(spectral["ndvi"], geom)
+        placeholder[["GNDVI"]] = engineer._detStats(spectral["gndvi"], geom)
         # placeholder[["ENDVI_mean"]] = engineer._detStats(spectral["endvi"], geom)
         # placeholder[["Intensity_mean"]] = engineer._detStats(spectral["intensity"], geom)
         # placeholder[["Saturation_mean"]] = engineer._detStats(spectral["saturation"], geom)
-        placeholder[["SAVI_mean"]] = engineer._detStats(spectral["savi"], geom)
-        placeholder[["EVI_mean"]] = engineer._detStats(spectral["evi"], geom)
+        placeholder[["SAVI"]] = engineer._detStats(spectral["savi"], geom)
+        placeholder[["EVI"]] = engineer._detStats(spectral["evi"], geom)
         # placeholder[["CI_mean"]] = engineer._detStats(spectral["ci"], geom)
-        placeholder[["OSAVI_mean"]] = engineer._detStats(spectral["osavi"], geom)
+        placeholder[["OSAVI"]] = engineer._detStats(spectral["osavi"], geom)
         
         return placeholder
 
