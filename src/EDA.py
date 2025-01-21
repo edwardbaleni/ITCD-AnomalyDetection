@@ -80,6 +80,31 @@ if __name__ == '__main__':
         fig.savefig("results/EDA/Orchards/orchard_{}.png".format(i+1))
         plot.plotRef(img[i], data[i], "results/EDA/Orchards/reference_{}.png".format(i+1))
 
+    dataOriginal, img = zip(*results)
+    data = list(dataOriginal)[:]
+    # Obtain contrast values above 5000
+    for i in range(sampleSize):
+        high_contrast = data[i][data[i]["Contrast"] > 5000]
+        low_contrast = data[i][data[i]["Contrast"] <= 5000]
+        plot.plot(img[i], low_contrast, high_contrast, "results/EDA/upper_contrast_{}.png".format(i+1))
+        
+
+        high_corr = data[i][data[i]["Corr"] > 0.4]
+        low_corr = data[i][data[i]["Corr"] <= 0.4]
+        plot.plot(img[i], high_corr, low_corr, "results/EDA/corr_{}.png".format(i+1))
+       
+        high_ASM = data[i][data[i]["ASM"] > 0.04]
+        low_ASM = data[i][data[i]["ASM"] <= 0.04]
+        plot.plot(img[i], high_corr, low_corr, "results/EDA/ASM_{}.png".format(i+1))
+       
+        # low_contrast = data[i][data[i]["Contrast"] <= 2500]
+        # high_contrast = data[i][data[i]["Contrast"] > 2500]
+        # plot.plot(img[i], low_contrast, high_contrast, "results/EDA/lower_contrast_{}.png".format(i+1))
+        
+    # Calculate the third quartile (Q3) of ASM for each orchard
+    for i in range(sampleSize):
+        q3_asm = data[i]["ASM"].quantile(0.75)
+        print(f"Orchard {i+1} - Q3 of ASM: {q3_asm}")
 
     # Label orchards according to orchard
     for i in range(sampleSize):
@@ -105,7 +130,7 @@ if __name__ == '__main__':
     OutlierInfo.to_csv("results/EDA/benchmark_data.csv", index=False)
 
     # Group data by groups
-    spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "DEM":"OSAVI"].columns)] for i in range(sampleSize)])
+    spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "DSM":"OSAVI"].columns)] for i in range(sampleSize)])
     contrast = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Contrast":"Contrast"].columns)] for i in range(sampleSize)])
     text = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Corr":"ASM"].columns)] for i in range(sampleSize)])
     shape = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "confidence":"eccentricity"].columns)] for i in range(sampleSize)])
@@ -126,12 +151,19 @@ if __name__ == '__main__':
     other_long = other.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
     contrast_long = contrast.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
 
+    # Subset bending energy data to remove outliers
+    bendingE_Sub = pd.concat([data[i][dataOriginal[i]["bendingE"] < 100].loc[:, ["Orchard"] + list(data[i].loc[:, "bendingE":"bendingE"].columns)] for i in range(sampleSize)])
+    # bendingE_Sub = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "bendingE":"bendingE"].columns)] for i in range(sampleSize)])
+    bendingE_Sub.reset_index(drop=True, inplace=True)
+    bendingE_Sub_long = bendingE_Sub.melt(id_vars=['Orchard'], var_name='Feature', value_name='Value')
+
     box_plot_comparison(spec_long, feature_group="Spectral")
     box_plot_comparison(text_long, feature_group="Texture")
     box_plot_comparison(shape_long, feature_group="Shape")
     box_plot_comparison(bendingE_long, feature_group="Bending Energy")
     box_plot_comparison(other_long, feature_group="Zernike")
     box_plot_comparison(contrast_long, feature_group="Contrast")
+    box_plot_comparison(bendingE_Sub_long, feature_group="Bending Energy (Subset)")
 
     # Variance barplots    
     # Calculate variances for each feature in each orchard
@@ -143,7 +175,7 @@ if __name__ == '__main__':
         orchard_variances["Orchard"] = "Orchard {}".format(i+1)
         variances = pd.concat([variances, orchard_variances], ignore_index=True)
 
-        spec = orchard_data.loc[:, "DEM":"OSAVI"]
+        spec = orchard_data.loc[:, "DSM":"OSAVI"]
         contrast = orchard_data.loc[:, "Contrast":"Contrast"]
         text = orchard_data.loc[:, "Corr":"ASM"]
         shape = orchard_data.loc[:, "roundness":"eccentricity"]
@@ -167,11 +199,6 @@ if __name__ == '__main__':
     for i in range(sampleSize):
         d_w, d_g, d_p, d_c = tri.delauneyTriangulation(data[i])
         tri.delauneyPlot(d_g, d_p, d_c, img[i], f"results/EDA/Delauney/delauney_{i+1}.png")
-
-
-
-
-
 
 
 
@@ -208,7 +235,7 @@ if __name__ == '__main__':
         data_scaled[i].loc[:,'confidence':] = utils.engineer._scaleData(data_scaled[i].loc[:,'confidence':])
 
         # Group data by groups
-    spec = pd.concat([data_scaled[i].loc[:, ["Orchard"] + list(data_scaled[i].loc[:, "DEM":"OSAVI"].columns)] for i in range(sampleSize)])
+    spec = pd.concat([data_scaled[i].loc[:, ["Orchard"] + list(data_scaled[i].loc[:, "DSM":"OSAVI"].columns)] for i in range(sampleSize)])
     text = pd.concat([data_scaled[i].loc[:, ["Orchard"] + list(data_scaled[i].loc[:, "Contrast":"ASM"].columns)] for i in range(sampleSize)])
     shape = pd.concat([data_scaled[i].loc[:, ["Orchard"] + list(data_scaled[i].loc[:, "confidence":"bendingE"].columns)] for i in range(sampleSize)])
 
@@ -218,7 +245,7 @@ if __name__ == '__main__':
     other.reset_index(drop=True, inplace=True)
     
 
-    # # TODO: log DEM_mean after demonstrating that it should be logged here!
+    # # TODO: log DSM_mean after demonstrating that it should be logged here!
     # #       however, does transforming the data stutter detection or improve it?
     g = sns.PairGrid(shape, hue="Orchard", diag_sharey=False, corner=False)
     g.map_lower(plt.scatter, alpha=0.4)
@@ -244,7 +271,7 @@ if __name__ == '__main__':
     #     # calculate correlation values
     #     # Recognise Multicollinearities
     for i in range(sampleSize):
-        orchard_spec = data_scaled[i].loc[:, "DEM":"OSAVI"]
+        orchard_spec = data_scaled[i].loc[:, "DSM":"OSAVI"]
         orchard_shape = data_scaled[i].loc[:, "confidence":"bendingE"]
         orchard_text = data_scaled[i].loc[:, "Contrast":"ASM"]
 

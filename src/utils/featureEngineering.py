@@ -310,14 +310,14 @@ class engineer(collect):
         placeholder["radius_of_gyration"] = placeholder[["centroid", "geometry"]].apply(lambda x: engineer._radiusOfGyration(x.iloc[0], x.iloc[1].exterior.coords.xy[0], x.iloc[1].exterior.coords.xy[1]), axis=1)
         # Robust Shape Descriptors
         placeholder[["minor_axis", "major_axis"]] = placeholder["geometry"].apply(lambda x: engineer._major_minor(x))
-        placeholder["roundness"] = (4 * placeholder["crown_projection_area"]) / (math.pi * placeholder["major_axis"]**2)
+        placeholder["roundness"] = (4 * placeholder["crown_projection_area"]) / (math.pi * (placeholder["major_axis"]**2))
         # Circularity is NB for some reason
-        placeholder["circularity"] = (placeholder["crown_perimeter"]**2) / (4 * math.pi * placeholder["crown_projection_area"])
+        placeholder["circularity"] = 4 * math.pi * (placeholder["crown_projection_area"]) / (placeholder["crown_perimeter"]**2) #(placeholder["crown_perimeter"]**2) / (4 * math.pi * placeholder["crown_projection_area"])
         placeholder["shape_index"] = (placeholder["crown_perimeter"]**2) / placeholder["crown_projection_area"]
         placeholder["form_factor"] = placeholder["crown_projection_area"] / (placeholder["crown_perimeter"]**2)
         # Useful Robust Features
             # Can remove compactness
-        placeholder["compactness"] = (4 * math.pi * placeholder["crown_projection_area"]) / (placeholder["crown_perimeter"]**2)
+        placeholder["compactness"] = (placeholder["crown_perimeter"]**2) / (4 * math.pi * placeholder["crown_projection_area"])#(4 * math.pi * placeholder["crown_projection_area"]) / (placeholder["crown_perimeter"]**2)
         placeholder["convexity"] = placeholder["crown_perimeter"] / convex_perimeter
         placeholder["solidity"] = placeholder["crown_projection_area"] / placeholder["geometry"].convex_hull.area # convex hull score
         placeholder["eccentricity"] = placeholder["major_axis"] / placeholder["minor_axis"]
@@ -373,7 +373,7 @@ class engineer(collect):
         # TODO: The log of DEM is more helpful than the actual DEM
         #       however, need to demonstrate this before acting upon this!
         
-        placeholder[["DEM"]] = engineer._detStats(spectral["dem"], geom)#np.log(engineer._detStats(spectral["dem"], geom))
+        placeholder[["DSM"]] = engineer._detStats(spectral["dem"], geom)#np.log(engineer._detStats(spectral["dem"], geom))
         placeholder[["NIR"]] = engineer._detStats(spectral["nir"], geom)
         # placeholder[["Red_mean"]] = engineer._detStats(spectral["red"], geom)
         # placeholder[["Reg_mean"]] = engineer._detStats(spectral["reg"], geom)

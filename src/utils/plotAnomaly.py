@@ -1,5 +1,5 @@
 import matplotlib.pylab as plt
-def plot(erf, normal, anomaly):
+def plot(erf, normal, anomaly, name):
     """
     Plots the given Earth Relief File (ERF) along with normal and anomaly regions.
     Parameters:
@@ -18,6 +18,7 @@ def plot(erf, normal, anomaly):
     erf.plot.imshow(ax=ax)
     normal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
     anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
+    fig.savefig(name)
 
 def plotRef(erf, data, name):
     """
