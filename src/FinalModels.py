@@ -46,6 +46,7 @@ X_train, X_test, _, y_test = train_test_split(X,
                                             stratify=y,
                                             random_state=42)
 
+# %%
 # standardizing data for processing
 X_train_norm = utils.engineer._scaleData(X_train)
 X_test_norm = utils.engineer._scaleData(X_test)
@@ -113,6 +114,11 @@ labels = clf.labels_
 
 
 # %%
+og_data = data.copy(deep=True)
+fin_data = list(og_data.loc[:,'geometry':'roundness'].columns) + ["compactness", "convexity", "bendingE",  "DSM" , "NDRE", "OSAVI", "ASM", "Corr"]+ list(og_data.loc[:,"z0":'z24'])
+og_data = og_data.loc[:, fin_data]
+data = og_data.copy(deep=True)
+data.loc[:,'confidence':] = utils.engineer._scaleData(data.loc[:, "confidence":])
 clf = EIF(outliers_fraction, data.loc[:, "confidence":].columns)
 clf.fit(X)
 test_scores = clf.decision_scores_
@@ -123,33 +129,29 @@ labels = clf.labels_
 normal = data[labels == 0]
 abnormal = data[labels == 1]
 
-plotA.plot(tryout, normal, abnormal)
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-normal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
-abnormal.plot(ax=ax, facecolor = 'none',edgecolor='blue')
-plt.savefig('foo.png')
+plotA.plot(tryout, normal, abnormal, 'foo2.png')
+# fig, ax = plt.subplots(figsize=(15, 15))
+# tryout.plot.imshow(ax=ax)
+# normal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
+# abnormal.plot(ax=ax, facecolor = 'none',edgecolor='blue')
+# plt.savefig('foo.png')
 
 
 # %%
 
 # just want to see if ABOD is indeed too slow
 # default is way too slow!
-from pyod.models.pca import PCA
+from pyod.models.lof import LOF
 
-clf = PCA(contamination=outliers_fraction)
-clf.fit(X)
+clf = LOF(contamination=outliers_fraction)
+clf.fit(data.loc[:, "confidence":])
 test_scores = clf.decision_scores_
 labels = clf.labels_
 
 normal = data[labels == 0]
 abnormal = data[labels == 1]
 
-fig, ax = plt.subplots(figsize=(15, 15))
-tryout.plot.imshow(ax=ax)
-normal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
-abnormal.plot(ax=ax, facecolor = 'none',edgecolor='blue')
-plt.savefig('foo2.png')
+plotA.plot(tryout, normal, abnormal, 'foo2.png')
 
 # %%
 
