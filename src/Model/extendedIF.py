@@ -4,7 +4,10 @@ import numpy as np
 import pandas as pd
 
 class EIF:
-    def __init__(self, contamination=0.5, predictors=None):
+    def __init__(self, contamination=0.5, ntrees = 100, extension_level = 6, seed=42, predictors=None):
+        self.ntrees = ntrees
+        self.extension_level = extension_level
+        self.seed = seed
         self.eif = None
         self.decision_scores_ = None
         self.labels_ = None
@@ -45,15 +48,17 @@ class EIF:
 
     def fit(self, X):
         h2o.init()
+        h2o.no_progress()
         X = pd.DataFrame(X)
         X.columns = self.predictors
 
         self.h2o_df = h2o.H2OFrame(X)
 
         eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
-                                                    ntrees = 100,
-                                                    sample_size = int(X.shape[0] * 0.5), # 256 is the defualt, but not using it just incase an orchard is small!
-                                                    extension_level = 6)#len(predictors) - 1)
+                                                    ntrees = self.ntrees,
+                                                    sample_size = int(X.shape[0] * 0.6), # 256 is the defualt, but not using it just incase an orchard is small!
+                                                    extension_level = self.extension_level, #len(predictors) - 1)
+                                                    seed=self.seed)
         
         eif.train(x = self.predictors,
                   training_frame = self.h2o_df)

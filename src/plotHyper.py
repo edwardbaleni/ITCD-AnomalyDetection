@@ -8,7 +8,7 @@ study.best_params
 print(study.best_trial)
 optuna.visualization.plot_optimization_history(study)
 # %%
-optuna.visualization.plot_param_importance(study)
+optuna.visualization.plot_param_importances(study)
 
 # %%
 optuna.visualization.plot_slice(study)

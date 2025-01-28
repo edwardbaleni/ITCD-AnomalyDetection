@@ -86,16 +86,16 @@ if __name__ == '__main__':
     for i in range(sampleSize):
         high_contrast = data[i][data[i]["Contrast"] > 5000]
         low_contrast = data[i][data[i]["Contrast"] <= 5000]
-        plot.plot(img[i], low_contrast, high_contrast, "results/EDA/upper_contrast_{}.png".format(i+1))
+        plot.plot(img[i], low_contrast, high_contrast, "results/EDA/TextBoxplotOutliers/upper_contrast_{}.png".format(i+1))
         
 
         high_corr = data[i][data[i]["Corr"] > 0.4]
         low_corr = data[i][data[i]["Corr"] <= 0.4]
-        plot.plot(img[i], high_corr, low_corr, "results/EDA/corr_{}.png".format(i+1))
+        plot.plot(img[i], high_corr, low_corr, "results/EDA/TextBoxplotOutliers/corr_{}.png".format(i+1))
        
         high_ASM = data[i][data[i]["ASM"] > 0.04]
         low_ASM = data[i][data[i]["ASM"] <= 0.04]
-        plot.plot(img[i], high_corr, low_corr, "results/EDA/ASM_{}.png".format(i+1))
+        plot.plot(img[i], high_corr, low_corr, "results/EDA/TextBoxplotOutliers/ASM_{}.png".format(i+1))
        
         # low_contrast = data[i][data[i]["Contrast"] <= 2500]
         # high_contrast = data[i][data[i]["Contrast"] > 2500]
