@@ -27,7 +27,7 @@ def process(data_paths_tif, data_paths_geojson, data_paths_geojson_zipped):
     data = myData.data.copy(deep=True)
     erf_num = myData.erf
 
-    results = transductive.transductionResults(data, erf_num)
+    results = transductive.transductionResults(data, erf_num, True)
     
     return results
 
@@ -96,13 +96,13 @@ if __name__ == "__main__":
 
     df_perf = auroc_long
 
-    try:
-        cdDiagram.draw_cd_diagram(df_perf=ap_long, title='Average Precision', labels=True, measure = 'transductive/AP')
-    except:
-        print("Error in AP")
+    # try:
+    #     cdDiagram.draw_cd_diagram(df_perf=ap_long, title='Average Precision', labels=True, measure = 'transductive/AP')
+    # except:
+    #     print("Error in AP")
 
 
-    try:
-        cdDiagram.draw_cd_diagram(df_perf=auroc_long, title='Average Precision', labels=True, measure = 'transductive/AUCROC')
-    except:
-        print("Error in AUCROC")
+    # try:
+    #     cdDiagram.draw_cd_diagram(df_perf=auroc_long, title='Average Precision', labels=True, measure = 'transductive/AUCROC')
+    # except:
+    #     print("Error in AUCROC")

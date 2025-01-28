@@ -169,7 +169,7 @@ def init_results(keys, pop_size):
     return {key: np.zeros([pop_size]) for key in keys}, {key: np.zeros([pop_size]) for key in keys}, {key: 0 for key in keys}
 
 
-def transductionResults(data, erf_num):
+def transductionResults(data, erf_num, trans=False):
     n_classifiers = 12
 
     df_columns = ['Data', '# Samples', '# Dimensions', 'Outlier Perc %',
@@ -279,7 +279,8 @@ def transductionResults(data, erf_num):
     output = output + (labels,)
     output = output + (precision, recall, aucpr)
 
-    pickle.dump(output, #(tpr_results, fpr_results, labels, auc),
-                open("results/transductive/" + erf_num + ".pkl", "wb"))
+    if trans:
+        pickle.dump(output,
+                    open("results/transductive/" + erf_num + ".pkl", "wb"))
 
     return (aucroc_df, ap_df, time_df)

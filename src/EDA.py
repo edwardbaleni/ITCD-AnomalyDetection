@@ -14,7 +14,7 @@ import utils.plotAnomaly as plot
 import plotly.express as px
 import utils.Triangulation as tri
 
-from sklearn.feature_selection import VarianceThreshold
+from Model import transductive
 
 # plot boxplots for each group and separate by orchard
 def box_plot_comparison(data, feature_group=None):
@@ -283,12 +283,43 @@ if __name__ == '__main__':
         plt.savefig(f"results/EDA/ClusterMaps/text_orchard_{i+1}.png")
 
 
-    # # TODO: Do pairplot and clustermap for all remaining features after
-    # #       feature selection
-    # #       Only after feature selection
+
+    # Demonstrate model performance before and after feature reduction
+    # Perform feature reduction
+
+    data_sensitive = list(dataOriginal[:])
+    fin_data = list(data_sensitive[0].loc[:,:'roundness'].columns) + ["compactness", "convexity", "solidity", "bendingE",  "DSM" , "NDRE", "OSAVI", "ASM", "Corr"]+ list(data_sensitive[0].loc[:,"z1":'z24'])
+    for i in range(sampleSize):
+        data_sensitive[i] = data_sensitive[i].loc[:, fin_data]
+        # data_sensitive[i].loc[:,'confidence':] = utils.engineer._scaleData(data_sensitive[i].loc[:, "confidence":])
+
+    # Perform anomaly detection
+    # Perform anomaly detection
+
+    # Obtain the precision for full dataset and precision for reduced dataset
+    # As well as images of improvements!
+    results = []
+    results_sensitive = []
+    for i in range(sampleSize):
+        results.append(transductive.transductionResults(data[i], f"{i}"))
+        results_sensitive.append(transductive.transductionResults(data_sensitive[i], f"{i}"))
+
+    # This is to separate the results
+
+    auroc, ap, _ = zip(*results)
+    auroc_sensitive, ap_sensitive, _ = zip(*results_sensitive)
+
+    auroc_df = pd.DataFrame()
+    ap_df = pd.DataFrame()
+
+    auroc_sensitive_df = pd.DataFrame()
+    ap_sensitive_df = pd.DataFrame()
     
-    # # Plot clustermap for all orchards using data_scaled
-    # for i in range(sampleSize):
-    #     orchard_data = data_scaled[i].loc[:, "confidence":]
-    #     sns.clustermap(orchard_data.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
-    #     plt.savefig(f"results/EDA/clustermap_all_features_orchard_{i+1}.png")
+    for i in range(sampleSize):
+        auroc_df = pd.concat([auroc_df, auroc[i]])
+        ap_df = pd.concat([ap_df, ap[i]])
+    
+        auroc_sensitive_df = pd.concat([auroc_sensitive_df, auroc_sensitive[i]])
+        ap_sensitive_df = pd.concat([ap_sensitive_df, ap_sensitive[i]])
+    
+    

@@ -31,7 +31,7 @@ y = np.array(data.loc[:, "Y"]).T
     # Change outlier to 1 and inlier to 0 in data
 y = np.where(y == 'Outlier', 1, 0)
 
-outliers_fraction = np.count_nonzero(y) / len(y)
+outliers_fraction = 0.05#np.count_nonzero(y) / len(y)
 
 
 
@@ -50,46 +50,31 @@ abnormal = data[labels == 1]
 plotA.plot(img, normal, abnormal, 'data_full.png')
 
 
-# %% With all shape but summarised others
-data_shape = myData.data.copy(deep=True)
-fin_data = list(data_shape.loc[:,:'bendingE'].columns) + ["compactness", "convexity", "bendingE",  "DSM" , "NDRE", "OSAVI", "ASM", "Corr"]+ list(data_shape.loc[:,"z0":'z24'])
+# %% Data Shape
 
-data_shape.loc[:,'confidence':] = utils.engineer._scaleData(data_shape.loc[:, "confidence":])
-from pyod.models.lof import LOF
+data_sensitive = myData.data.copy(deep=True)
+fin_data = list(data_sensitive.loc[:,:'roundness'].columns) + ["compactness", "convexity", "solidity", "bendingE",  "DSM" , "NDRE", "OSAVI", "ASM", "Corr"]+ list(data_sensitive.loc[:,"z1":'z24'])
+data_sensitive = data_sensitive.loc[:, fin_data]
+data_sensitive.loc[:,'confidence':] = utils.engineer._scaleData(data_sensitive.loc[:, "confidence":])
 
-clf = LOF(contamination=outliers_fraction)
-clf.fit(data_shape.loc[:, "confidence":])
-test_scores = clf.decision_scores_
-labels = clf.labels_
-
-normal = data[labels == 0]
-abnormal = data[labels == 1]
-plotA.plot(img, normal, abnormal, 'data_shape.png')
-
-
-# So far it equates and no information has been lost!!!
-
-# %% Sensitivity Analysis
-
-og_data = myData.data.copy(deep=True)
-fin_data = list(og_data.loc[:,'geometry':'roundess'].columns) + ["compactness", "convexity", "bendingE",  "DSM" , "NDRE", "OSAVI", "ASM", "Corr"]+ list(og_data.loc[:,"z0":'z24'])
-og_data = og_data.loc[:, fin_data]
-data = og_data.copy(deep=True)
 
 from pyod.models.lof import LOF
 
 clf = LOF(contamination=outliers_fraction)
-clf.fit(data.loc[:, "confidence":])
+clf.fit(data_sensitive.loc[:, "confidence":])
 test_scores = clf.decision_scores_
 labels = clf.labels_
 
 normal = data[labels == 0]
 abnormal = data[labels == 1]
 
-plotA.plot(tryout, normal, abnormal, 'foo2.png')
+plotA.plot(img, normal, abnormal, 'data_sensitive.png')
+
+# %%
 
 
-
+# Obtain the precision for full dataset and precision for reduced dataset
+# As well as images of improvements!
 
 
 
