@@ -37,7 +37,6 @@ class collect:
         Raises:
         FileNotFoundError: If any of the specified files are not found.
         """
-        
         nir = rio.open_rasterio([j for j in data_paths_tif if "nir_native" in j][0])
         red = rio.open_rasterio([j for j in data_paths_tif if "red_native" in j][0])
         reg = rio.open_rasterio([j for j in data_paths_tif if "reg_native" in j][0])
@@ -61,8 +60,6 @@ class collect:
         Returns:
         bool: True if the points in geom are within the mask, False otherwise.
         """
-
-        # find points within mask
         return mask.contains(geom)
 
     @staticmethod
@@ -75,8 +72,6 @@ class collect:
         Returns:
             list: A list of indices of the geometries that had points removed.
         """
-
-        # remove points that touch the mask
         hold = []
         for i in range(0, len(geoms)):
             if collect._removePoints(geoms.loc[i,"geometry"], mask)[0]:
@@ -93,7 +88,7 @@ class collect:
         Returns:
         xarray.DataArray or xarray.Dataset: The reprojected data with updated coordinates.
         """    
-        data = data.rio.reproject_match(xds_match, resampling = Resampling.nearest) # Resampling.bilinear
+        data = data.rio.reproject_match(xds_match, resampling = Resampling.nearest)
         data = data.assign_coords({
             "x": xds_match.x,
             "y": xds_match.y,})
@@ -122,8 +117,6 @@ class collect:
                 - mask (array): The mask array used for point removal.
                 - ref_data (any): Reference data retrieved from the input files.
         """
-
-        # Resamples data and removes irrelevant points
         dem, nir, red, reg, rgb, points, mask, ref_data = collect._retrieveData(tif, geojson, zipped)
 
         xds_match = dem
@@ -169,9 +162,6 @@ class collect:
         Returns:
         None: The method updates the input DataFrame in place by adding new columns for each vegetation index.
         """
-        
-        # reg stands for red edge
-        
         data["ndvi"] = (data["nir"] - data["red"]) / (data["nir"] + data["red"])
         data["ndre"] = (data["nir"] - data["reg"]) / (data["nir"] + data["reg"])
         data["gndvi"] = (data["nir"] - data["green"]) / (data["nir"] + data["green"])
@@ -181,33 +171,8 @@ class collect:
         data["ci"] = (data["nir"]) / (data["reg"]) - 1 
         data["osavi"] = 1.16 * (data["nir"] - data["red"]) / (data["nir"]+data["red"] + 0.16)
         data["sr_reg"] = data["nir"]/data["reg"]
-        # Graveyard of unworkeable vegetative indices.
-        # When plotted, they did not distinguish well between soil and 
-        # vegetation
-        # data["intensity"] = data["nir"] + data["green"] + data["blue"]
-        # data["saturation"] = (data["intensity"] -3 * data["blue"]) / data["intensity"]
-        # msavi = (2 * spectralData["nir"]/1000 + 1 - np.sqrt( ( 2 * spectralData["nir"]/1000 + 1)**2 - 8 * (spectralData["nir"]/1000 - spectralData["red"]/1000))) / 2
-        # data["ccci"] = data["ndre"]/data["ndvi"]
-        # sr = spectralData["nir"]/spectralData["red"] # Simple Ratio
-        # WDRI = sr = 0.1* spectralData["nir"] - spectralData["red"] / (0.1 * spectralData["nir"]) + spectralData["red"] # Wide Dynamic Range Vegetation Index
-        # vari = (spectralData["green"] - spectralData["red"])/(spectralData["green"] + spectralData["red"] -spectralData["blue"]) 
-        # ci = (spectralData["nir"]/1000) / (spectralData["green"]/1000) - 1
 
-
-        #       as only NDVI seems to distinguish ground pixels from trees well
-        #data["NDVI"].plot()
-        #data["NDRE"].plot()
-        #data["GNDVI"].plot()
-        #data["ENDVI"].plot()
-
-        # data["NDVI"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/NDVI.tif")
-        # data["NDRE"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/NDRE.tif")
-        # data["GNDVI"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/GNDVI.tif")
-        # data["ENDVI"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/ENDVI.tif")
-        # data["Intensity"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/Intensity.tif")
-        # data["Satuartion"].rio.to_raster("C:/Users/balen/OneDrive/Desktop/Saturation.tif")
         self.spectralData = data
-        #return data
 
 def _dCollect(size, file_type):
     """

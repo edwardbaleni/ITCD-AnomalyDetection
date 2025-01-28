@@ -31,19 +31,6 @@ class engineer(collect):
         super().__init__(num, tifs, geojsons, zips)
         self.scaleData(self.delineations, self.spectralData, scale)
         self.labelRefData(self.data, self.ref_data, self.mask)
-        
-
-        # can remove confidence but don't necessarily have to as it is a feature
-        # that we can expext most datasets to have. Aerobotics provides this feature
-        # with every dataset.
-
-    # Radius of gyration - https://www.tutorialspoint.com/radius-of-gyration
-    # For now we will use the straight line distance from the centroid to the vertices
-    # However, in future this line should be robust, say in the case of a concave polygon
-    # the line should not exit the polygon.
-    # I want to calculate the distance between two points within a concave shape, 
-    # and the distance line between these points cannot exit the polygon.
-
     
     def labelRefData(self, data, refData, mask):
         """
@@ -70,25 +57,17 @@ class engineer(collect):
         refData = refData.iloc[index_mask_intersect]
         refData.reset_index(drop=True, inplace=True)
         refData.to_crs("3857", inplace=True)
-        # Get the center of refData polygons
         refData.loc[:,"centroid"] = refData["geometry"].centroid
-        # Check the number of reference centers in estimated delineations
-        # Check for under-segmentation amd false positives
         refData.to_crs(data.crs, inplace=True)
         refData.loc[:, "centroid"] = refData.loc[:,"centroid"].to_crs(data.crs)
         underSeg_Fp = data['geometry'].apply(lambda x: refData["centroid"].within(x).sum())
-        # Check how many estimated centres are within the reference delineation
-        # Check for over-segmentation
+  
         overSeg = []
         for _, row in data.iterrows():
             count = refData["geometry"].apply(lambda x: row["centroid"].within(x)).sum()
             overSeg.append(count)
 
         data['Y'] = "TP"
-
-        # Problem here is that sometimes over-segmented estimates are
-        # not overlapping with the reference data therefore they are false-positives
-        # in this case, they will be false-positives!
 
         # Over-segmentation
         for i, key in enumerate(overSeg):
@@ -104,8 +83,6 @@ class engineer(collect):
                 # Under
                 data.loc[i, 'Y'] = "Outlier"
 
-
-        # Relocate Y to a position after centroid in the data dataframe
         cols = list(data.columns)
         cols.insert(cols.index('centroid') + 1, cols.pop(cols.index('Y')))
         data = data[cols]
@@ -133,7 +110,6 @@ class engineer(collect):
         return pd.Series(math.sqrt(rad) / len(xx))
 
     @staticmethod
-    # https://stackoverflow.com/questions/13536209/efficient-way-to-measure-region-properties-using-shapely
     def _major_minor(xx):
         """
         Calculate the lengths of the major and minor axes of the minimum bounding rectangle of a given shape.
@@ -239,8 +215,7 @@ class engineer(collect):
                 #         # https://scikit-image.org/docs/stable/api/skimage.feature.html#skimage.feature.graycomatrix
         """
         co_matrix = skimage.feature.graycomatrix(im, 
-                                                 # I changed the distances from 5 -> 2
-                                            distances=[2], # looks at distances and how many pixels away to consider
+                                            distances=[2],
                                             angles=[0], 
                                             levels=256, 
                                             symmetric=True, 
@@ -248,16 +223,9 @@ class engineer(collect):
         
         contrast = skimage.feature.graycoprops(co_matrix, 'contrast')[0][0]
         correlation = skimage.feature.graycoprops(co_matrix, 'correlation')[0][0]
-            # energy = sqrt(ASM) # so we can just remove it!
-        # energy = skimage.feature.graycoprops(co_matrix, 'energy')[0][0]
-            # ASM is a measure of homogeneity of an image. so we don't need homo
-        # homogeneity = skimage.feature.graycoprops(co_matrix, 'homogeneity')[0][0]
         ASM = skimage.feature.graycoprops(co_matrix, 'ASM')[0][0]
-            # diss captures the same information as contrast
-        # diss = skimage.feature.graycoprops(co_matrix, 'dissimilarity')[0][0]
 
-        return [contrast, correlation, ASM]#, homogeneity,diss]#, energy]
-
+        return [contrast, correlation, ASM]
 
     def imageA(self, dat, spectral):
         """
@@ -304,34 +272,20 @@ class engineer(collect):
         convexHull = placeholder.loc[:, "geometry"].convex_hull
         convex_area = shapely.area(convexHull)
         convex_perimeter = shapely.length(convexHull)
-        # Shape Descriptors Not Robust
-        placeholder["crown_projection_area"] = shapely.area(placeholder.loc[:,"geometry"])
-        placeholder["crown_perimeter"] = shapely.length(placeholder.loc[:,"geometry"])
-        placeholder["radius_of_gyration"] = placeholder[["centroid", "geometry"]].apply(lambda x: engineer._radiusOfGyration(x.iloc[0], x.iloc[1].exterior.coords.xy[0], x.iloc[1].exterior.coords.xy[1]), axis=1)
-        # Robust Shape Descriptors
-        placeholder[["minor_axis", "major_axis"]] = placeholder["geometry"].apply(lambda x: engineer._major_minor(x))
-        placeholder["roundness"] = (4 * placeholder["crown_projection_area"]) / (math.pi * (placeholder["major_axis"]**2))
-        # Circularity is NB for some reason
-        placeholder["circularity"] = 4 * math.pi * (placeholder["crown_projection_area"]) / (placeholder["crown_perimeter"]**2) #(placeholder["crown_perimeter"]**2) / (4 * math.pi * placeholder["crown_projection_area"])
-        placeholder["shape_index"] = (placeholder["crown_perimeter"]**2) / placeholder["crown_projection_area"]
-        placeholder["form_factor"] = placeholder["crown_projection_area"] / (placeholder["crown_perimeter"]**2)
-        # Useful Robust Features
-            # Can remove compactness
-        placeholder["compactness"] = (placeholder["crown_perimeter"]**2) / (4 * math.pi * placeholder["crown_projection_area"])#(4 * math.pi * placeholder["crown_projection_area"]) / (placeholder["crown_perimeter"]**2)
-        placeholder["convexity"] = placeholder["crown_perimeter"] / convex_perimeter
-        placeholder["solidity"] = placeholder["crown_projection_area"] / placeholder["geometry"].convex_hull.area # convex hull score
-        placeholder["eccentricity"] = placeholder["major_axis"] / placeholder["minor_axis"]
-
-        # TODO: Add in Bending energy, first and second order invariant moment
-        placeholder["bendingE"] = list(map(engineer._bendingEnergy, placeholder["geometry"], placeholder["radius_of_gyration"]))
         
-        # calling upon a global variable.
-    
-        # Removing the bottom features makes detection slightly worse. So will keep them
-        # for EDA and decide from there.
-        # # Drop useless/repeat/non-robust items
-        #r", "minor_axis", "major_axis", "radius_of_gyration", "crown_perimeter", "crown_projection_area"], axis=1, inplace = True)
-        placeholder.drop(["form_factor", "shape_index", "minor_axis", "major_axis", "radius_of_gyration", "crown_perimeter", "crown_projection_area"], axis=1, inplace = True)
+        area = shapely.area(placeholder.loc[:,"geometry"])
+        perimeter = shapely.length(placeholder.loc[:,"geometry"])
+        rog = placeholder[["centroid", "geometry"]].apply(lambda x: engineer._radiusOfGyration(x.iloc[0], x.iloc[1].exterior.coords.xy[0], x.iloc[1].exterior.coords.xy[1]), axis=1)
+        minor_axis, major_axis = placeholder["geometry"].apply(lambda x: engineer._major_minor(x))
+        placeholder["roundness"] = (4 * area) / (math.pi * (major_axis**2))
+        placeholder["circularity"] = 4 * math.pi * (area) / (perimeter**2)
+        placeholder["compactness"] = (perimeter**2) / (4 * math.pi * area)
+        placeholder["convexity"] = perimeter / convex_perimeter
+        placeholder["solidity"] = area / placeholder["geometry"].convex_hull.area
+        placeholder["eccentricity"] = major_axis / minor_axis
+        placeholder["bendingE"] = list(map(engineer._bendingEnergy, placeholder["geometry"], rog))
+        
+        # placeholder.drop(["form_factor", "shape_index", "minor_axis", "major_axis", "radius_of_gyration", "crown_perimeter", "crown_projection_area"], axis=1, inplace = True)
         return placeholder
 
     @staticmethod
@@ -346,7 +300,6 @@ class engineer(collect):
         """
 
         geometry = geometry.to_crs(x.rio.crs)
-        #nodata = x.rio.nodata
         affine = x.rio.transform()
         array = np.array(x)[0]
 
@@ -366,51 +319,17 @@ class engineer(collect):
         Returns:
         pandas.DataFrame: Updated DataFrame with computed mean values for each spectral feature.
         """
-
-        # Spectral Features
         geom = placeholder.loc[:,"geometry"]
 
-        # TODO: The log of DEM is more helpful than the actual DEM
-        #       however, need to demonstrate this before acting upon this!
-        
-        placeholder[["DSM"]] = engineer._detStats(spectral["dem"], geom)#np.log(engineer._detStats(spectral["dem"], geom))
+        placeholder[["DSM"]] = engineer._detStats(spectral["dem"], geom)
         placeholder[["NIR"]] = engineer._detStats(spectral["nir"], geom)
-        # placeholder[["Red_mean"]] = engineer._detStats(spectral["red"], geom)
-        # placeholder[["Reg_mean"]] = engineer._detStats(spectral["reg"], geom)
         placeholder[["NDRE"]] = engineer._detStats(spectral["ndre"], geom)
         placeholder[["NDVI"]] = engineer._detStats(spectral["ndvi"], geom)
         placeholder[["GNDVI"]] = engineer._detStats(spectral["gndvi"], geom)
-        # placeholder[["ENDVI_mean"]] = engineer._detStats(spectral["endvi"], geom)
-        # placeholder[["Intensity_mean"]] = engineer._detStats(spectral["intensity"], geom)
-        # placeholder[["Saturation_mean"]] = engineer._detStats(spectral["saturation"], geom)
         placeholder[["SAVI"]] = engineer._detStats(spectral["savi"], geom)
         placeholder[["EVI"]] = engineer._detStats(spectral["evi"], geom)
-        # placeholder[["CI_mean"]] = engineer._detStats(spectral["ci"], geom)
         placeholder[["OSAVI"]] = engineer._detStats(spectral["osavi"], geom)
         
-        return placeholder
-
-    def distanceFeatures(self, placeholder):
-        """
-        Generates distance-based features for the given placeholder DataFrame.
-        This method calculates the distances to the k-nearest neighbors for each point
-        in the placeholder DataFrame based on their latitude and longitude coordinates.
-        The distances are then added as new columns to the DataFrame.
-        Parameters:
-        placeholder (GeoDataFrame): A GeoDataFrame containing at least 'latitude' and 'longitude' columns.
-        Returns:
-        GeoDataFrame: The input GeoDataFrame with additional columns for the distances to the k-nearest neighbors.
-        Notes:
-            https://iopscience.iop.org/article/10.1088/1361-6560/abfbf5/data
-            This actually makes the model worse. So will not use it.
-        """
-        k = 4
-        neigh = KNN(n_neighbors= k + 1)
-        neigh.fit(placeholder[["latitude","longitude"]])
-        distances, positions = neigh.kneighbors(placeholder[["latitude","longitude"]], return_distance=True)
-        placeholder[["dist1", "dist2", "dist3", "dist4"]] = distances[:,1:]
-
-        placeholder = placeholder.to_crs(4326)
         return placeholder
 
     @staticmethod
@@ -424,7 +343,6 @@ class engineer(collect):
         """
                 
         scaler = RobustScaler()
-        # scaler = StandardScaler()
         return(scaler.fit_transform(x))
 
 
@@ -455,24 +373,13 @@ class engineer(collect):
         placeholder["centroid"] = shapely.centroid(placeholder.loc[:,"geometry"])
         placeholder["latitude"] = placeholder["centroid"].y
         placeholder["longitude"] = placeholder["centroid"].x
-        # put the spatial features first
         placeholder = placeholder.loc[:, ['geometry', 'centroid', 'latitude', 'longitude', 'confidence']]
         placeholder = self.shapeDescriptors(placeholder)
-        # placeholder = self.distanceFeatures(placeholder)
-        placeholder = placeholder.to_crs(4326)
-        # zonal statistics have to come last as crs is 4326 
-        # and above crs is converted to 3857 to work with the shape descriptors
+        placeholder = placeholder.to_crs(4326) 
         placeholder = self.zonalStatistics(placeholder, spectral)
-
-        # print(self.spectralData['rgb'])
-        analysis = ["z" + str(x) for x in range(25)] + ['Contrast', 'Corr', 'ASM']#, homogeneity,diss]#, energy]
+        analysis = ["z" + str(x) for x in range(25)] + ['Contrast', 'Corr', 'ASM']
         placeholder[analysis] = placeholder["geometry"].apply(lambda x: self.imageA(x, spectral['rgb']))
-        #placeholder[['contrast', 'correlation', 'energy', 'homogeneity', 'ASM', "dissimilarity"]] = placeholder["geometry"].apply(lambda x: self._texture(x, spectral['rgb']))
 
-        # placeholder.drop(['dist1', 'dist2', 'dist3', 'dist4'], axis = 1, inplace=True)
-        # Feature Scaling
-        # TODO: this paper says to use robust scaling: https://link.springer.com/article/10.1007/s00138-023-01450-x#Sec3
-        #       For some reason it does work better than standard scaling
         if (scale):
             placeholder.loc[:, "confidence":] = engineer._scaleData(placeholder.loc[:,'confidence':])
         
