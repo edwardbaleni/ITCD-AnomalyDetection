@@ -20,7 +20,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-class engineer(collect):
+class salientEngineer(collect):
 
     def __init__(self, num, tifs, geojsons, zips, scale = True):
         super().__init__(num, tifs, geojsons, zips)
@@ -85,6 +85,7 @@ class engineer(collect):
         self.data = data
         self.ref_data = refData
 
+
     @staticmethod
     def _zernickeMoments(im):
         """
@@ -101,7 +102,7 @@ class engineer(collect):
         zernike_moments = mh.features.zernike_moments(im, 
                                                       radius = (mh.labeled.bbox(im).max()/2)
                                                       )
-        return list(zernike_moments)
+        return list(zernike_moments)[1:]
 
 
     @staticmethod
@@ -136,11 +137,10 @@ class engineer(collect):
                                             symmetric=True, 
                                             normed=True)
         
-        contrast = skimage.feature.graycoprops(co_matrix, 'contrast')[0][0]
         correlation = skimage.feature.graycoprops(co_matrix, 'correlation')[0][0]
         ASM = skimage.feature.graycoprops(co_matrix, 'ASM')[0][0]
 
-        return [contrast, correlation, ASM]
+        return [correlation, ASM]
 
     def imageA(self, dat, spectral):
         """
@@ -158,8 +158,7 @@ class engineer(collect):
         text = self._texture(im)
         zernicke = self._zernickeMoments(im)
         return pd.Series(zernicke + text)
-
-
+    
     @staticmethod
     def _radiusOfGyration(xx_centre, xx, yy):
         """
@@ -238,7 +237,7 @@ class engineer(collect):
         import math
         xx = shapely.get_coordinates(xx)
         L = xx.shape[0]
-        return max( (2 * math.pi)/r , 1/L * sum( engineer._curvature(xx)**2 ))
+        return max( (2 * math.pi)/r , 1/L * sum( salientEngineer._curvature(xx)**2 ))
 
     def shapeDescriptors(self, placeholder):
         """
@@ -271,17 +270,17 @@ class engineer(collect):
         
         area = shapely.area(placeholder.loc[:,"geometry"])
         perimeter = shapely.length(placeholder.loc[:,"geometry"])
-        rog = placeholder[["centroid", "geometry"]].apply(lambda x: engineer._radiusOfGyration(x.iloc[0], x.iloc[1].exterior.coords.xy[0], x.iloc[1].exterior.coords.xy[1]), axis=1)
-        minor_axis, major_axis = placeholder["geometry"].apply(lambda x: engineer._major_minor(x))
-        placeholder["roundness"] = (4 * area) / (math.pi * (major_axis**2))
+        placeholder["radius_of_gyration"] = placeholder[["centroid", "geometry"]].apply(lambda x: salientEngineer._radiusOfGyration(x.iloc[0], x.iloc[1].exterior.coords.xy[0], x.iloc[1].exterior.coords.xy[1]), axis=1)
+        placeholder[["minor_axis", "major_axis"]] = placeholder["geometry"].apply(lambda x: salientEngineer._major_minor(x))
+        placeholder["roundness"] = (4 * area) / (math.pi * (placeholder["major_axis"]**2))
         placeholder["circularity"] = 4 * math.pi * (area) / (perimeter**2)
         placeholder["compactness"] = (perimeter**2) / (4 * math.pi * area)
         placeholder["convexity"] = perimeter / convex_perimeter
         placeholder["solidity"] = area / placeholder["geometry"].convex_hull.area
-        placeholder["eccentricity"] = major_axis / minor_axis
-        placeholder["bendingE"] = list(map(engineer._bendingEnergy, placeholder["geometry"], rog))
+        placeholder["bendingE"] = list(map(salientEngineer._bendingEnergy, placeholder["geometry"], placeholder["radius_of_gyration"]))
         
-        # placeholder.drop(["form_factor", "shape_index", "minor_axis", "major_axis", "radius_of_gyration", "crown_perimeter", "crown_projection_area"], axis=1, inplace = True)
+        placeholder.drop(["minor_axis", "major_axis", "radius_of_gyration"], axis=1, inplace = True)
+        
         return placeholder
 
     @staticmethod
@@ -317,14 +316,9 @@ class engineer(collect):
         """
         geom = placeholder.loc[:,"geometry"]
 
-        placeholder[["DSM"]] = engineer._detStats(spectral["dem"], geom)
-        placeholder[["NIR"]] = engineer._detStats(spectral["nir"], geom)
-        placeholder[["NDRE"]] = engineer._detStats(spectral["ndre"], geom)
-        placeholder[["NDVI"]] = engineer._detStats(spectral["ndvi"], geom)
-        placeholder[["GNDVI"]] = engineer._detStats(spectral["gndvi"], geom)
-        placeholder[["SAVI"]] = engineer._detStats(spectral["savi"], geom)
-        placeholder[["EVI"]] = engineer._detStats(spectral["evi"], geom)
-        placeholder[["OSAVI"]] = engineer._detStats(spectral["osavi"], geom)
+        placeholder[["DSM"]] = salientEngineer._detStats(spectral["dem"], geom)
+        placeholder[["NDRE"]] = salientEngineer._detStats(spectral["ndre"], geom)
+        placeholder[["OSAVI"]] = salientEngineer._detStats(spectral["osavi"], geom)
         
         return placeholder
 
@@ -367,17 +361,15 @@ class engineer(collect):
         """
         
         placeholder["centroid"] = shapely.centroid(placeholder.loc[:,"geometry"])
-        placeholder["latitude"] = placeholder["centroid"].y
-        placeholder["longitude"] = placeholder["centroid"].x
-        placeholder = placeholder.loc[:, ['geometry', 'centroid', 'latitude', 'longitude', 'confidence']]
+        placeholder = placeholder.loc[:, ['geometry', 'centroid', 'confidence']]
         placeholder = self.shapeDescriptors(placeholder)
         placeholder = placeholder.to_crs(4326) 
         placeholder = self.zonalStatistics(placeholder, spectral)
-        analysis = ["z" + str(x) for x in range(25)] + ['Contrast', 'Corr', 'ASM']
+        analysis = ["z" + str(x) for x in range(1,25)] + ['Corr', 'ASM']
         placeholder[analysis] = placeholder["geometry"].apply(lambda x: self.imageA(x, spectral['rgb']))
 
         if (scale):
-            placeholder.loc[:, "confidence":] = engineer._scaleData(placeholder.loc[:,'confidence':])
+            placeholder.loc[:, "confidence":] = salientEngineer._scaleData(placeholder.loc[:,'confidence':])
         
         self.data = placeholder
         self.delineations = placeholder[["geometry"]]
