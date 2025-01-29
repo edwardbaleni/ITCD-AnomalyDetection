@@ -41,7 +41,7 @@ if __name__ == "__main__":
         refData.append(myData.ref_data.copy(deep=True))
 
         # For plotting
-        img = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
+        img = myData.spectralData["rgb"][0:3].rio.clip(myData.mask.geometry.values, myData.mask.crs, drop=True, invert=False)
         img = img/255
 
         # Plot all the orchards
@@ -51,11 +51,11 @@ if __name__ == "__main__":
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
         plt.title("")
         fig.savefig("results/EDA/Orchards/orchard_{}.png".format(num+1))
-        plot.plotRef(img, data, "results/EDA/Orchards/reference_{}.png".format(num+1))
+        plot.plotRef(img, myData.data, "results/EDA/Orchards/reference_{}.png".format(num+1))
 
         new_row = {"Orchard": "Orchard {}".format(num+1), 
-                    "Outliers": data.loc[data["Y"] == "Outlier"].shape[0], 
-                    "Delineations": data.shape[0]}
+                    "Outliers": myData.data.loc[myData.data["Y"] == "Outlier"].shape[0], 
+                    "Delineations": myData.data.shape[0]}
         new_row["Ratio"] = new_row["Outliers"]/new_row["Delineations"]
         OutlierInfo = pd.concat([OutlierInfo, pd.DataFrame([new_row])], ignore_index=True)
 
