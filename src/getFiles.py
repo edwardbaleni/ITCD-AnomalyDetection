@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 
 if __name__ == "__main__":
     
-    sampleSize = 40
+    sampleSize = 30
     data = []
     delineations = []
     mask = []
@@ -19,13 +19,14 @@ if __name__ == "__main__":
     erf_num = []
     refData = []
 
-    sampleSize = 30
-    data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
+    data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)
 
     # Obtain number of outliers each orchard and number of delineations
     OutlierInfo = pd.DataFrame(columns=["Orchard", "Outliers", "Delineations", "Ratio"])
 
-    for num in range(sampleSize):
+    # TODO: Remember to change this for from 19 to 29 when
+    #       looking at 30 to 40!
+    for num in range(19, sampleSize):
         myData = utils.salientEngineer(num, 
                                 data_paths_tif, 
                                 data_paths_geojson, 
@@ -61,9 +62,14 @@ if __name__ == "__main__":
 
         print(f"Orchard {num+1} done")
 
-    OutlierInfo.to_csv("results/EDA/benchmark_data.csv", index=False)
+    OutlierInfo.to_csv("results/EDA/benchmark_data20_29.csv", index=False)
 
-    with open('results/training/data.pkl', 'wb') as f:
+
+    # Remove the feature 'circularity' from all datasets
+    # for i in range(len(data)):
+    #     if 'circularity' in data[i].columns:
+    #         data[i] = data[i].drop(columns=['circularity'])
+    with open('results/training/data20_29.pkl', 'wb') as f:
         joblib.dump({
             'data': data,
             'delineations': delineations,

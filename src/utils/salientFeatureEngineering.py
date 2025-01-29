@@ -273,7 +273,6 @@ class salientEngineer(collect):
         placeholder["radius_of_gyration"] = placeholder[["centroid", "geometry"]].apply(lambda x: salientEngineer._radiusOfGyration(x.iloc[0], x.iloc[1].exterior.coords.xy[0], x.iloc[1].exterior.coords.xy[1]), axis=1)
         placeholder[["minor_axis", "major_axis"]] = placeholder["geometry"].apply(lambda x: salientEngineer._major_minor(x))
         placeholder["roundness"] = (4 * area) / (math.pi * (placeholder["major_axis"]**2))
-        placeholder["circularity"] = 4 * math.pi * (area) / (perimeter**2)
         placeholder["compactness"] = (perimeter**2) / (4 * math.pi * area)
         placeholder["convexity"] = perimeter / convex_perimeter
         placeholder["solidity"] = area / placeholder["geometry"].convex_hull.area

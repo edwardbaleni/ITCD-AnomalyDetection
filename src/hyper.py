@@ -19,35 +19,8 @@ from pyod.models.lof import LOF
 import warnings
 warnings.filterwarnings("ignore")
 
+data = joblib.load("results/training/data0_19.pkl")
 
-
-sampleSize = 20
-data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
-num = 0
-myData = utils.salientEngineer(num, 
-                              data_paths_tif, 
-                              data_paths_geojson, 
-                              data_paths_geojson_zipped,
-							  False)
-
-data = myData.data.copy(deep=True)
-delineations = myData.delineations.copy(deep=True)
-mask = myData.mask.copy(deep=True)
-spectralData = myData.spectralData
-erf_num = myData.erf
-refData = myData.ref_data.copy(deep=True)
-# For plotting
-img = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
-img = img/255
-
-y = np.array(data.loc[:, "Y"]).T 
-    # Change outlier to 1 and inlier to 0 in data
-y = np.where(y == 'Outlier', 1, 0)
-
-X = np.array(data.loc[:, "confidence":])
-outliers_fraction = np.count_nonzero(y) / len(y)
-
-# %%
 
 def tuning(model_name):
     def objective(trial, model_name):
@@ -116,9 +89,15 @@ def tuning(model_name):
 # Save the study
 models = ["ABOD", "LOF", "EIF", "PCA"]
 # TODO: make it such that the loop works over all 30 datasets!
-for i in models:
-    for j in range(5):
-        joblib.dump(tuning(i), f"results/hyperparameter/tuning_{i}_Orchard_{j}.pkl")
+
+for i in range(len(data["data"])):
+    y = np.array(data["data"][i].loc[:, "Y"]).T 
+    y = np.where(y == 'Outlier', 1, 0)
+
+    X = np.array(data["data"][i].loc[:, "confidence":])
+    outliers_fraction = np.count_nonzero(y) / len(y)
+    for j in models:
+        joblib.dump(tuning(j), f"results/hyperparameter/tuning_{j}_Orchard_{i}.pkl")
 
 # %%
 
