@@ -65,11 +65,6 @@ if __name__ == "__main__":
 
     OutlierInfo.to_csv("results/EDA/benchmark_data20.csv", index=False)
 
-
-    # Remove the feature 'circularity' from all datasets
-    # for i in range(len(data)):
-    #     if 'circularity' in data[i].columns:
-    #         data[i] = data[i].drop(columns=['circularity'])
     with open('results/training/data20.pkl', 'wb') as f:
         joblib.dump({
             'data': data,

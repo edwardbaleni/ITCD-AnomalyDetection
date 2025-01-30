@@ -1,14 +1,11 @@
 # %%
 import utils
-import matplotlib.pyplot as plt
 import numpy as np
 
 import optuna
 
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
 from sklearn.metrics import average_precision_score
-import pandas as pd
 import joblib
 
 from Model import EIF
@@ -19,8 +16,7 @@ from pyod.models.lof import LOF
 import warnings
 warnings.filterwarnings("ignore")
 
-data = joblib.load("results/training/data0_19.pkl")
-
+data = joblib.load("results/training/data0_40.pkl")
 
 def tuning(model_name):
     def objective(trial, model_name):
@@ -85,19 +81,14 @@ def tuning(model_name):
 
     return study
 
-# %%
-# Save the study
-models = ["ABOD", "LOF", "EIF", "PCA"]
-# TODO: make it such that the loop works over all 30 datasets!
+if __name__ == "__main__":
+    models = ["LOF", "ABOD", "EIF", "PCA"]
 
-for i in range(len(data["data"])):
-    y = np.array(data["data"][i].loc[:, "Y"]).T 
-    y = np.where(y == 'Outlier', 1, 0)
+    for i in range(len(data)):
+        y = np.array(data[i].loc[:, "Y"]).T 
+        y = np.where(y == 'Outlier', 1, 0)
 
-    X = np.array(data["data"][i].loc[:, "confidence":])
-    outliers_fraction = np.count_nonzero(y) / len(y)
-    for j in models:
-        joblib.dump(tuning(j), f"results/hyperparameter/tuning_{j}_Orchard_{i}.pkl")
-
-# %%
-
+        X = np.array(data[i].loc[:, "confidence":])
+        outliers_fraction = np.count_nonzero(y) / len(y)
+        for j in models:
+            joblib.dump(tuning(j), f"results/hyperparameter/tuning_{j}_Orchard_{i+1}.pkl")
