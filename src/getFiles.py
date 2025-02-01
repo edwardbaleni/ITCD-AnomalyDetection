@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 
 if __name__ == "__main__":
     
-    sampleSize = 40
+    sampleSize = 70
     data = []
     delineations = []
     mask = []
@@ -24,10 +24,8 @@ if __name__ == "__main__":
     # Obtain number of outliers each orchard and number of delineations
     OutlierInfo = pd.DataFrame(columns=["Orchard", "Outliers", "Delineations", "Ratio"])
 
-    # TODO: come back and collect orchard 20 which is the 19th orchard
-    # Orchard 19 is huge!!
-    # num = 19
-    for num in range(19, 20):
+    # TODO: Collect Test Set
+    for num in range(sampleSize):
         myData = utils.salientEngineer(num, 
                                 data_paths_tif, 
                                 data_paths_geojson, 
@@ -63,9 +61,9 @@ if __name__ == "__main__":
 
         print(f"Orchard {num+1} done")
 
-    OutlierInfo.to_csv("results/EDA/benchmark_data20.csv", index=False)
+    OutlierInfo.to_csv("results/EDA/benchmark_data0_70.csv", index=False)
 
-    with open('results/training/data20.pkl', 'wb') as f:
+    with open('results/training/data0_70.pkl', 'wb') as f:
         joblib.dump({
             'data': data,
             'delineations': delineations,

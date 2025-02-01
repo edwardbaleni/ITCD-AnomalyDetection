@@ -1,5 +1,6 @@
 # %%
-import utils
+from sklearn.preprocessing import RobustScaler 
+
 import numpy as np
 
 import optuna
@@ -13,16 +14,14 @@ from pyod.models.abod import ABOD
 from pyod.models.pca import PCA
 from pyod.models.lof import LOF
 
-import warnings
-warnings.filterwarnings("ignore")
-
-data = joblib.load("results/training/data0_40.pkl")
+# import warnings
+# warnings.filterwarnings("ignore")
 
 def tuning(model_name):
     def objective(trial, model_name):
         if model_name == "LOF":
             clf = LOF(
-                n_neighbors=trial.suggest_int("n_neighbors", 10, 500),
+                n_neighbors=trial.suggest_int("n_neighbors", 10, 150),
                 contamination=outliers_fraction
             )
         elif model_name == "ABOD":
@@ -33,10 +32,10 @@ def tuning(model_name):
         elif model_name == "EIF":
             clf = EIF(
                 contamination=outliers_fraction,
-                ntrees=trial.suggest_int("ntrees", 100, 1000),
+                ntrees=trial.suggest_int("ntrees", 100, 2000),
                 extension_level=trial.suggest_int("extension_level", 0, X.shape[1]-1), # 7 is the maximum extension level
                 seed=42,
-                predictors=data.loc[:, "confidence":].columns
+                predictors=variables
             )
         elif model_name == "PCA":
             clf = PCA(
@@ -58,8 +57,10 @@ def tuning(model_name):
                                                     random_state=42)
         
         # standardizing data for processing
-        X_train_norm = utils.engineer._scaleData(X_train)
-        X_test_norm = utils.engineer._scaleData(X_test)
+        scaler = RobustScaler()
+        X_train_norm = scaler.fit_transform(X_train)
+        scaler = RobustScaler()
+        X_test_norm = scaler.fit_transform(X_test)
         
         # Fit the model
         model.fit(X_train_norm)
@@ -82,6 +83,9 @@ def tuning(model_name):
     return study
 
 if __name__ == "__main__":
+    data = joblib.load("results/training/data0_40.pkl")
+    variables = data[0].loc[:, "confidence":].columns
+
     models = ["LOF", "ABOD", "EIF", "PCA"]
 
     for i in range(len(data)):
