@@ -50,13 +50,13 @@ study_history_df = study[0].trials_dataframe()
 optuna.visualization.plot_intermediate_values(study[0])
 
 # Plot objective value against number of neighbors
-for i in range(21):
+for i in range(30):
     study_history_df = study[i].trials_dataframe()
     plt.figure(figsize=(10, 6))
     plt.scatter(study_history_df['params_n_neighbors'], study_history_df['value'])
     plt.xlabel('Number of Neighbors')
     plt.ylabel('Objective Value')
-    plt.title('Objective Value vs Number of Neighbors')
+    plt.title(f'Objective Value vs Number of Neighbors for Orchard {i+1}')
     plt.show()
 
 # TODO:
