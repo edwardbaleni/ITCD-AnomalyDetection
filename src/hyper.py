@@ -54,7 +54,7 @@ def tuning(model_name):
         # 60% data for training and 40% for testing
         X_train, X_test, _, y_test = train_test_split(X,
                                                     y,
-                                                    test_size=0.4, 
+                                                    test_size=0.2, 
                                                     stratify=y,
                                                     random_state=42)
         
@@ -98,22 +98,3 @@ if __name__ == "__main__":
         outliers_fraction = np.count_nonzero(y) / len(y)
         for j in models:
             joblib.dump(tuning(j), f"results/hyperparameter/tuning_{j}_Orchard_{i+1}.pkl")
-
-
-    # Cannot use whole dataset for tuning! 
-    # Because number of neighbours will increase according to the number of data points
-    # and cannot be reused for out-of-sample data
-
-    # import pandas as pd
-    # data = joblib.load("results/training/data0_40.pkl")
-    # variables = data[0].loc[:, "confidence":].columns
-    # data = pd.concat(data)
-
-    # y = np.array(data.loc[:, "Y"]).T 
-    # y = np.where(y == 'Outlier', 1, 0)
-
-    # X = np.array(data.loc[:, "confidence":])
-    # outliers_fraction = np.count_nonzero(y) / len(y)
-    # study = {}
-    # for j in models:
-    #     study[j] = joblib.dump(tuning(j))#, f"results/hyperparameter/tuning_{j}_Orchard_{i+1}.pkl")
