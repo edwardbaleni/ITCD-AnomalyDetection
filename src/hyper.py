@@ -19,14 +19,16 @@ from pyod.models.lof import LOF
 
 def tuning(model_name):
     def objective(trial, model_name):
+        uB = 10000
+        lB = 100
         if model_name == "LOF":
             clf = LOF(
-                n_neighbors=trial.suggest_int("n_neighbors", 10, 150),
+                n_neighbors=trial.suggest_int("n_neighbors", lB, uB),
                 contamination=outliers_fraction
             )
         elif model_name == "ABOD":
             clf = ABOD(
-                n_neighbors=trial.suggest_int("n_neighbors", 10, 70),
+                n_neighbors=trial.suggest_int("n_neighbors", lB, uB),
                 contamination=outliers_fraction
             )
         elif model_name == "EIF":
@@ -78,7 +80,7 @@ def tuning(model_name):
     study = optuna.create_study(direction="maximize")
 
     # TODO: If this runs on HPC, increase the number of trials
-    study.optimize(func, n_trials=100)
+    study.optimize(func, n_trials=1000)
 
     return study
 
@@ -96,3 +98,22 @@ if __name__ == "__main__":
         outliers_fraction = np.count_nonzero(y) / len(y)
         for j in models:
             joblib.dump(tuning(j), f"results/hyperparameter/tuning_{j}_Orchard_{i+1}.pkl")
+
+
+    # Cannot use whole dataset for tuning! 
+    # Because number of neighbours will increase according to the number of data points
+    # and cannot be reused for out-of-sample data
+
+    # import pandas as pd
+    # data = joblib.load("results/training/data0_40.pkl")
+    # variables = data[0].loc[:, "confidence":].columns
+    # data = pd.concat(data)
+
+    # y = np.array(data.loc[:, "Y"]).T 
+    # y = np.where(y == 'Outlier', 1, 0)
+
+    # X = np.array(data.loc[:, "confidence":])
+    # outliers_fraction = np.count_nonzero(y) / len(y)
+    # study = {}
+    # for j in models:
+    #     study[j] = joblib.dump(tuning(j))#, f"results/hyperparameter/tuning_{j}_Orchard_{i+1}.pkl")
