@@ -14,13 +14,10 @@ from pyod.models.abod import ABOD
 from pyod.models.pca import PCA
 from pyod.models.lof import LOF
 
-# import warnings
-# warnings.filterwarnings("ignore")
-
 def tuning(model_name):
     def objective(trial, model_name):
-        uB = 10000
-        lB = 100
+        uB = 150
+        lB = 10
         if model_name == "LOF":
             clf = LOF(
                 n_neighbors=trial.suggest_int("n_neighbors", lB, uB),
@@ -34,8 +31,8 @@ def tuning(model_name):
         elif model_name == "EIF":
             clf = EIF(
                 contamination=outliers_fraction,
-                ntrees=trial.suggest_int("ntrees", 100, 2000),
-                extension_level=trial.suggest_int("extension_level", 0, X.shape[1]-1), # 7 is the maximum extension level
+                ntrees=2000,
+                extension_level=trial.suggest_int("extension_level", 0, X.shape[1]-1),
                 seed=42,
                 predictors=variables
             )
@@ -80,7 +77,7 @@ def tuning(model_name):
     study = optuna.create_study(direction="maximize")
 
     # TODO: If this runs on HPC, increase the number of trials
-    study.optimize(func, n_trials=1000)
+    study.optimize(func, n_trials=140)
 
     return study
 

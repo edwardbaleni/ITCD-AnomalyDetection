@@ -50,14 +50,14 @@ study_history_df = study[0].trials_dataframe()
 optuna.visualization.plot_intermediate_values(study[0])
 
 # Plot objective value against number of neighbors
-for i in range(30):
-    study_history_df = study[i].trials_dataframe()
-    plt.figure(figsize=(10, 6))
-    plt.scatter(study_history_df['params_n_neighbors'], study_history_df['value'])
-    plt.xlabel('Number of Neighbors')
-    plt.ylabel('Objective Value')
-    plt.title(f'Objective Value vs Number of Neighbors for Orchard {i+1}')
-    plt.show()
+# for i in range(30):
+#     study_history_df = study[i].trials_dataframe()
+#     plt.figure(figsize=(10, 6))
+#     plt.scatter(study_history_df['params_n_neighbors'], study_history_df['value'])
+#     plt.xlabel('Number of Neighbors')
+#     plt.ylabel('Objective Value')
+#     plt.title(f'Objective Value vs Number of Neighbors for Orchard {i+1}')
+#     plt.show()
 
 # TODO:
 # either just demonstrate number
@@ -97,6 +97,35 @@ optuna.visualization.plot_parallel_coordinate(study[0])
 study_history_df = study[0].trials_dataframe()
 
 
+for i in range(10):
+    study_history_df = study[i].trials_dataframe()
+    plt.figure(figsize=(20, 12))
+    plt.scatter(study_history_df['params_n_selected_components'], study_history_df['value'], s=300)
+    plt.xlabel('Number of Components', fontsize=30)
+    plt.ylabel('Average Precision', fontsize=30)
+    plt.xticks(fontsize=25)
+    plt.yticks(fontsize=25)
+    plt.savefig(f"results/hyperparameter_selection/PCA/PCA_Select_{i+1}.png")
+    # plt.title(f'Objective Value vs Number of Neighbors for Orchard {i+1}')
+    plt.show()
+
+for i in range(30):
+    print(study[i].best_params)
+
+
+plt.figure(figsize=(20, 12))
+for i, s in enumerate(study[0:5]):
+    df = s.trials_dataframe()
+    df = df.sort_values(by='params_n_selected_components')
+    plt.plot(df['params_n_selected_components'], df['value'], label=f'Study {i+1}', linewidth=5)
+plt.xlabel('Number of Components', fontsize=30)
+plt.ylabel('Average Precision', fontsize=30)
+# plt.title('Optimization History', fontsize=16)
+plt.legend(fontsize=25, loc='upper right')
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+plt.savefig("results/hyperparameter_selection/PCA/PCA_Select.png")
+plt.show()
 
 
 
@@ -131,7 +160,7 @@ optuna.visualization.plot_optimization_history(study[4])
 
 optuna.visualization.plot_slice(study[27])
 # Plot the parallel coordinates plot
-optuna.visualization.plot_parallel_coordinate(study[4])
+optuna.visualization.plot_parallel_coordinate(study[5])
 
 # Save study history as a dataframe
 study_history_df = study[0].trials_dataframe()
@@ -140,6 +169,12 @@ study_history_df = study[0].trials_dataframe()
 # Plot intermediate values
 optuna.visualization.plot_intermediate_values(study[0])
 
+for i in range(5):
+    fig = optuna.visualization.plot_param_importances(study[i])
+    fig.update_layout(title_text='', font=dict(size=40))
+    fig.update_layout(title_font=dict(size=50, color='black', family='bold'))
+    fig.write_html(f"results/hyperparameter_selection/EIF/Importance/Orchard_{i+1}.html")
+    fig.show()
 
 
 

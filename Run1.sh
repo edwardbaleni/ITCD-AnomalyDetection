@@ -9,5 +9,5 @@
 # Your science stuff goes here...
 
 module load python/miniconda3-py310
-
-python /home/blnedw003/Anomaly/hyper.py
+source activate myenv
+python /home/blnedw003/Anomaly/src/hyper.py
