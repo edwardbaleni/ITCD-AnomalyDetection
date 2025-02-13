@@ -271,17 +271,16 @@ class engineer(collect):
         
         area = shapely.area(placeholder.loc[:,"geometry"])
         perimeter = shapely.length(placeholder.loc[:,"geometry"])
-        rog = placeholder[["centroid", "geometry"]].apply(lambda x: engineer._radiusOfGyration(x.iloc[0], x.iloc[1].exterior.coords.xy[0], x.iloc[1].exterior.coords.xy[1]), axis=1)
-        minor_axis, major_axis = placeholder["geometry"].apply(lambda x: engineer._major_minor(x))
+        placeholder["radius_of_gyration"] = placeholder[["centroid", "geometry"]].apply(lambda x: engineer._radiusOfGyration(x.iloc[0], x.iloc[1].exterior.coords.xy[0], x.iloc[1].exterior.coords.xy[1]), axis=1)
+        placeholder[["minor_axis", "major_axis"]] = placeholder["geometry"].apply(lambda x: engineer._major_minor(x))
+        major_axis = placeholder["major_axis"]
         placeholder["roundness"] = (4 * area) / (math.pi * (major_axis**2))
         placeholder["circularity"] = 4 * math.pi * (area) / (perimeter**2)
         placeholder["compactness"] = (perimeter**2) / (4 * math.pi * area)
         placeholder["convexity"] = perimeter / convex_perimeter
         placeholder["solidity"] = area / placeholder["geometry"].convex_hull.area
-        placeholder["eccentricity"] = major_axis / minor_axis
-        placeholder["bendingE"] = list(map(engineer._bendingEnergy, placeholder["geometry"], rog))
-        
-        # placeholder.drop(["form_factor", "shape_index", "minor_axis", "major_axis", "radius_of_gyration", "crown_perimeter", "crown_projection_area"], axis=1, inplace = True)
+        placeholder["eccentricity"] = placeholder["major_axis"] / placeholder["minor_axis"]
+        placeholder["bendingE"] = list(map(engineer._bendingEnergy, placeholder["geometry"], placeholder["radius_of_gyration"]))
         return placeholder
 
     @staticmethod
@@ -301,7 +300,7 @@ class engineer(collect):
 
         return pd.DataFrame(zonal_stats(geometry, array, nodata=np.nan,
                     affine=affine,
-                    stats="mean"))
+                    stats="max"))
         
 
     # TODO: Select a better statistic mean/median/mode/max/etc.

@@ -11,7 +11,7 @@ from Model import EIF
 
 sampleSize = 20
 data_paths_tif, data_paths_geojson, data_paths_geojson_zipped = utils.collectFiles(sampleSize)# .collectFiles() # this will automatically give 20
-num = 0
+num = 2
 myData = utils.engineer(num, 
                               data_paths_tif, 
                               data_paths_geojson, 
@@ -27,20 +27,28 @@ refData = myData.ref_data.copy(deep=True)
 img = spectralData["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
 img = img/255
 
+# import joblib
+# data_all = joblib.load('results/training/data0_19.pkl')
+# data = data_all["data"][2]
+# mask = data_all["mask"][2]
+# img = data_all["spectralData"][2]['rgb'][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
+# img = img/255
+# %%
+
 y = np.array(data.loc[:, "Y"]).T 
     # Change outlier to 1 and inlier to 0 in data
 y = np.where(y == 'Outlier', 1, 0)
 
-outliers_fraction = 0.05#np.count_nonzero(y) / len(y)
+outliers_fraction = 0.05 #np.count_nonzero(y) / len(y)
 
 
-
+from pyod.models.ecod import ECOD
 # %% With the full feature set
-data_full = myData.data.copy(deep=True)
+data_full = data.copy(deep=True)#myData.data.copy(deep=True)
 data_full.loc[:,'confidence':] = utils.engineer._scaleData(data_full.loc[:, "confidence":])
-from pyod.models.lof import LOF
 
-clf = LOF(contamination=outliers_fraction)
+
+clf = ECOD(contamination=outliers_fraction)
 clf.fit(data_full.loc[:, "confidence":])
 test_scores = clf.decision_scores_
 labels = clf.labels_
@@ -52,15 +60,15 @@ plotA.plot(img, normal, abnormal, 'data_full.png')
 
 # %% Data Shape
 
-data_sensitive = myData.data.copy(deep=True)
-fin_data = list(data_sensitive.loc[:,:'roundness'].columns) + ["compactness", "convexity", "solidity", "bendingE",  "DSM" , "NDRE", "OSAVI", "ASM", "Corr"]+ list(data_sensitive.loc[:,"z1":'z24'])
-data_sensitive = data_sensitive.loc[:, fin_data]
+data_sensitive = data.copy(deep=True)#myData.data.copy(deep=True)
+data_sensitive = data_sensitive.drop(columns=['roundness', 'compactness','convexity', 'solidity', 'bendingE',])
+# fin_data = list(data_sensitive.loc[:,:'roundness'].columns) + ["compactness", "convexity", "solidity", "bendingE",  "DSM" , "NDRE", "OSAVI", "ASM", "Corr"]+ list(data_sensitive.loc[:,"z1":'z24'])
+# data_sensitive = data_sensitive.loc[:, fin_data]
 data_sensitive.loc[:,'confidence':] = utils.engineer._scaleData(data_sensitive.loc[:, "confidence":])
 
 
-from pyod.models.lof import LOF
 
-clf = LOF(contamination=outliers_fraction)
+clf = ECOD(contamination=outliers_fraction)
 clf.fit(data_sensitive.loc[:, "confidence":])
 test_scores = clf.decision_scores_
 labels = clf.labels_
@@ -68,7 +76,7 @@ labels = clf.labels_
 normal = data[labels == 0]
 abnormal = data[labels == 1]
 
-plotA.plot(img, normal, abnormal, 'data_sensitive.png')
+plotA.plot(img, normal, abnormal, 'data_sensitive3.png')
 
 # %%
 
