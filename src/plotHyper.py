@@ -97,7 +97,7 @@ optuna.visualization.plot_parallel_coordinate(study[0])
 study_history_df = study[0].trials_dataframe()
 
 
-for i in range(10):
+for i in range(20):
     study_history_df = study[i].trials_dataframe()
     plt.figure(figsize=(20, 12))
     plt.scatter(study_history_df['params_n_selected_components'], study_history_df['value'], s=300)
@@ -188,3 +188,16 @@ full_data = pd.concat(data)
 
 # proposed 
 # Need to chunk images (block cross-val)
+
+for i in range(20):
+    study_history_df = study[i].trials_dataframe()
+    plt.figure(figsize=(20, 12))
+    plt.scatter(study_history_df['params_extension_level'], study_history_df['value'], s=300)
+    plt.xlabel('Number of Components', fontsize=30)
+    plt.ylabel('Average Precision', fontsize=30)
+    plt.xticks(fontsize=25)
+    plt.yticks(fontsize=25)
+    # plt.savefig(f"results/hyperparameter_selection/PCA/PCA_Select_{i+1}.png")
+    # plt.title(f'Objective Value vs Number of Neighbors for Orchard {i+1}')
+    plt.show()
+# %%

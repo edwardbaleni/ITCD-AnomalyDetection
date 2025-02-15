@@ -299,7 +299,7 @@ class salientEngineer(collect):
 
         return pd.DataFrame(zonal_stats(geometry, array, nodata=np.nan,
                     affine=affine,
-                    stats="mean"))
+                    stats="max"))
         
 
     # TODO: Select a better statistic mean/median/mode/max/etc.
