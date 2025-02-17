@@ -27,12 +27,12 @@ def box_plot_comparison(data, feature_group=None):
     # Create box plots for each feature grouped by orchard
     plt.figure(figsize=(20, 12))
     sns.boxplot(x='Feature', y='Value', hue='Orchard', data=data)
-    plt.xticks(rotation=90, fontsize=25)
+    plt.xticks(fontsize=25, rotation=90)
     plt.yticks(fontsize=25)
     # plt.title(f'Box Plot of Feature Values by Orchard ({feature_group or "All Groups"})')
     plt.ylabel('Value', fontsize=30)
-    plt.xlabel('Feature', fontsize=30)
-    plt.legend(loc='upper right', title='Orchard', fontsize=25)
+    plt.xlabel('')
+    plt.legend(loc='upper right', fontsize=25)
     plt.tight_layout()
     plt.savefig("results/EDA/Boxplots/{}.png".format(feature_group))
 
@@ -81,6 +81,10 @@ sampleSize = 5
 # %%
 dataOriginal, spec, masks = data['data'][0:5], data['spectralData'][0:5], data['mask'][0:5]  
 
+columns_to_remove = ["minor_axis", "radius_of_gyration", "major_axis"]
+for i in range(sampleSize):
+    dataOriginal[i].drop(columns=columns_to_remove, inplace=True)
+
 data = list(dataOriginal)[:]
 img = []
 
@@ -89,8 +93,18 @@ for i in range(5):
     # For plotting
     img.append(spec[i]["rgb"][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)/255)
 
-# %%
 
+# Label orchards according to orchard
+for i in range(sampleSize):
+    data[i]["Orchard"] = "Orchard {}".format(i+1)
+    data[i] = data[i].loc[:, ["Orchard"] + list(data[i].columns[:-1])]
+
+# Remove specified columns from data # nir, red, reg, green and blue have already been removed
+columns_to_remove = ["GNDVI", "NIR"]
+for i in range(sampleSize):
+    data[i].drop(columns=columns_to_remove, inplace=True)
+
+# %%
 # Group data by groups
 spec = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "DSM":"OSAVI"].columns)] for i in range(sampleSize)])
 contrast = pd.concat([data[i].loc[:, ["Orchard"] + list(data[i].loc[:, "Contrast":"Contrast"].columns)] for i in range(sampleSize)])
@@ -151,12 +165,16 @@ for group_name, group_data in [("Spectral", spec), ("Texture", text), ("Shape", 
     group_variances = group_data.columns
     group_variances_pivot = variances_pivot.loc[group_variances]
     group_variances_pivot.plot(kind='bar', stacked=False, figsize=(15, 8))
-    plt.ylabel('Variance')
-    plt.xticks(rotation=90)
+    plt.ylabel('Variance', fontsize=30)
+    plt.xticks(fontsize=25)
+    plt.yticks(fontsize=25)
+    plt.legend(loc='upper right', fontsize=25)
     plt.tight_layout()
     plt.savefig(f"results/EDA/Barplots/{group_name}.png")
     plt.show()
 
+
+# %%
 # Should also plot the Delauney Triangulation of the data
 for i in range(sampleSize):
     d_w, d_g, d_p, d_c = tri.delauneyTriangulation(data[i])
@@ -206,30 +224,43 @@ text.reset_index(drop=True, inplace=True)
 shape.reset_index(drop=True, inplace=True)
 other.reset_index(drop=True, inplace=True)
 
-
-# # TODO: log DSM_mean after demonstrating that it should be logged here!
-# #       however, does transforming the data stutter detection or improve it?
 g = sns.PairGrid(shape, hue="Orchard", diag_sharey=False, corner=False)
 g.map_lower(plt.scatter, alpha=0.4)
 g.map_diag(plt.hist, alpha=1, bins=30)
 g.map_upper(sns.kdeplot, warn_singular=False)
-g.add_legend()
+g.add_legend(title='', fontsize=18)
+for ax in g.axes.flat:
+    ax.tick_params(axis='both', which='major', labelsize=16)
+    ax.set_xlabel(ax.get_xlabel(), fontsize=20)
+    ax.set_ylabel(ax.get_ylabel(), fontsize=20)
+plt.gcf().subplots_adjust(left=0.1, bottom=0.1)  # Increase left border
 plt.savefig("results/EDA/PairPlots/Shape.png")
 
 g = sns.PairGrid(spec, hue="Orchard", diag_sharey=False, corner=False)
 g.map_lower(plt.scatter, alpha=0.4)
 g.map_diag(plt.hist, alpha=1, bins=30)
 g.map_upper(sns.kdeplot, warn_singular=False)
-g.add_legend()
+g.add_legend(title='', fontsize=18)
+for ax in g.axes.flat:
+    ax.tick_params(axis='both', which='major', labelsize=16)
+    ax.set_xlabel(ax.get_xlabel(), fontsize=20)
+    ax.set_ylabel(ax.get_ylabel(), fontsize=20)
+plt.gcf().subplots_adjust(left=0.1, bottom=0.1)  # Increase left border
 plt.savefig("results/EDA/PairPlots/Spec.png")
 
 g = sns.PairGrid(text, hue="Orchard", diag_sharey=False, corner=False)
 g.map_lower(plt.scatter, alpha=0.4)
 g.map_diag(plt.hist, alpha=1, bins=30)
 g.map_upper(sns.kdeplot, warn_singular=False)
-g.add_legend()
+g.add_legend(title='', fontsize=18)
+for ax in g.axes.flat:
+    ax.tick_params(axis='both', which='major', labelsize=16)
+    ax.set_xlabel(ax.get_xlabel(), fontsize=20)
+    ax.set_ylabel(ax.get_ylabel(), fontsize=20)
+plt.gcf().subplots_adjust(left=0.1, bottom=0.1)  # Increase left border
 plt.savefig("results/EDA/PairPlots/Text.png")
 
+# %%
 #     # calculate correlation values
 #     # Recognise Multicollinearities
 for i in range(sampleSize):
@@ -237,15 +268,48 @@ for i in range(sampleSize):
     orchard_shape = data_scaled[i].loc[:, "confidence":"bendingE"]
     orchard_text = data_scaled[i].loc[:, "Contrast":"ASM"]
 
-    sns.clustermap(orchard_spec.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
+    heat = sns.clustermap(orchard_spec.corr(), 
+                          annot=True, 
+                          cbar_pos=None, 
+                          cmap="plasma", 
+                          annot_kws={"size": 18})
+    ax_heatmap = heat.ax_heatmap  # For the heatmap itself
+    ax_heatmap.tick_params(axis='both', which='major', labelsize=20)
+    heat.ax_row_dendrogram.set_visible(False)
+    heat.ax_col_dendrogram.set_visible(False)
+    plt.gcf().subplots_adjust(left=-0.2, bottom=0.05, right=0.9, top=1.2)
     plt.savefig(f"results/EDA/ClusterMaps/spec_orchard_{i+1}.png")
-    sns.clustermap(orchard_shape.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
+
+    heat = sns.clustermap(orchard_shape.corr(), 
+                          annot=True, 
+                          cbar_pos=None,#(-0.1, .2, .03, .4), 
+                          cmap="plasma", 
+                          annot_kws={"size": 18})
+    # plt.gcf().subplots_adjust(right=0.9, bottom=0.1)  # Increase right and bottom margins
+    ax_heatmap = heat.ax_heatmap  # For the heatmap itself
+    ax_heatmap.tick_params(axis='x', which='major', labelsize=20, rotation=90)
+    ax_heatmap.tick_params(axis='y', which='major', labelsize=20, rotation=0)
+    heat.ax_row_dendrogram.set_visible(False)
+    heat.ax_col_dendrogram.set_visible(False)
+    plt.gcf().subplots_adjust(left=-0.2, bottom=0.2, right=0.8, top=1.2)
     plt.savefig(f"results/EDA/ClusterMaps/shape_orchard_{i+1}.png")
-    sns.clustermap(orchard_text.corr(), annot=True, cbar_pos=(-0.1, .2, .03, .4), cmap="plasma")
+
+    heat = sns.clustermap(orchard_text.corr(),
+                          annot=True, 
+                          cbar_pos=None, 
+                          cmap="plasma", 
+                          annot_kws={"size": 18})
+    ax_heatmap = heat.ax_heatmap  # For the heatmap itself
+    ax_heatmap.tick_params(axis='both', which='major', labelsize=20)
+    heat.ax_row_dendrogram.set_visible(False)
+    heat.ax_col_dendrogram.set_visible(False)
+    plt.gcf().subplots_adjust(left=-0.2, bottom=0.05, right=0.9, top=1.2)
     plt.savefig(f"results/EDA/ClusterMaps/text_orchard_{i+1}.png")
 
 
 
+
+# %%
 # Demonstrate model performance before and after feature reduction
 # Perform feature reduction
 
@@ -284,3 +348,5 @@ for i in range(sampleSize):
     auroc_sensitive_df = pd.concat([auroc_sensitive_df, auroc_sensitive[i]])
     ap_sensitive_df = pd.concat([ap_sensitive_df, ap_sensitive[i]])
 
+
+# %%
