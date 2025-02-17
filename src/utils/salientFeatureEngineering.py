@@ -297,9 +297,11 @@ class salientEngineer(collect):
         affine = x.rio.transform()
         array = np.array(x)[0]
 
-        return pd.DataFrame(zonal_stats(geometry, array, nodata=np.nan,
-                    affine=affine,
-                    stats="max"))
+        return pd.DataFrame(zonal_stats(geometry, 
+                                        array, 
+                                        nodata=np.nan,
+                                        affine=affine,
+                                        stats="max"))
         
 
     # TODO: Select a better statistic mean/median/mode/max/etc.

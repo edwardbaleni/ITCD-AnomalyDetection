@@ -77,7 +77,7 @@ def tuning(model_name):
     study = optuna.create_study(direction="maximize")
 
     # TODO: If this runs on HPC, increase the number of trials
-    study.optimize(func, n_trials=140)
+    study.optimize(func, n_trials=100)
 
     return study
 

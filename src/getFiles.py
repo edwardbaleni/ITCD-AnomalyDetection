@@ -24,9 +24,12 @@ if __name__ == "__main__":
     # Obtain number of outliers each orchard and number of delineations
     OutlierInfo = pd.DataFrame(columns=["Orchard", "Outliers", "Delineations", "Ratio"])
 
+    mn = 21
+    mx = 30
+
     # TODO: Collect Test Set
-    for num in range(sampleSize):
-        myData = utils.salientEngineer(num, 
+    for num in range(mn, mx):
+        myData = utils.engineer(num, 
                                 data_paths_tif, 
                                 data_paths_geojson, 
                                 data_paths_geojson_zipped,
@@ -61,9 +64,9 @@ if __name__ == "__main__":
 
         print(f"Orchard {num+1} done")
 
-    OutlierInfo.to_csv("results/EDA/benchmark_data0_70.csv", index=False)
+    # OutlierInfo.to_csv("results/EDA/benchmark_data0_70.csv", index=False)
 
-    with open('results/training/data0_70.pkl', 'wb') as f:
+    with open(f'results/training/data{mn}_{mx}.pkl', 'wb') as f:
         joblib.dump({
             'data': data,
             'delineations': delineations,
@@ -72,3 +75,4 @@ if __name__ == "__main__":
             'erf_num': erf_num,
             'refData': refData
         }, f)
+
