@@ -81,6 +81,7 @@ sampleSize = 5
 # %%
 dataOriginal, spec, masks = data['data'][0:5], data['spectralData'][0:5], data['mask'][0:5]  
 
+# TODO: Do this for entire dataset and save separately
 columns_to_remove = ["minor_axis", "radius_of_gyration", "major_axis"]
 for i in range(sampleSize):
     dataOriginal[i].drop(columns=columns_to_remove, inplace=True)
