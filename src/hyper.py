@@ -5,7 +5,7 @@ import numpy as np
 
 import optuna
 
-# from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import average_precision_score
 import joblib
 
@@ -48,7 +48,8 @@ def tuning(model_name):
         elif model_name == "ABOD":
             clf = ABOD(
                 n_neighbors=trial.suggest_int("n_neighbors", lB, uB),
-                contamination=outliers_fraction
+                contamination=outliers_fraction,
+                method='fast'
             )
         elif model_name == "EIF":
             clf = EIF(
@@ -76,20 +77,35 @@ def tuning(model_name):
         Returns:
             float: The average precision score of the model on the training data.
         """
-
-        # Performing in a transductive manner
-        scaler = RobustScaler()
-
-        # do five independent trials!
-            # and report the average of the five trials
-        # I am yet to see a paper that does not use cross-validation for this task
-
-        X_train = scaler.fit_transform(X)
-        model.fit(X_train)
-        test_scores = model.decision_scores_
-        y_test = y
+        scores = []
+        for i in range(5):
+            if np.count_nonzero(y) > 0:
+                X_train, X_test, _, y_test = train_test_split(X,
+                                                              y,
+                                                              test_size=0.2, 
+                                                              stratify=y,
+                                                              random_state=i)
+            else:
+                X_train, X_test, _, y_test = train_test_split(X,
+                                                              y,
+                                                              test_size=0.2, 
+                                                              random_state=i)
         
-        return average_precision_score(y_test, test_scores)
+            # standardizing data for processing
+            scaler = RobustScaler()
+            X_train_norm = scaler.fit_transform(X_train)
+            scaler = RobustScaler()
+            X_test_norm = scaler.fit_transform(X_test)
+            
+            # Fit the model
+            model.fit(X_train_norm)
+            
+            # Predict the anomaly scores
+            test_scores = model.decision_function(X_test_norm)
+
+            scores.append(average_precision_score(y_test, test_scores))
+        
+        return np.mean(scores)
 
     # Grid search
     if model_name == "LOF":
@@ -117,6 +133,7 @@ if __name__ == "__main__":
     models = ["LOF", "ABOD", "EIF", "PCA"]
 
     for i in range(len(data)):
+        data[i] = data[i].drop(columns=['z1','z2', 'z3', 'z4', 'z5', 'z6', 'z7', 'z8', 'z9', 'z10', 'z11', 'z12', 'z13', 'z14', 'z15', 'z16', 'z17', 'z18', 'z19', 'z20', 'z21', 'z22', 'z23', 'z24'])
         y = np.array(data[i].loc[:, "Y"]).T 
         y = np.where(y == 'Outlier', 1, 0)
 

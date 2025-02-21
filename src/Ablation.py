@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
     for i in range(rng):
         data_text[i] = data_text[i].drop(columns=['Corr','ASM'])
-        scores = anomaly(data_text[i], i, "No Texture")
+        auc, ap = anomaly(data_text[i], i, "No Texture")
         output_auc = pd.concat([output_auc, auc], axis=0)
         output_ap = pd.concat([output_ap, ap], axis=0)
 
@@ -145,9 +145,9 @@ if __name__ == "__main__":
     output_melted = output_auc.melt(id_vars=['Orchard', 'Group'], var_name='Model', value_name='auc')
     plt.figure(figsize=(20, 12))
     sns.boxplot(x='Model', y='auc', hue='Group', data=output_melted)
-    plt.title('Anomaly Detection Model Performance by Feature Group')
+    # plt.title('Anomaly Detection Model Performance by Feature Group')
     plt.xlabel('Model', fontsize=30)
-    plt.ylabel('ROCAUC Score', fontsize=30)
+    plt.ylabel('ROC-AUC Score', fontsize=30)
     plt.legend(title='Feature Group')
     plt.xticks(fontsize=25)
     plt.yticks(fontsize=25)
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     output_melted = output_ap.melt(id_vars=['Orchard', 'Group'], var_name='Model', value_name='ap')
     plt.figure(figsize=(20, 12))
     sns.boxplot(x='Model', y='ap', hue='Group', data=output_melted)
-    plt.title('Anomaly Detection Model Performance by Feature Group')
+    # plt.title('Anomaly Detection Model Performance by Feature Group')
     plt.xlabel('Model', fontsize=30)
     plt.ylabel('Average Precision', fontsize=30)
     plt.legend(title='Feature Group')
