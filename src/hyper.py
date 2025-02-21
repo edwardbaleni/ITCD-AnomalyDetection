@@ -1,4 +1,3 @@
-# %%
 from sklearn.preprocessing import RobustScaler 
 
 import numpy as np
@@ -64,8 +63,6 @@ def tuning(model_name):
                 contamination=outliers_fraction,
                 n_selected_components=trial.suggest_int("n_selected_components", 2, X.shape[1])
             )
-        
-
 
         return train(clf)
 
@@ -112,7 +109,7 @@ def tuning(model_name):
         search_space = {'n_neighbors': list(range(10, 155, 5)),
                         'metric': ['euclidean', 'manhattan', 'chebyshev', 'minkowski']}
     elif model_name == "ABOD":
-        search_space = {'n_neighbors': list(range(0, 155, 5))}
+        search_space = {'n_neighbors': list(range(0, 100, 5))}
     elif model_name == "EIF":
         search_space = {'ntrees': list(range(100, 2000, 50)), 
                         'extension_level': list(range(0, X.shape[1]))}
@@ -133,7 +130,6 @@ if __name__ == "__main__":
     models = ["LOF", "ABOD", "EIF", "PCA"]
 
     for i in range(len(data)):
-        data[i] = data[i].drop(columns=['z1','z2', 'z3', 'z4', 'z5', 'z6', 'z7', 'z8', 'z9', 'z10', 'z11', 'z12', 'z13', 'z14', 'z15', 'z16', 'z17', 'z18', 'z19', 'z20', 'z21', 'z22', 'z23', 'z24'])
         y = np.array(data[i].loc[:, "Y"]).T 
         y = np.where(y == 'Outlier', 1, 0)
 

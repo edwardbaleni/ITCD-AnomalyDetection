@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 
 if __name__ == "__main__":
     
-    sampleSize = 70
+    sampleSize = 100
     data = []
     delineations = []
     mask = []
@@ -24,8 +24,8 @@ if __name__ == "__main__":
     # Obtain number of outliers each orchard and number of delineations
     OutlierInfo = pd.DataFrame(columns=["Orchard", "Outliers", "Delineations", "Ratio"])
 
-    mn = 21
-    mx = 30
+    mn = 70
+    mx = 80
 
     # TODO: Collect Test Set
     for num in range(mn, mx):
@@ -64,9 +64,9 @@ if __name__ == "__main__":
 
         print(f"Orchard {num+1} done")
 
-    # OutlierInfo.to_csv("results/EDA/benchmark_data0_70.csv", index=False)
+    OutlierInfo.to_csv(f"results/EDA/benchmark_data{mn}_{mx}.csv", index=False)
 
-    with open(f'results/training/data{mn}_{mx}.pkl', 'wb') as f:
+    with open(f'results/testing/data{mn}_{mx}.pkl', 'wb') as f:
         joblib.dump({
             'data': data,
             'delineations': delineations,

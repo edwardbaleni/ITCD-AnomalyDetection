@@ -3,8 +3,12 @@ import numpy as np
 # Load in Performance matrix, P
     # This is obtained from hyper
 
+
+# TODO: Do this in separate IPM folder!
 # Load in internal Performance, IPM measures.
-    # This is also obtained from hyper
+    # Use the results from tuning to get O 
+    # Use O to get the IPM measures
+    # Save the IPM measures
 
 # extract meta-features per task g(X)
 from sklearn.datasets import load_iris
