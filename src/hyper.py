@@ -80,6 +80,10 @@ def tuning(model_name):
         # Performing in a transductive manner
         scaler = RobustScaler()
 
+        # do five independent trials!
+            # and report the average of the five trials
+        # I am yet to see a paper that does not use cross-validation for this task
+
         X_train = scaler.fit_transform(X)
         model.fit(X_train)
         test_scores = model.decision_scores_
@@ -118,6 +122,6 @@ if __name__ == "__main__":
 
         X = np.array(data[i].loc[:, "confidence":])
         
-        outliers_fraction = np.count_nonzero(y) / len(y)
+        outliers_fraction = np.count_nonzero(y) / len(y) if np.count_nonzero(y) > 0 else 0.01
         for j in models:
             joblib.dump(tuning(j), f"results/hyperparameter/tuning_{j}_Orchard_{i+1}.pkl")

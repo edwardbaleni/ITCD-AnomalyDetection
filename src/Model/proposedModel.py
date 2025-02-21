@@ -6,7 +6,7 @@ from scipy.special import expit
 
 
 class Geary:
-    def __init__(self, contamination=0.5, geometry=None, centroid=None):
+    def __init__(self, contamination=0.05, geometry=None, centroid=None):
         """
         Initialize the proposed model with given parameters.
         Parameters

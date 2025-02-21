@@ -32,3 +32,14 @@ data = joblib.load("results/training/data0_70.pkl")
 #     data[i].drop(columns=columns_to_remove, inplace=True)
 
 # joblib.dump(data, "results/training/data0_70.pkl")
+
+# remove columns that are already justified
+columns_to_remove = ['circularity', 'eccentricity', 'GNDVI', 'NIR', 'Contrast', 'SAVI', 'z0']
+for i in range(70):
+    data[i].drop(columns=columns_to_remove, inplace=True)
+
+joblib.dump(data, "results/training/data0_70.pkl")
+
+
+# %%
+# need to remove zernike

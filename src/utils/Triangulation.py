@@ -2,12 +2,12 @@ from libpysal import weights
 from libpysal.cg import voronoi_frames
 from libpysal import weights
 import numpy as np
-from contextily import add_basemap
+# from contextily import add_basemap
 import matplotlib.pyplot as plt
 import numpy as np
 import networkx as nx
-import shapely
-import pandas as pd
+# import shapely
+# import pandas as pd
 
 
 def KNNGraph(data, nn = 3):
@@ -191,66 +191,66 @@ def delauneyPlot(d_g, d_p, v_cells, tryout,  plot_all):
 
 
 
-def KNNPlot(knn_g, knn_p, cases, tryout, plot_all = True):
-    """
-    Plots K-Nearest Neighbors (KNN) graphs and related data.
-    Parameters:
-    knn_g : networkx.Graph
-        The KNN graph to be plotted.
-    knn_p : dict
-        Positions of nodes in the KNN graph.
-    cases : geopandas.GeoDataFrame
-        GeoDataFrame containing the cases data with a 'centroid' column.
-    tryout : matplotlib.image.AxesImage
-        Image data to be plotted.
-    plot_all : bool, optional
-        If True, plots three subplots with different visualizations. If False, plots a single visualization. Default is True.
-    Returns:
-    None
-    """
+# def KNNPlot(knn_g, knn_p, cases, tryout, plot_all = True):
+#     """
+#     Plots K-Nearest Neighbors (KNN) graphs and related data.
+#     Parameters:
+#     knn_g : networkx.Graph
+#         The KNN graph to be plotted.
+#     knn_p : dict
+#         Positions of nodes in the KNN graph.
+#     cases : geopandas.GeoDataFrame
+#         GeoDataFrame containing the cases data with a 'centroid' column.
+#     tryout : matplotlib.image.AxesImage
+#         Image data to be plotted.
+#     plot_all : bool, optional
+#         If True, plots three subplots with different visualizations. If False, plots a single visualization. Default is True.
+#     Returns:
+#     None
+#     """
     
-    cases.rename({"centroid": "geometry"}, axis="columns", inplace=True)
-    if (plot_all):
-            # plot with a nice basemap
-        f, ax = plt.subplots(1, 3, figsize=(20, 20))
-        # Plot 1
-        cases.plot(marker=".", color="orangered", ax=ax[0])
-        try:  # For issues with downloading/parsing basemaps in CI
-            add_basemap(ax[0])
-        except:
-            pass
-        ax[0].set_title("KNN-3")
-        ax[0].axis("off")
-        nx.draw(knn_g, knn_p, ax=ax[0], node_size=5, node_color="b")
+#     cases.rename({"centroid": "geometry"}, axis="columns", inplace=True)
+#     if (plot_all):
+#             # plot with a nice basemap
+#         f, ax = plt.subplots(1, 3, figsize=(20, 20))
+#         # Plot 1
+#         cases.plot(marker=".", color="orangered", ax=ax[0])
+#         try:  # For issues with downloading/parsing basemaps in CI
+#             add_basemap(ax[0])
+#         except:
+#             pass
+#         ax[0].set_title("KNN-3")
+#         ax[0].axis("off")
+#         nx.draw(knn_g, knn_p, ax=ax[0], node_size=5, node_color="b")
 
-        # Plot 2
-        tryout.plot.imshow(ax=ax[1])
-        ax[1].axis("off")
-        ax[1].set_title("KNN-3")
-        nx.draw(
-            knn_g,
-            knn_p,
-            ax=ax[1],
-            node_size=30,
-            node_color="lightgreen",
-            edge_color="red",
-            alpha=0.8,
-        )
-        # Plot 3
-        nx.draw(knn_g, ax=ax[2],node_size = 10, alpha = 0.8)
-        plt.show()
-    else:
-        fig, ax = plt.subplots(figsize=(25, 25))
-        tryout.plot.imshow(ax=ax)
-        ax.set_title("KNN-3")
-        ax.axis("off")
-        nx.draw(
-            knn_g,
-            knn_p,
-            ax=ax,
-            node_size=30,
-            node_color="lightgreen",
-            edge_color="red",
-            alpha=0.8,
-        )
-        plt.show()
+#         # Plot 2
+#         tryout.plot.imshow(ax=ax[1])
+#         ax[1].axis("off")
+#         ax[1].set_title("KNN-3")
+#         nx.draw(
+#             knn_g,
+#             knn_p,
+#             ax=ax[1],
+#             node_size=30,
+#             node_color="lightgreen",
+#             edge_color="red",
+#             alpha=0.8,
+#         )
+#         # Plot 3
+#         nx.draw(knn_g, ax=ax[2],node_size = 10, alpha = 0.8)
+#         plt.show()
+#     else:
+#         fig, ax = plt.subplots(figsize=(25, 25))
+#         tryout.plot.imshow(ax=ax)
+#         ax.set_title("KNN-3")
+#         ax.axis("off")
+#         nx.draw(
+#             knn_g,
+#             knn_p,
+#             ax=ax,
+#             node_size=30,
+#             node_color="lightgreen",
+#             edge_color="red",
+#             alpha=0.8,
+#         )
+#         plt.show()
