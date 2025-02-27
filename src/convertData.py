@@ -51,3 +51,17 @@ for i in range(70):
     data[i].drop(columns=columns_to_remove, inplace=True)
 
 joblib.dump(data, "results/training/data0_70.pkl")
+
+# %%
+
+import joblib
+import numpy as np
+data = joblib.load("results/training/data0_70.pkl")
+
+
+y = np.array(data[5].loc[:, "Y"]).T 
+y = np.where(y == 'Outlier', 1, 0)
+
+X = np.array(data[i].loc[:, "confidence":])
+        
+outliers_fraction = np.count_nonzero(y) / len(y) if np.count_nonzero(y) > 0 else 0.01
