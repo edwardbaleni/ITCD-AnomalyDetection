@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 
 if __name__ == "__main__":
     
-    sampleSize = 100
+    sampleSize = 105
     data = []
     delineations = []
     mask = []
@@ -24,8 +24,8 @@ if __name__ == "__main__":
     # Obtain number of outliers each orchard and number of delineations
     OutlierInfo = pd.DataFrame(columns=["Orchard", "Outliers", "Delineations", "Ratio"])
 
-    mn = 97
-    mx = 100
+    mn = 98
+    mx = 101
 
     # TODO: Collect Test Set
     for num in range(mn, mx):

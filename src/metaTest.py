@@ -23,7 +23,6 @@ import joblib
 # load the 39 file list
 # file_list = pd.read_csv(os.path.join('datasets','file_list.csv'), header=None).to_numpy().tolist()
 # file_list = [item for sublist in file_list for item in sublist]
-n_datasets = 14#len(file_list)
 
 # size of the meta-HP set
 n_hp_configs = 116
@@ -36,6 +35,8 @@ X = meta_features
 # X = np.load(os.path.join('datasets', 'precomputed', 'lof', 'X.npy'))
 # X = X.astype(np.float32)
 X = np.nan_to_num(X)
+
+n_datasets = int(meta_features.shape[0]/n_hp_configs)#len(file_list)
 
 # add standardization
 X = standardizer(X)
@@ -111,6 +112,7 @@ best_model_history = np.zeros([n_datasets, n_epochs]).astype('float')
 best_model_index = np.zeros([n_datasets, n_epochs]).astype('int')
 ei_tracker = np.zeros([n_datasets, n_epochs]).astype('float')
 
+# XXX: this gives us the indices of the initial models
 init_configs_list, _ = get_meta_init(n_init_models=n_init_configs, ap_values=ap_values)
 # meta_list, _ = get_meta_init(n_init_models=n_epochs, ap_values=ap_values)
 
@@ -118,8 +120,11 @@ init_configs_list, _ = get_meta_init(n_init_models=n_init_configs, ap_values=ap_
 for k in range(n_trials):
 
     for ind, train_index, test_index in zip(inds, train_indexs, test_indexs):
-
+        
+        # XXX: This outputs the index of the datasets
+        # XXX: that can be used for meta-training 
         meta_train_list = get_diff(list(range(n_datasets)), [ind])
+        
 
         # meta init
         init_configs = init_configs_list[ind]
@@ -129,16 +134,14 @@ for k in range(n_trials):
         # initialize the evaluation set
         all_models = list(range(ap_values.shape[1] ))#+ ap_values_inner.shape[1]))
         curr_models = init_configs
+        # cur_models are the models that are now being considered
+        # left models would be the models that are not yet considered
         left_models = get_diff(all_models, curr_models)
 
         X_train, X_test = X[train_index, :], X[test_index, :]
         y_train, y_test = y[train_index], y[test_index]
 
-        # !!!!!!#
-        # X_test_inner = X_inner[test_index, :]
-        # X_test_all = np.concatenate([X_test, X_test_inner], axis=0)
         X_test_all = X_test
-        # X_test_all = standardizer(X_test_all)
 
         # warm up the surrogate
         X_test_s = X_test_all[curr_models,]
@@ -158,7 +161,6 @@ for k in range(n_trials):
         rfu.fit(X_test_s[:, feature_index], f_pred)
 
         for epoch in range(n_epochs):
-
             # this should be changed to f's prediction
             curr_model_best_idx = np.argmax(f_pred)
             curr_model_best = np.max(f_pred)
@@ -171,7 +173,6 @@ for k in range(n_trials):
             neighbor_mu = []
             neighbor_sigma = []
             for n in neighbors:
-                # !!!!!!!#
                 mu_temp, sigma_temp = pre_clfs[n].predict(X_test_all[left_models, :][:, feature_index],
                                                             return_std=True)
                 neighbor_mu.append(mu_temp)
@@ -205,10 +206,15 @@ for k in range(n_trials):
             rfu.fit(X_test_s[:, feature_index], f_pred)
 
             best_model_history[ind, epoch] = ap_all[ind, curr_models[curr_model_best_idx]]
+
             best_model_index[ind, epoch] = curr_models[curr_model_best_idx]
+
+            # XXX: I think the best hyperparameters can be found at 
+            print(f'best hyperparams: {X_test_all[best_model_index[ind, epoch], feature_index]}')
 
             ei_tracker[ind, epoch] = ei.max()
 
+        print(f'best hyperparams: {X_test_all[best_model_index[ind, epoch], feature_index]}')
         ours.append(ap_all[ind, curr_models[curr_model_best_idx]])
         print('HPOD trail', k, ind, 'identified HP avg. norm. rank', ours[-1])
 

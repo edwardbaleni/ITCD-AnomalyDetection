@@ -110,7 +110,7 @@ metric_df = pd.DataFrame(binarize,
                         columns = lb.classes_) 
 # 0 isnt working very well right now
 # TODO: Change the 38 to len(data)
-for i in range(14):
+for i in range(len(study)):
     meta_vals, meta_feats = generate_meta_features(data[i].loc[:, "confidence":])
     meta_vals = np.nan_to_num(meta_vals, copy=False)
 
@@ -198,6 +198,8 @@ def train(params, X, Y):
 kf = KFold(n_splits=len(lof_files))
 ind = 0
 
+# We train the entire PPE on all the data available
+# so it is like LOO-CV where we train on all but one
 for train_index, test_index in kf.split(meta_dataframe):
     # print(test_index)
     X = meta_dataframe.iloc[train_index]
