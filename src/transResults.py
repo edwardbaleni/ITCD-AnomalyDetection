@@ -39,7 +39,7 @@ def process(data, erf_num, lof_params, abod_params, pca_params, if_params):
     # Get sample size from user
 # %%
 # data, LOF, ABOD, PCA, IF = getData()
-# sampleSize = 40#len(data)
+# sampleSize = len(LOF)
 # # I have 20 cores!
 # # with Pool(cpu_count() - 14) as pool:
 # #     args = zip(data, LOF, ABOD, PCA, IF)
