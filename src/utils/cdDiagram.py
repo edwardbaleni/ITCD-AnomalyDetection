@@ -28,6 +28,8 @@ from scipy.stats import wilcoxon
 from scipy.stats import friedmanchisquare
 import networkx
 
+import joblib
+
 # inspired from orange3 https://docs.orange.biolab.si/3/data-mining-library/reference/evaluation.cd.html
 def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, highv=None,
                 width=6, textspace=1, reverse=False, filename=None, labels=False, **kwargs):
@@ -290,11 +292,10 @@ def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False, measure=
     p_values, average_ranks, _ = wilcoxon_holm(df_perf=df_perf, alpha=alpha)
 
     print(average_ranks)
-
     for p in p_values:
         print(p)
 
-
+    joblib.dump(p_values, f'results{measure}-p_values.pkl')
     graph_ranks(average_ranks.values, average_ranks.keys(), p_values,
                 cd=None, reverse=True, width=9, textspace=1.5, labels=labels)
 
@@ -303,9 +304,10 @@ def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False, measure=
         'weight': 'normal',
         'size': 22,
         }
+
     if title:
         plt.title(title,fontdict=font, y=0.9, x=0.5)
-    plt.savefig('results'+measure+'-cd-diagram.png',bbox_inches='tight')
+    plt.savefig(f'results{measure}-cd-diagram.png',bbox_inches='tight')
 
 def wilcoxon_holm(alpha=0.05, df_perf=None):
     """
@@ -325,6 +327,7 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
     friedman_p_value = friedmanchisquare(*(
         np.array(df_perf.loc[df_perf['classifier_name'] == c]['accuracy'])
         for c in classifiers))[1]
+    
     if friedman_p_value >= alpha:
         # then the null hypothesis over the entire classifiers cannot be rejected
         print('the null hypothesis over the entire classifiers cannot be rejected')
@@ -354,7 +357,7 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
     k = len(p_values)
     # sort the list in acsending manner of p-value
     p_values.sort(key=operator.itemgetter(2))
-
+    
     # loop through the hypothesis
     for i in range(k):
         # correct alpha with holm
@@ -365,6 +368,7 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
         else:
             # stop
             break
+
     # compute the average ranks to be returned (useful for drawing the cd diagram)
     # sort the dataframe of performances
     sorted_df_perf = df_perf.loc[df_perf['classifier_name'].isin(classifiers)]. \
@@ -375,11 +379,9 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
     # create the data frame containg the accuracies
     df_ranks = pd.DataFrame(data=rank_data, index=np.sort(classifiers), columns=
     np.unique(sorted_df_perf['dataset_name']))
-
     # number of wins
     dfff = df_ranks.rank(ascending=False)
     print(dfff[dfff == 1.0].sum(axis=1))
-
     # average the ranks
     average_ranks = df_ranks.rank(ascending=False).mean(axis=1).sort_values(ascending=False)
     # return the p-values and the average ranks

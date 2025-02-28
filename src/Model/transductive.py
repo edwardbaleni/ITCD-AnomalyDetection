@@ -96,26 +96,30 @@ def getPR(y_true, y_pred, mean_recall):
 def estimators(outliers_fraction, params, geometry=None, centroid=None):
     return {
         'ABOD': 
-            ABOD(params['ABOD'], 
-                #  contamination=outliers_fraction
+            ABOD( contamination=outliers_fraction, 
+                 n_neighbors=params['ABOD']['n_neighbors']
                  ),
                 
         'IF': 
-            IForest(params['IF'], 
-                    # contamination=outliers_fraction,
+            IForest(contamination=outliers_fraction,
+                    n_estimators=params['IF']['n_estimators'],
+                    max_features=params['IF']['max_features'],
+                    behaviour='new',
+                    n_jobs=5,
                     random_state=42),
                         
         'LOF': 
-            LOF(params['LOF'], 
-                # contamination=outliers_fraction
+            LOF(contamination=outliers_fraction,
+                n_neighbors=params['LOF']['n_neighbors'],
+                metric=params['LOF']['metric']
                 ),
 
         'ECOD': 
             ECOD(contamination=outliers_fraction),
 
         'PCA':
-            PCA(params['PCA'],
-                # contamination=outliers_fraction
+            PCA(contamination=outliers_fraction,
+                n_selected_components=params['PCA']['n_selected_components']
                 ),
 
         'Geary':
@@ -140,7 +144,7 @@ def init_results(keys, pop_size):
 
 
 def transductionResults(data, erf_num, localOF, angleBOD, principleCA, isolationF):
-    n_classifiers = 12
+    n_classifiers = 6
 
     df_columns = ['Data', '# Samples', '# Dimensions', 'Outlier Perc %',
                 'ABOD', 'IForest', 'LOF', 'ECOD', 'PCA', 'Geary']
