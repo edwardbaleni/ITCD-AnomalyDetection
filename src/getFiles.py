@@ -24,8 +24,8 @@ if __name__ == "__main__":
     # Obtain number of outliers each orchard and number of delineations
     OutlierInfo = pd.DataFrame(columns=["Orchard", "Outliers", "Delineations", "Ratio"])
 
-    mn = 98
-    mx = 101
+    mn = 97
+    mx = 98
 
     # TODO: Collect Test Set
     for num in range(mn, mx):

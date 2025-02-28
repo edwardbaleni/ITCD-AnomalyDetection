@@ -10,32 +10,22 @@ warnings.filterwarnings("ignore")
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
 from pyod.models.abod import ABOD
-from pyod.models.cblof import CBLOF
-from pyod.models.copod import COPOD
-from pyod.models.hbos import HBOS
 from pyod.models.iforest import IForest
-from pyod.models.knn import KNN
 from pyod.models.lof import LOF
-from pyod.models.mcd import MCD
-from pyod.models.kpca import KPCA
+from pyod.models.pca import PCA
 from pyod.models.ecod import ECOD
-from pyod.models.inne import INNE
 
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
 from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import average_precision_score
-from sklearn.metrics import RocCurveDisplay
 
 import utils
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import utils.plotAnomaly as plotA
 
 from Model import Geary
 
@@ -62,18 +52,18 @@ def transformData(data, PR=False):
     df['Type'] = None
 
     for i in df["Estimator"].unique():
-        if i == 'ABOD' or i == 'COPOD' or i == 'ECOD' or i == 'HBOS':
+        if i == 'ECOD':
             df.loc[df['Estimator'] == i, 'Type'] = 'Probabilistic'
-        elif i == 'CBLOF':
-            df.loc[df['Estimator'] == i, 'Type'] = 'Cluster'
-        elif i == 'IF' or i == 'KNN':
-            df.loc[df['Estimator'] == i, 'Type'] = 'Distance'
-        elif i == 'KPCA':
+        elif i == 'IF':
+            df.loc[df['Estimator'] == i, 'Type'] = 'Learning'
+        elif i == 'PCA':
             df.loc[df['Estimator'] == i, 'Type'] = 'Reconstruction'
+        elif i == 'LOF':
+            df.loc[df['Estimator'] == i, 'Type'] = 'Density'
+        elif i == 'ABOD':
+            df.loc[df['Estimator'] == i, 'Type'] = 'Distance'
         elif i == 'Geary':
             df.loc[df['Estimator'] == i, 'Type'] = 'Spatial'
-        else:
-            df.loc[df['Estimator'] == i, 'Type'] = 'Density'
 
     result.reset_index(inplace=True)
     if PR == False:
@@ -103,44 +93,30 @@ def getPR(y_true, y_pred, mean_recall):
     return precision, recall, round(ap, ndigits=3) #mean_recall, round(ap, ndigits=3)
 
     # TODO: Pick outliers factor that is common over many orchards as a default!
-def estimators(outliers_fraction, random_state, geometry=None, centroid=None, vars=None):
+def estimators(outliers_fraction, params, geometry=None, centroid=None):
     return {
         'ABOD': 
-            ABOD(contamination=outliers_fraction),
-            
-        'CBLOF': 
-            CBLOF(n_clusters=10,
-                    contamination=outliers_fraction,
-                    check_estimator=False,
-                    random_state=random_state),
-    
-        'HBOS': 
-            HBOS(contamination=outliers_fraction),
+            ABOD(params['ABOD'], 
+                #  contamination=outliers_fraction
+                 ),
                 
         'IF': 
-            IForest(contamination=outliers_fraction,
-                    random_state=random_state),
+            IForest(params['IF'], 
+                    # contamination=outliers_fraction,
+                    random_state=42),
                         
-        'KNN': 
-            KNN(contamination=outliers_fraction),
-                
-        'MCD': 
-            MCD(contamination=outliers_fraction),
-    
         'LOF': 
-            LOF(contamination=outliers_fraction),
+            LOF(params['LOF'], 
+                # contamination=outliers_fraction
+                ),
 
         'ECOD': 
             ECOD(contamination=outliers_fraction),
-    
-        'KPCA': 
-            KPCA(contamination=outliers_fraction, random_state=random_state),
 
-        'iNNE': 
-            INNE(contamination=outliers_fraction),
-                
-        'COPOD': 
-            COPOD(contamination=outliers_fraction),
+        'PCA':
+            PCA(params['PCA'],
+                # contamination=outliers_fraction
+                ),
 
         'Geary':
             Geary(contamination=outliers_fraction, 
@@ -151,17 +127,11 @@ def estimators(outliers_fraction, random_state, geometry=None, centroid=None, va
 def indices():
     return {
         'ABOD': 0,
-        'CBLOF': 1,
-        'HBOS': 2,
-        'IF': 3,
-        'KNN': 4,
-        'MCD': 5,
-        'LOF': 6,
-        'ECOD': 7,
-        'KPCA': 8,
-        'iNNE': 9,
-        'COPOD': 10,
-        'Geary': 11
+        'IF': 1,
+        'LOF': 2,
+        'ECOD': 3,
+        'PCA':4,
+        'Geary': 5
     }
 
 def init_results(keys, pop_size):
@@ -169,13 +139,11 @@ def init_results(keys, pop_size):
     return {key: np.zeros([pop_size]) for key in keys}, {key: np.zeros([pop_size]) for key in keys}, {key: 0 for key in keys}
 
 
-def transductionResults(data, erf_num, trans=False):
+def transductionResults(data, erf_num, localOF, angleBOD, principleCA, isolationF):
     n_classifiers = 12
 
     df_columns = ['Data', '# Samples', '# Dimensions', 'Outlier Perc %',
-                'ABOD', 'CBLOF', 'HBOS', 'IForest', 'KNN', 'MCD',
-                'LOF', 'ECOD', 'KPCA', 'INNE', 'COPOD', 'Geary']
-
+                'ABOD', 'IForest', 'LOF', 'ECOD', 'PCA', 'Geary']
 
     # initialize the container for saving the results
     aucroc_df = pd.DataFrame(columns=df_columns)
@@ -192,6 +160,17 @@ def transductionResults(data, erf_num, trans=False):
         outliers_percentage = round(outliers_fraction * 100, ndigits=4)
     else:
         outliers_percentage = 0.1
+    
+    localOF["contamination"] = outliers_fraction
+    angleBOD["contamination"] = outliers_fraction
+    principleCA["contamindation"] = outliers_fraction
+    isolationF["contamination"] = outliers_fraction
+
+
+    params = {'LOF': localOF,
+              'ABOD': angleBOD, 
+              'PCA': principleCA, 
+              'IF': isolationF}
 
     # construct containers for saving results
     aucroc_list = ["Orchard_"+erf_num, X.shape[0], X.shape[1], outliers_percentage]
@@ -222,10 +201,9 @@ def transductionResults(data, erf_num, trans=False):
 
     # classifiers must be reinitialized for each iteration
     classifiers = estimators(outliers_fraction, 
-                             random_state, 
+                             params,
                              data["geometry"], 
-                             data["centroid"],
-                             data.loc[:, "confidence":].columns)
+                             data["centroid"])
 
     # standardizing data for processing
     X = utils.engineer._scaleData(X)
@@ -279,8 +257,8 @@ def transductionResults(data, erf_num, trans=False):
     output = output + (labels,)
     output = output + (precision, recall, aucpr)
 
-    if trans:
-        pickle.dump(output,
-                    open("results/transductive/" + erf_num + ".pkl", "wb"))
+    
+    pickle.dump(output,
+                open("results/transductive/" + erf_num + ".pkl", "wb"))
 
-    return (aucroc_df, ap_df, time_df)
+    return aucroc_df, ap_df, time_df
