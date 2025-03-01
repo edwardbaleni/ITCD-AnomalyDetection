@@ -180,7 +180,10 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
     def text(x, y, s, *args, **kwargs):
         ax.text(wf * x, hf * y, s, *args, **kwargs)
 
-    line([(textspace, cline), (width - textspace, cline)], linewidth=2)
+    line([(textspace-0.01, cline), (width - textspace, cline)], linewidth=2)
+    
+    # Add "Avg. Rank" text to the left side of the scale
+    text(textspace - 1, cline, "Avg. Rank", ha="left", va="bottom", size=14)
 
     bigtick = 0.3
     smalltick = 0.15
