@@ -13,6 +13,9 @@ from multiprocessing import cpu_count, Pool
 import joblib
 from os import listdir
 
+from utils import cdDiagram
+import seaborn as sns
+
 def getData():
     data = joblib.load("results/training/data0_70.pkl")
     path = "results/hyperparameter/"
@@ -34,7 +37,7 @@ def process(data, erf_num, lof_params, abod_params, pca_params, if_params):
                                                abod_params, 
                                                pca_params, 
                                                if_params)
-
+# %%
 data, LOF, ABOD, PCA, IF = getData()
 sampleSize = len(LOF)
 
@@ -64,6 +67,7 @@ aucroc.reset_index(drop=True, inplace=True)
 ap.reset_index(drop=True, inplace=True)
 time.reset_index(drop=True, inplace=True)
 
+# %%
 # Save aucroc with only unique indices
 aucroc = pd.read_csv("results/transductive/auc.csv")
 ap = pd.read_csv("results/transductive/ap.csv")
@@ -86,7 +90,6 @@ time_long = pd.melt(time,
                     value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
 
 # Plot the CD diagram
-from utils import cdDiagram
 
 aucroc_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
 ap_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
@@ -102,4 +105,75 @@ cdDiagram.draw_cd_diagram(df_perf=ap_long, title='', labels=True, measure = '/tr
 cdDiagram.draw_cd_diagram(df_perf=aucroc_long, title='', labels=True, measure = '/transductive/AUCROC/AUC')
 
 cdDiagram.draw_cd_diagram(df_perf=time_long, title='', labels=True, measure = '/transductive/Time/Time')
+# %%
+
+aucroc.loc[:, 'ABOD':].mean()
+ap.loc[:, 'ABOD':].mean()
+
+# %%
+
+# Alternative with more detailed visualization
+plt.figure(figsize=(20, 12))
+sns.boxplot(x='classifier_name', y='accuracy', data=aucroc_long, palette='rocket_r')
+sns.stripplot(x='classifier_name', y='accuracy', data=aucroc_long, 
+              size=10, color='.3', linewidth=0, alpha=0.6)
+
+import matplotlib.patches as mpatches
+classifiers = aucroc_long['classifier_name'].unique()
+colors = sns.color_palette('rocket_r', len(classifiers))
+patches = [mpatches.Patch(color=colors[i], label=classifier) for i, classifier in enumerate(classifiers)]
+plt.legend(handles=patches, title='Classifier', loc='best', prop={'size': 25}, title_fontsize=20)
+
+# plt.title('AUCROC Performance Distribution by Classifier', fontsize=14)
+plt.ylabel('AUCROC', fontsize=30)
+plt.xlabel('', fontsize=30)
+# plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.xticks(fontsize = 25)
+plt.yticks(fontsize = 25)
+plt.tight_layout()
+plt.savefig('results/transductive/AUCROC/AUC_Summary.png')
+plt.show()
+
+# %%
+plt.figure(figsize=(20, 12))
+sns.boxplot(x='classifier_name', y='accuracy', data=ap_long, hue='classifier_name', palette='rocket_r')
+sns.stripplot(x='classifier_name', y='accuracy', data=ap_long, 
+              size=10, color='.3', linewidth=0, alpha=0.6)
+
+import matplotlib.patches as mpatches
+classifiers = ap_long['classifier_name'].unique()
+colors = sns.color_palette('rocket_r', len(classifiers))
+patches = [mpatches.Patch(color=colors[i], label=classifier) for i, classifier in enumerate(classifiers)]
+plt.legend(handles=patches, title='Classifier', loc='upper right', prop={'size': 25}, title_fontsize=20)
+
+# plt.title('AP Performance Distribution by Classifier', fontsize=14)
+plt.ylabel('Average Precision', fontsize=20)
+plt.xlabel('', fontsize=20)
+# plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.xticks(fontsize = 25)
+plt.yticks(fontsize = 25)
+plt.tight_layout()
+plt.savefig('results/transductive/AP/AP_Summary.png')
+plt.show()
+# %%
+plt.figure(figsize=(20, 12))
+sns.boxplot(x='classifier_name', y='accuracy', data=time_long, hue='classifier_name', palette='rocket_r')
+sns.stripplot(x='classifier_name', y='accuracy', data=time_long, 
+              size=10, color='.3', linewidth=0, alpha=0.6)
+
+import matplotlib.patches as mpatches
+classifiers = time_long['classifier_name'].unique()
+colors = sns.color_palette('rocket_r', len(classifiers))
+patches = [mpatches.Patch(color=colors[i], label=classifier) for i, classifier in enumerate(classifiers)]
+plt.legend(handles=patches, title='Classifier', loc='upper right', prop={'size': 25}, title_fontsize=20)
+
+# plt.title('AP Performance Distribution by Classifier', fontsize=14)
+plt.ylabel('Time (Seconds)', fontsize=20)
+plt.xlabel('', fontsize=20)
+# plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.xticks(fontsize = 25)
+plt.yticks(fontsize = 25)
+plt.tight_layout()
+plt.savefig('results/transductive/Time/Time_Summary.png')
+plt.show()
 # %%

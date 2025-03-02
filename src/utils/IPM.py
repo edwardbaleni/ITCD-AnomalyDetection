@@ -146,7 +146,7 @@ def HITS(score_mat, rank_mat):
     # np.savetxt(os.path.join('scores_mat', mat_file+'.HITS.Target.csv'), auth_vec, delimiter=',')
 
 
-def IPM(outlier_score, data, train=True):
+def IPM(outlier_score):
     MC_s = []
 
     SELECT_s = []
@@ -154,23 +154,8 @@ def IPM(outlier_score, data, train=True):
 
     HITS_s = []
     HITS_t = []
-    if train:
-        for scores in outlier_score:
-            scores_mat = scores.to_numpy().astype('float64')
-            scores_mat = np.nan_to_num(scores_mat)
-            rank_mat = rankdata(scores_mat, axis=0)
 
-            MC_s.append(MC(scores_mat, rank_mat))
-            
-            select_s, select_t = SELECT(scores_mat, rank_mat)
-            SELECT_s.append(select_s)
-            SELECT_t.append(select_t)
-
-            hits_s, hits_t = HITS(scores_mat, rank_mat)
-            HITS_s.append(hits_s)
-            HITS_t.append(hits_t)
-    else:
-        scores = outlier_score
+    for scores in outlier_score:
         scores_mat = scores.to_numpy().astype('float64')
         scores_mat = np.nan_to_num(scores_mat)
         rank_mat = rankdata(scores_mat, axis=0)

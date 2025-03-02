@@ -28,7 +28,7 @@ import joblib
 n_hp_configs = 116
 
 # load the precomputed features for fast demo
-meta_features = joblib.load(os.path.join('results', 'meta', 'LOF', 'meta_dataframe.pkl'))
+meta_features = joblib.load(os.path.join('results', 'meta', 'PCA', 'meta_dataframe.pkl'))
 meta_features = np.array(meta_features)
 meta_features = meta_features.astype(np.float32)
 X = meta_features

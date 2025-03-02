@@ -65,3 +65,23 @@ y = np.where(y == 'Outlier', 1, 0)
 X = np.array(data[i].loc[:, "confidence":])
         
 outliers_fraction = np.count_nonzero(y) / len(y) if np.count_nonzero(y) > 0 else 0.01
+
+
+# %%
+
+import joblib
+data1 = joblib.load("results/testing/data70_80.pkl")
+data2 = joblib.load("results/testing/data80_90.pkl")
+data3 = joblib.load("results/testing/data90_97.pkl")
+data4 = joblib.load("results/testing/data97_98.pkl")
+data5 = joblib.load("results/testing/data98_101.pkl")
+
+data = data1['data'] + data2['data'] + data3['data'] + data4['data'] + data5['data']
+# %%
+
+columns_to_remove = ['circularity', 'eccentricity', 'GNDVI', 'NIR', 'Contrast', 'SAVI', 'z0', 'z1', 'z2', 'z3', 'z4', 'z4', 'z5', 'z6', 'z7', 'z8', 'z9', 'z10', 'z11', 'z12', 'z13', 'z14', 'z15', 'z16', 'z17', 'z18', 'z19', 'z20', 'z21', 'z22', 'z23', 'z24']
+columns_to_remove = ['radius_of_gyration', 'minor_axis', 'major_axis']
+for i in range(len(data)):
+    data[i].drop(columns=columns_to_remove, inplace=True)
+
+joblib.dump(data, "results/testing/data70_101.pkl")
