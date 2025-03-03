@@ -1,11 +1,11 @@
 # %%
 import joblib
 import pandas as pd
-import pyod.models.abod as ABOD
-import pyod.models.iforest as IF
-import pyod.models.lof as LOF
-import pyod.models.pca as PCA
-import pyod.models.ecod as ECOD
+from pyod.models.abod import ABOD
+from pyod.models.iforest import IForest
+from pyod.models.lof import LOF
+from pyod.models.pca import PCA
+from pyod.models.ecod import ECOD
 from Model import Geary
 
 from utils.plotAnomaly import plotScores, plot
@@ -16,7 +16,6 @@ from sklearn.preprocessing import RobustScaler
 
 
 data = joblib.load("results/testing/data70_101.pkl")
-
 images = joblib.load("results/testing/images70_101.pkl")
 
 # %%
@@ -43,50 +42,58 @@ del lof['value']
 
 
 # perform outlier detection
-for i in len(data):
+for i in range(len(data)):
     scaler = RobustScaler()
     dataset = scaler.fit_transform(data[i].loc[:,'confidence':])
     # LOF
-    clf = LOF(n_neighbors=lof['params_n_neighbors'][i], metric=lof['metric'][i])
+    clf = LOF(n_neighbors=int(lof['params_n_neighbors'][i]), metric=lof['metric'][i])
     clf.fit(dataset)
     y_test_scores = clf.decision_scores_
     y_labels = clf.labels_
-    # plot the outlier scores
+    plotScores(images[i], data[i], y_test_scores, f"results/oos/outliers/lof_{i+71}.png")
+    plot(images[i], data[i][y_labels == 0], data[i][y_labels == 1], f"results/oos/out_scores/lof_{i+71}.png")
 
 
-    # ABOD
+    # # ABOD
     clf = ABOD(n_neighbors=abod['params_n_neighbors'][i])
     # Isolation Forest
-    clf = IF(n_estimators=iforest['params_n_estimators'][i], max_features=iforest['params_max_features'][i])
+    clf = IForest(n_estimators=int(iforest['params_n_estimators'][i]), max_features=int(iforest['params_max_features'][i]))
     clf.fit(dataset)
     y_test_scores = clf.decision_scores_
+    y_labels = clf.labels_
+    plotScores(images[i], data[i], y_test_scores, f"results/oos/outliers/iforest_{i+71}.png")
+    plot(images[i], data[i][y_labels == 0], data[i][y_labels == 1], f"results/oos/out_scores/iforest_{i+71}.png")
 
-    # PCA
-    clf = PCA(n_selected_components=pca['params_n_selected_components'][i])
+    # # PCA
+    clf = PCA(n_selected_components=int(pca['params_n_selected_components'][i]))
     clf.fit(dataset)
     y_test_scores = clf.decision_scores_
+    y_labels = clf.labels_
+    plotScores(images[i], data[i], y_test_scores, f"results/oos/outliers/pca_{i+71}.png")
+    plot(images[i], data[i][y_labels == 0], data[i][y_labels == 1], f"results/oos/out_scores/pca_{i+71}.png")
 
-    # ECOD
+    # # ECOD
     clf = ECOD()
     clf.fit(dataset)
     y_test_scores = clf.decision_scores_
+    y_labels = clf.labels_
+    plotScores(images[i], data[i], y_test_scores, f"results/oos/outliers/ecod_{i+71}.png")
+    plot(images[i], data[i][y_labels == 0], data[i][y_labels == 1], f"results/oos/out_scores/ecod_{i+71}.png")
 
-    # Geary
+    # # Geary
     clf = Geary(contamination=0.1,
                 geometry=data[i]["geometry"], 
                 centroid=data[i]["centroid"])
     clf.fit(dataset)
     y_test_scores = clf.decision_scores_
+    y_labels = clf.labels_
+    plotScores(images[i], data[i], y_test_scores, f"results/oos/outliers/geary_{i+71}.png")
+    plot(images[i], data[i][y_labels == 0], data[i][y_labels == 1], f"results/oos/out_scores/geary_{i+71}.png")
 
-    # plot the outlier scores
-
-
-    # plot the outliers
-
-
-    # XXX: Maybe
-    # obtain ROC and PR curves
-    # obtain AUC and AP
+    # # XXX: Maybe
+    # # obtain ROC and PR curves
+    # # obtain AUC and AP
 
 
 
+# %%

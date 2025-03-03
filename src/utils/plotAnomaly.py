@@ -42,7 +42,7 @@ def plotRef(img, data, name):
     plt.title("")  # Data Geometries Colored by Y
     fig.savefig(name)
 
-def plotScores(erf, data, scores):
+def plotScores(erf, data, scores, name):
     
     _, ax = plt.subplots(1, figsize=(20, 20))
     erf.plot.imshow(ax=ax)
@@ -51,4 +51,5 @@ def plotScores(erf, data, scores):
             edgecolor='white', legend=True, alpha=0.7)
     ax.set_axis_off()
     plt.title("Anomaly Scores")
+    plt.savefig(name)
     plt.show()
