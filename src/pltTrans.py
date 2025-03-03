@@ -123,7 +123,7 @@ for i, (ax, orchard) in enumerate(zip(axs.flat, orchards)):
     estimators = [est for est in desired_order if est in data_orch['Estimator'].unique()]
     for estimator in estimators:
         data_est = data_orch[data_orch['Estimator'] == estimator]
-        # Retrieve the corresponding AUC value from the auc dataframe
+        # Retrieve the corresponding AP value from the ap dataframe
         ap_val_series = ap[(ap['Orchard'] == orchard) & (ap['Estimator'] == estimator)]['AP']
         if not ap_val_series.empty:
             ap_val = float(ap_val_series.iloc[0])
@@ -133,6 +133,8 @@ for i, (ax, orchard) in enumerate(zip(axs.flat, orchards)):
                 label=f"{estimator}={ap_val:.3f}",
                 color=palette.get(estimator, 'black'),
                 linewidth=4)
+    # Draw a horizontal line at Precision = 0.5
+    ax.axhline(y=0.5, color='gray', linestyle='--', linewidth=2)
     ax.set_title(orchard, fontsize=24)
     ax.legend(title="AP", loc="upper right", fontsize=16, title_fontsize=20)
     ax.tick_params(axis='both', labelsize=20)
@@ -152,6 +154,7 @@ for i, (ax, orchard) in enumerate(zip(axs.flat, orchards)):
     else:
         ax.set_xticklabels([])
         ax.set_xlabel("")
+        
 plt.tight_layout()
 plt.savefig("results/transductive/AP/PR-Curve.png", dpi=300, bbox_inches='tight')
 plt.show()
