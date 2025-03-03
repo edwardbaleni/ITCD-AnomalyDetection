@@ -13,8 +13,8 @@ from scipy.stats import norm
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.model_selection import KFold
 
-from init_meta import get_meta_init
-from utility import get_diff, process_batch, get_sim_kendall
+from utils.init_meta import get_meta_init
+from utils.utility import get_diff, process_batch, get_sim_kendall
 
 import joblib
 
