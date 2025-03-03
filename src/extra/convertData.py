@@ -85,3 +85,24 @@ for i in range(len(data)):
     data[i].drop(columns=columns_to_remove, inplace=True)
 
 joblib.dump(data, "results/testing/data70_101.pkl")
+
+
+# need to donwload masks and images
+data1 = joblib.load("results/testing/data70_80.pkl")
+data2 = joblib.load("results/testing/data80_90.pkl")
+data3 = joblib.load("results/testing/data90_97.pkl")
+data4 = joblib.load("results/testing/data97_98.pkl")
+data5 = joblib.load("results/testing/data98_101.pkl")
+
+masks = data1['mask'] + data2['mask'] + data3['mask'] + data4['mask'] + data5['mask']
+images = [x['rgb'] for x in data1['spectralData']] + [x['rgb'] for x in data2['spectralData']] + [x['rgb'] for x in data3['spectralData']] + [x['rgb'] for x in data4['spectralData']] + [x['rgb'] for x in data5['spectralData']]
+
+for i in range(len(images)):
+    mask = masks[i]
+    img = images[i][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
+    img = img/255
+
+    images[i] = img
+
+# joblib.dump(masks, "results/testing/masks70_101.pkl")
+joblib.dump(images, "results/testing/images70_101.pkl")

@@ -1,9 +1,9 @@
 import matplotlib.pylab as plt
-def plot(erf, normal, anomaly, name):
+def plot(img, normal, anomaly, name):
     """
     Plots the given Earth Relief File (ERF) along with normal and anomaly regions.
     Parameters:
-    erf : GeoDataFrame
+    img : GeoDataFrame
         The Earth Relief File to be plotted as the base layer.
     normal : GeoDataFrame
         The GeoDataFrame containing the normal regions to be plotted with red edges.
@@ -15,16 +15,16 @@ def plot(erf, normal, anomaly, name):
 
     # Plotting
     fig, ax = plt.subplots(figsize=(20, 20))
-    erf.plot.imshow(ax=ax)
+    img.plot.imshow(ax=ax)
     normal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
     anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
     fig.savefig(name)
 
-def plotRef(erf, data, name):
+def plotRef(img, data, name):
     """
     Plots the given Earth Relief File (ERF) along with data regions colored by the 'Y' column.
     Parameters:
-    erf : GeoDataFrame
+    img : GeoDataFrame
         The Earth Relief File to be plotted as the base layer.
     data : GeoDataFrame
         The GeoDataFrame containing the data regions to be plotted and colored by the 'Y' column.
@@ -33,7 +33,7 @@ def plotRef(erf, data, name):
     """
     fig, ax = plt.subplots(figsize=(20, 20))
     ax.axis('off')
-    erf.plot.imshow(ax=ax)
+    img.plot.imshow(ax=ax)
     data.plot(column='Y', categorical=True, legend=True, ax=ax, cmap='rainbow', alpha=0.7)
     leg = ax.get_legend()
     for text in leg.get_texts():

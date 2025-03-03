@@ -13,7 +13,8 @@ import joblib
 # output_files = pd.read_csv(os.path.join('results', 'hyperparameters','old', ''), header=None).to_numpy().tolist()
 # output_files = [item for sublist in output_files for item in sublist]
 
-n_datasets = 16#len(output_files)
+# XXX: 31 when testing, 67 when validating
+n_datasets = 31#67#len(output_files)
 
 meta_features = joblib.load(os.path.join('results', 'meta', 'LOF', 'meta_dataframe.pkl'))
 meta_features = np.array(meta_features)
