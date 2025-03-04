@@ -18,6 +18,8 @@ def plot(img, normal, anomaly, name):
     img.plot.imshow(ax=ax)
     normal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
     anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
+    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    plt.title("")  # Data Geometries Colored by Y
     fig.savefig(name)
 
 def plotRef(img, data, name):

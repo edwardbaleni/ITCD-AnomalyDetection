@@ -57,7 +57,13 @@ fig, axs = plt.subplots(4, 5, figsize=(30, 20))
 orchards = roc['Orchard'].unique()
 
 # Create a palette using the desired estimator order
-palette = dict(zip(desired_order, sns.color_palette("rocket_r", len(desired_order))))
+        # Yellow,     pink,      teal,      lime,     dark blue,   brown
+# color =  ["#FABE37", "#ec1763", "#118D92", "#91c059", "#204ecf", "#A25C43"]
+        # pink       brown      yellow      lime       teal     blue
+color = ["#ec1763", "#A25C43", "#FABE37", "#91c059", "#118D92", "#204ecf"]
+palette = dict(zip(desired_order, sns.color_palette(sns.set_palette(color), len(desired_order))))
+# Accent
+# palette = dict(zip(desired_order, sns.color_palette("nipy_spectral", len(desired_order))))
 
 nrows, ncols = axs.shape
 
@@ -114,7 +120,11 @@ desired_order = ["ABOD", "IF", "LOF", "ECOD", "PCA", "Geary"]
 fig, axs = plt.subplots(4, 5, figsize=(30, 20))
 orchards = pr['Orchard'].unique()
 # Create a palette using the desired estimator order
-palette = dict(zip(desired_order, sns.color_palette("rocket_r", len(desired_order))))
+
+# palette = dict(zip(desired_order, sns.color_palette("rocket_r", len(desired_order))))
+        # pink       brown      yellow      lime       teal     blue
+color = ["#ec1763", "#A25C43", "#FABE37", "#91c059", "#118D92", "#204ecf"]
+palette = dict(zip(desired_order, sns.color_palette(sns.set_palette(color), len(desired_order))))
 nrows, ncols = axs.shape
 
 for i, (ax, orchard) in enumerate(zip(axs.flat, orchards)):

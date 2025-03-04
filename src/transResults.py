@@ -111,23 +111,21 @@ aucroc.loc[:, 'ABOD':].mean()
 ap.loc[:, 'ABOD':].mean()
 
 # %%
-
+        # pink       brown      yellow      lime       teal     blue
+colors = ["#ec1763", "#A25C43", "#FABE37", "#91c059", "#118D92", "#204ecf"]
 # Alternative with more detailed visualization
 plt.figure(figsize=(20, 12))
-sns.boxplot(x='classifier_name', y='accuracy', data=aucroc_long, palette='rocket_r')
+sns.boxplot(x='classifier_name', y='accuracy', data=aucroc_long, palette=colors)
 sns.stripplot(x='classifier_name', y='accuracy', data=aucroc_long, 
               size=10, color='.3', linewidth=0, alpha=0.6)
 
 import matplotlib.patches as mpatches
 classifiers = aucroc_long['classifier_name'].unique()
-colors = sns.color_palette('rocket_r', len(classifiers))
 patches = [mpatches.Patch(color=colors[i], label=classifier) for i, classifier in enumerate(classifiers)]
 plt.legend(handles=patches, title='Classifier', loc='best', prop={'size': 25}, title_fontsize=20)
 
-# plt.title('AUCROC Performance Distribution by Classifier', fontsize=14)
 plt.ylabel('AUCROC', fontsize=30)
 plt.xlabel('', fontsize=30)
-# plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.xticks(fontsize = 25)
 plt.yticks(fontsize = 25)
 plt.tight_layout()
@@ -136,20 +134,17 @@ plt.show()
 
 # %%
 plt.figure(figsize=(20, 12))
-sns.boxplot(x='classifier_name', y='accuracy', data=ap_long, hue='classifier_name', palette='rocket_r')
+sns.boxplot(x='classifier_name', y='accuracy', data=ap_long, palette=colors)
 sns.stripplot(x='classifier_name', y='accuracy', data=ap_long, 
               size=10, color='.3', linewidth=0, alpha=0.6)
 
 import matplotlib.patches as mpatches
 classifiers = ap_long['classifier_name'].unique()
-colors = sns.color_palette('rocket_r', len(classifiers))
 patches = [mpatches.Patch(color=colors[i], label=classifier) for i, classifier in enumerate(classifiers)]
-plt.legend(handles=patches, title='Classifier', loc='upper right', prop={'size': 25}, title_fontsize=20)
+plt.legend(handles=patches, title='Classifier', loc='best', prop={'size': 25}, title_fontsize=20)
 
-# plt.title('AP Performance Distribution by Classifier', fontsize=14)
-plt.ylabel('Average Precision', fontsize=20)
-plt.xlabel('', fontsize=20)
-# plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.ylabel('Average Precision', fontsize=30)
+plt.xlabel('', fontsize=30)
 plt.xticks(fontsize = 25)
 plt.yticks(fontsize = 25)
 plt.tight_layout()
@@ -157,20 +152,17 @@ plt.savefig('results/transductive/AP/AP_Summary.png')
 plt.show()
 # %%
 plt.figure(figsize=(20, 12))
-sns.boxplot(x='classifier_name', y='accuracy', data=time_long, hue='classifier_name', palette='rocket_r')
+sns.boxplot(x='classifier_name', y='accuracy', data=time_long, palette=colors)
 sns.stripplot(x='classifier_name', y='accuracy', data=time_long, 
               size=10, color='.3', linewidth=0, alpha=0.6)
 
 import matplotlib.patches as mpatches
 classifiers = time_long['classifier_name'].unique()
-colors = sns.color_palette('rocket_r', len(classifiers))
 patches = [mpatches.Patch(color=colors[i], label=classifier) for i, classifier in enumerate(classifiers)]
-plt.legend(handles=patches, title='Classifier', loc='upper right', prop={'size': 25}, title_fontsize=20)
+plt.legend(handles=patches, title='Classifier', loc='best', prop={'size': 25}, title_fontsize=20)
 
-# plt.title('AP Performance Distribution by Classifier', fontsize=14)
-plt.ylabel('Time (Seconds)', fontsize=20)
-plt.xlabel('', fontsize=20)
-# plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.ylabel('Time (Seconds)', fontsize=30)
+plt.xlabel('', fontsize=30)
 plt.xticks(fontsize = 25)
 plt.yticks(fontsize = 25)
 plt.tight_layout()

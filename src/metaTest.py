@@ -1,3 +1,4 @@
+# %%
 import os
 import time
 from copy import deepcopy
@@ -78,7 +79,7 @@ def getTrain(model_name, feature_index, n_hp_configs):
 
     return cols, n_datasets, pre_clfs, ap_values, sorted_ap_val, ap_all
 
-model_name = 'ABOD'
+model_name = 'LOF'
 
 feature_index = None
 n_hp_configs = None
