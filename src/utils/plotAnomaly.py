@@ -1,3 +1,5 @@
+from matplotlib.lines import Line2D
+
 import matplotlib.pylab as plt
 def plot(img, normal, anomaly, name):
     """
@@ -16,8 +18,12 @@ def plot(img, normal, anomaly, name):
     # Plotting
     fig, ax = plt.subplots(figsize=(20, 20))
     img.plot.imshow(ax=ax)
-    normal.plot(ax=ax, facecolor = 'none',edgecolor='red') 
-    anomaly.plot(ax=ax, facecolor = 'none',edgecolor='blue')
+    ax.axis('off')
+    normal.plot(ax=ax, facecolor = 'none', edgecolor='red', label='Normal Regions') 
+    anomaly.plot(ax=ax, facecolor = 'none', edgecolor='blue', label='Anomaly Regions')
+    custom_lines = [Line2D([0], [0], color='red', lw=2),
+                    Line2D([0], [0], color='blue', lw=2)]
+    ax.legend(custom_lines, ['Normal', 'Outliers'], loc='upper right', fontsize=25)
     fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
     plt.title("")  # Data Geometries Colored by Y
     fig.savefig(name)
@@ -48,6 +54,7 @@ def plotScores(erf, data, scores, name):
     
     _, ax = plt.subplots(1, figsize=(20, 20))
     erf.plot.imshow(ax=ax)
+    ax.axis('off')
     data.assign(cl= scores).plot(column='cl', categorical=False,
             k=5, cmap='viridis', linewidth=0.1, ax=ax,
             edgecolor='white', legend=True, alpha=0.7)
