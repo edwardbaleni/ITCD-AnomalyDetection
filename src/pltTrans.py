@@ -3,6 +3,8 @@ import pickle
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt 
+import joblib
+import numpy as np
 
 def PrecisionRecall(P_1, R_1, AP,Orchard):
 
@@ -82,7 +84,7 @@ for i, (ax, orchard) in enumerate(zip(axs.flat, orchards)):
         ax.plot(data_est['FPR'], data_est['TPR'],
                 label=f"{estimator}={auc_val:.3f}",
                 color=palette.get(estimator, 'black'),
-                linewidth=4)
+                linewidth=4, alpha=0.8)
     ax.plot([0, 1], [0, 1], 'k--', alpha=0.5)
     ax.set_title(orchard, fontsize=24)
     ax.legend(title="AUC", loc="lower right", fontsize=16, title_fontsize=20)
@@ -111,6 +113,9 @@ plt.show()
 
 # %%
 
+data = joblib.load("results/training/data0_70.pkl")
+
+
 pr = pr[~((pr["Precision"] == 0) & (pr["Recall"] == 0))]
 
 plt.style.use('seaborn-v0_8-darkgrid')
@@ -131,6 +136,13 @@ for i, (ax, orchard) in enumerate(zip(axs.flat, orchards)):
     data_orch = pr[pr['Orchard'] == orchard]
     # Only consider estimators that exist in the current orchard in the desired order
     estimators = [est for est in desired_order if est in data_orch['Estimator'].unique()]
+
+    # Obtain the baseline precision and recall values
+    y = np.array(data[i].loc[:, "Y"]).T 
+    y = np.where(y == 'Outlier', 1, 0)
+    
+    outliers_fraction = np.count_nonzero(y) / len(y) 
+
     for estimator in estimators:
         data_est = data_orch[data_orch['Estimator'] == estimator]
         # Retrieve the corresponding AP value from the ap dataframe
@@ -142,9 +154,9 @@ for i, (ax, orchard) in enumerate(zip(axs.flat, orchards)):
         ax.plot(data_est['Recall'], data_est['Precision'],
                 label=f"{estimator}={ap_val:.3f}",
                 color=palette.get(estimator, 'black'),
-                linewidth=4)
+                linewidth=4, alpha=0.8)
     # Draw a horizontal line at Precision = 0.5
-    ax.axhline(y=0.5, color='gray', linestyle='--', linewidth=2)
+    ax.axhline(y=outliers_fraction, color='gray', linestyle='--', linewidth=2)
     ax.set_title(orchard, fontsize=24)
     ax.legend(title="AP", loc="upper right", fontsize=16, title_fontsize=20)
     ax.tick_params(axis='both', labelsize=20)
@@ -172,3 +184,5 @@ plt.show()
 
 
 # %%
+
+
