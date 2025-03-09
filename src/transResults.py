@@ -16,56 +16,56 @@ from os import listdir
 from utils import cdDiagram
 import seaborn as sns
 
-def getData():
-    data = joblib.load("results/training/data0_70.pkl")
-    path = "results/hyperparameter/"
-    home = listdir(path)
+# def getData():
+#     data = joblib.load("results/training/data0_70.pkl")
+#     path = "results/hyperparameter/"
+#     home = listdir(path)
 
-    abod_files = [f'{path}{file}' for file in home if "ABOD" in file]
-    lof_files = [f'{path}{file}' for file in home if "LOF" in file]
-    pca_files = [f'{path}{file}' for file in home if "PCA" in file]
-    if_files = [f'{path}{file}' for file in home if "IF" in file]
+#     abod_files = [f'{path}{file}' for file in home if "ABOD" in file]
+#     lof_files = [f'{path}{file}' for file in home if "LOF" in file]
+#     pca_files = [f'{path}{file}' for file in home if "PCA" in file]
+#     if_files = [f'{path}{file}' for file in home if "IF" in file]
 
-    return data, [joblib.load(file) for file in lof_files], [joblib.load(file) for file in abod_files], [joblib.load(file) for file in pca_files], [joblib.load(file) for file in if_files]
+#     return data, [joblib.load(file) for file in lof_files], [joblib.load(file) for file in abod_files], [joblib.load(file) for file in pca_files], [joblib.load(file) for file in if_files]
 
 
-def process(data, erf_num, lof_params, abod_params, pca_params, if_params):
+# def process(data, erf_num, lof_params, abod_params, pca_params, if_params):
 
-    return transductive.transductionResults(data, 
-                                               str(erf_num), 
-                                               lof_params, 
-                                               abod_params, 
-                                               pca_params, 
-                                               if_params)
-# %%
-data, LOF, ABOD, PCA, IF = getData()
-sampleSize = len(LOF)
+#     return transductive.transductionResults(data, 
+#                                                str(erf_num), 
+#                                                lof_params, 
+#                                                abod_params, 
+#                                                pca_params, 
+#                                                if_params)
+# # %%
+# data, LOF, ABOD, PCA, IF = getData()
+# sampleSize = len(LOF)
 
-aucroc = pd.DataFrame()
-ap = pd.DataFrame()
-time = pd.DataFrame()
+# aucroc = pd.DataFrame()
+# ap = pd.DataFrame()
+# time = pd.DataFrame()
 
-for i in range(sampleSize):
-    y = np.array(data[i].loc[:, "Y"]).T 
-    y = np.where(y == 'Outlier', 1, 0)
-    if np.count_nonzero(y) == 0:
-        # continue
-        del data[i]
+# for i in range(sampleSize):
+#     y = np.array(data[i].loc[:, "Y"]).T 
+#     y = np.where(y == 'Outlier', 1, 0)
+#     if np.count_nonzero(y) == 0:
+#         # continue
+#         del data[i]
 
-    auc, average_precision, tme = process(data[i], 
-                      i, 
-                      LOF[i].best_params, 
-                      ABOD[i].best_params, 
-                      PCA[i].best_params, 
-                      IF[i].best_params)
+#     auc, average_precision, tme = process(data[i], 
+#                       i, 
+#                       LOF[i].best_params, 
+#                       ABOD[i].best_params, 
+#                       PCA[i].best_params, 
+#                       IF[i].best_params)
     
-    aucroc = pd.concat([aucroc, auc], axis=0)
-    ap = pd.concat([ap, average_precision], axis=0)
-    time = pd.concat([time, tme], axis=0)
+#     aucroc = pd.concat([aucroc, auc], axis=0)
+#     ap = pd.concat([ap, average_precision], axis=0)
+#     time = pd.concat([time, tme], axis=0)
     
-aucroc.reset_index(drop=True, inplace=True)
-ap.reset_index(drop=True, inplace=True)
-time.reset_index(drop=True, inplace=True)
+# aucroc.reset_index(drop=True, inplace=True)
+# ap.reset_index(drop=True, inplace=True)
+# time.reset_index(drop=True, inplace=True)
 
 # %%
 # Save aucroc with only unique indices
@@ -168,4 +168,85 @@ plt.yticks(fontsize = 25)
 plt.tight_layout()
 plt.savefig('results/transductive/Time/Time_Summary.png')
 plt.show()
+
+
+# %%
+
+
+# XXX: Get CD diagrams for orchards with majority local outliers.
+
+local = [0, 3, 5,6,15, 17, 20, 28, 30, 31, 33, 35, 44, 63, 64, 65]
+ap_local = ap.iloc[local]
+aucroc_local = aucroc.iloc[local]
+
+ap_local_long = pd.melt(ap_local, 
+                        id_vars=["Data"], 
+                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+
+aucroc_local_long = pd.melt(aucroc_local,
+                        id_vars=["Data"], 
+                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+
+ap_local_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
+aucroc_local_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
+
+ap_local_long = ap_local_long[['classifier_name', 'dataset_name', 'accuracy']]
+aucroc_local_long = aucroc_local_long[['classifier_name', 'dataset_name', 'accuracy']]
+
+
+cdDiagram.draw_cd_diagram(df_perf=ap_local_long, title='', labels=True, measure = '/transductive/AP/AP-local',num=16)
+cdDiagram.draw_cd_diagram(df_perf=aucroc_local_long, title='', labels=True, measure = '/transductive/AUCROC/AUC-local',num=16)
+
+
+# XXX: Get CD diagrams for orchards with majority global outliers.
+
+# %%
+glob = [1,2, 4, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19, 21, 22, 23,24, 25, 26, 27, 29, 32, 36, 37, 40, 41, 42, 43,45, 47, 48, 50,51,52,53,54,55, 56, 57, 58, 60, 61, 62, 66]
+
+ap_global = ap.iloc[glob]
+aucroc_global = aucroc.iloc[glob]
+
+ap_global_long = pd.melt(ap_global, 
+                        id_vars=["Data"], 
+                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+aucroc_global_long = pd.melt(aucroc_global,
+                            id_vars=["Data"], 
+                            value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+
+ap_global_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
+aucroc_global_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
+
+ap_global_long = ap_global_long[['classifier_name', 'dataset_name', 'accuracy']]
+aucroc_global_long = aucroc_global_long[['classifier_name', 'dataset_name', 'accuracy']]
+
+cdDiagram.draw_cd_diagram(df_perf=ap_global_long, title='', labels=True, measure = '/transductive/AP/AP-global')
+cdDiagram.draw_cd_diagram(df_perf=aucroc_global_long, title='', labels=True, measure = '/transductive/AUCROC/AUC-global')
+
+# %%
+# XXX: Get CD diagrams for orchards with mixed outliers.
+
+mix = [i for i in range(67) if i not in local and i not in glob]
+
+ap_mix = ap.iloc[mix]
+aucroc_mix = aucroc.iloc[mix]
+
+ap_mix_long = pd.melt(ap_mix, 
+                      id_vars=["Data"], 
+                      value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+aucroc_mix_long = pd.melt(aucroc_mix,
+                        id_vars=["Data"], 
+                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+
+ap_mix_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
+aucroc_mix_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
+
+ap_mix_long = ap_mix_long[['classifier_name', 'dataset_name', 'accuracy']]
+aucroc_mix_long = aucroc_mix_long[['classifier_name', 'dataset_name', 'accuracy']]
+
+try:
+    cdDiagram.draw_cd_diagram(df_perf=ap_mix_long, title='', labels=True, measure = '/transductive/AP/AP-mix', num=14)
+    cdDiagram.draw_cd_diagram(df_perf=aucroc_mix_long, title='', labels=True, measure = '/transductive/AUCROC/AUC-mix', num=14)
+except:
+    print("Not enough samples")
+
 # %%

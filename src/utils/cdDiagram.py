@@ -32,7 +32,7 @@ import joblib
 
 # inspired from orange3 https://docs.orange.biolab.si/3/data-mining-library/reference/evaluation.cd.html
 def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, highv=None,
-                width=6, textspace=1, reverse=False, filename=None, labels=False, **kwargs):
+                width=6, textspace=1, reverse=False, filename=None, labels=False, num=100, **kwargs):
     """
     Draws a CD graph, which is used to display  the differences in methods'
     performance. See Janez Demsar, Statistical Comparisons of Classifiers over
@@ -249,6 +249,10 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
 
     # draw no significant lines
     # get the cliques
+    print(num)
+    if num < 30:
+        p_values = [(p[0], p[1], 0.05, False) for p in p_values]
+    print('p_values:' , p_values)
     cliques = form_cliques(p_values, nnames)
     i = 1
     achieved_half = False
@@ -287,20 +291,16 @@ def form_cliques(p_values, nnames):
     return networkx.find_cliques(g)
 
 
-def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False, measure=None):
+def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False, measure=None, num=100):
     """
     Draws the critical difference diagram given the list of pairwise classifiers that are
     significant or not
     """
     p_values, average_ranks, _ = wilcoxon_holm(df_perf=df_perf, alpha=alpha)
 
-    print(average_ranks)
-    for p in p_values:
-        print(p)
-
     joblib.dump(p_values, f'results{measure}-p_values.pkl')
     graph_ranks(average_ranks.values, average_ranks.keys(), p_values,
-                cd=None, reverse=True, width=9, textspace=1.5, labels=labels)
+                cd=None, reverse=True, width=9, textspace=1.5, labels=labels, num=num)
 
     font = {'family': 'sans-serif',
         'color':  'black',
@@ -317,7 +317,6 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
     Applies the wilcoxon signed rank test between each pair of algorithm and then use Holm
     to reject the null's hypothesis
     """
-    print(pd.unique(df_perf['classifier_name']))
     # count the number of tested datasets per classifier
     df_counts = pd.DataFrame({'count': df_perf.groupby(
         ['classifier_name']).size()}).reset_index()
