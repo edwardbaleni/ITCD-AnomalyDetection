@@ -86,25 +86,25 @@ ap_long = pd.melt(ap,
                         id_vars=["Data"], 
                         value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
 time_long = pd.melt(time,
-                    id_vars=["Data"], 
+                    id_vars=["Data", "# Samples"], 
                     value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
 
 # Plot the CD diagram
 
 aucroc_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
 ap_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
-time_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
+time_long.columns = ['dataset_name', 'Observations', 'classifier_name', 'time']
 
 aucroc_long = aucroc_long[['classifier_name', 'dataset_name', 'accuracy']]
 ap_long = ap_long[['classifier_name', 'dataset_name', 'accuracy']]
-time_long = time_long[['classifier_name', 'dataset_name', 'accuracy']]
+time_long = time_long[['classifier_name','Observations', 'dataset_name', 'time']]
 
 
 cdDiagram.draw_cd_diagram(df_perf=ap_long, title='', labels=True, measure = '/transductive/AP/AP')
 
 cdDiagram.draw_cd_diagram(df_perf=aucroc_long, title='', labels=True, measure = '/transductive/AUCROC/AUC')
 
-cdDiagram.draw_cd_diagram(df_perf=time_long, title='', labels=True, measure = '/transductive/Time/Time')
+# cdDiagram.draw_cd_diagram(df_perf=time_long, title='', labels=True, measure = '/transductive/Time/Time')
 # %%
 
 aucroc.loc[:, 'ABOD':].mean()
@@ -149,24 +149,6 @@ plt.xticks(fontsize = 25)
 plt.yticks(fontsize = 25)
 plt.tight_layout()
 plt.savefig('results/transductive/AP/AP_Summary.png')
-plt.show()
-# %%
-plt.figure(figsize=(20, 12))
-sns.boxplot(x='classifier_name', y='accuracy', data=time_long, palette=colors)
-sns.stripplot(x='classifier_name', y='accuracy', data=time_long, 
-              size=10, color='.3', linewidth=0, alpha=0.6)
-
-import matplotlib.patches as mpatches
-classifiers = time_long['classifier_name'].unique()
-patches = [mpatches.Patch(color=colors[i], label=classifier) for i, classifier in enumerate(classifiers)]
-plt.legend(handles=patches, title='Classifier', loc='best', prop={'size': 25}, title_fontsize=20)
-
-plt.ylabel('Time (Seconds)', fontsize=30)
-plt.xlabel('', fontsize=30)
-plt.xticks(fontsize = 25)
-plt.yticks(fontsize = 25)
-plt.tight_layout()
-plt.savefig('results/transductive/Time/Time_Summary.png')
 plt.show()
 
 
@@ -250,3 +232,66 @@ except:
     print("Not enough samples")
 
 # %%
+
+
+plt.figure(figsize=(20, 12))
+sns.boxplot(x='classifier_name', y='accuracy', data=time_long, palette=colors)
+sns.stripplot(x='classifier_name', y='accuracy', data=time_long, 
+              size=10, color='.3', linewidth=0, alpha=0.6)
+
+import matplotlib.patches as mpatches
+classifiers = time_long['classifier_name'].unique()
+patches = [mpatches.Patch(color=colors[i], label=classifier) for i, classifier in enumerate(classifiers)]
+plt.legend(handles=patches, title='Classifier', loc='best', prop={'size': 25}, title_fontsize=20)
+
+plt.ylabel('Time (Seconds)', fontsize=30)
+plt.xlabel('', fontsize=30)
+plt.xticks(fontsize = 25)
+plt.yticks(fontsize = 25)
+plt.tight_layout()
+plt.savefig('results/transductive/Time/Time_Summary.png')
+plt.show()
+# %%
+
+plt.figure(figsize=(20, 12))
+time_long_sorted = time_long.sort_values(by='Observations')
+# Order the colors according to the specified list
+palette = {"ABOD": "#ec1763", "IForest": "#A25C43", "LOF": "#FABE37", "ECOD": "#91c059", "PCA": "#118D92", "Geary": "#204ecf"}
+sns.scatterplot(x='Observations', y='time', hue='classifier_name', data=time_long_sorted,  s=500, alpha=0.6, palette=palette)
+
+plt.ylabel('Time (Seconds)', fontsize=30)
+plt.xlabel('Observations', fontsize=30)
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+
+# Create a custom legend to ensure the order
+handles, labels = plt.gca().get_legend_handles_labels()
+order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "Geary"]
+ordered_handles = [handles[labels.index(label)] for label in order]
+plt.legend(ordered_handles, order, title='Classifier', loc='best', prop={'size': 25}, title_fontsize=20)
+
+plt.tight_layout()
+plt.savefig('results/transductive/Time/Time_vs_Observations.png')
+plt.show()
+# %%
+
+plt.figure(figsize=(20, 12))
+time_long_sorted = time_long.sort_values(by='Observations')
+# Order the colors according to the specified list
+palette = {"ABOD": "#ec1763", "IForest": "#A25C43", "LOF": "#FABE37", "ECOD": "#91c059", "PCA": "#118D92", "Geary": "#204ecf"}
+sns.scatterplot(x='Observations', y='time', hue='classifier_name', data=time_long_sorted,  s=500, alpha=0.6, palette=palette)
+
+plt.ylabel('Time (Seconds)', fontsize=30)
+plt.xlabel('Observations', fontsize=30)
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+
+# Create a custom legend to ensure the order
+handles, labels = plt.gca().get_legend_handles_labels()
+order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "Geary"]
+ordered_handles = [handles[labels.index(label)] for label in order]
+plt.legend(ordered_handles, order, title='Classifier', loc='best', prop={'size': 25}, title_fontsize=20)
+
+plt.tight_layout()
+plt.savefig('results/transductive/Time/Time_vs_Observations.png')
+plt.show()
