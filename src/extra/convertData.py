@@ -106,3 +106,23 @@ for i in range(len(images)):
 
 # joblib.dump(masks, "results/testing/masks70_101.pkl")
 joblib.dump(images, "results/testing/images70_101.pkl")
+
+
+# %%
+import joblib
+# need to donwload masks and images
+data1 = joblib.load("results/training/data60_70.pkl")
+
+masks = data1['mask']
+images = [x['rgb'] for x in data1['spectralData']]
+
+for i in range(len(images)):
+    mask = masks[i]
+    img = images[i][0:3].rio.clip(mask.geometry.values, mask.crs, drop=True, invert=False)
+    img = img/255
+
+    images[i] = img
+
+# joblib.dump(masks, "results/testing/masks70_101.pkl")
+joblib.dump(images, "results/training/images60_70.pkl")
+# %%

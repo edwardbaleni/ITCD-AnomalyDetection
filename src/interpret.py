@@ -22,9 +22,14 @@ from sklearn.preprocessing import RobustScaler
 import numpy as np
 
 
-data = joblib.load("results/testing/data70_101.pkl")
+# data = joblib.load("results/testing/data70_101.pkl")
+data = joblib.load("results/training/data0_70.pkl")
 
-data_local = data[-1]
+# Orchard 62 is data 61
+
+
+# %%
+data_local = data[61]
 geometry = data_local["geometry"]
 centroid = data_local["centroid"]
 
@@ -65,28 +70,60 @@ percentile_99 = outliers.quantile(0.99, axis=0)
 
 # Plot individual observations and the 99th percentile line
 for idx in outliers.index:
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(20, 12))
     # Plot individual observation
-    plt.plot(outliers.columns, outliers.loc[idx, :], marker='o', linestyle='-', alpha=0.7, label=f'Observation {idx}')
+    plt.plot(outliers.columns, outliers.loc[idx, :], marker='o', linestyle='-', alpha=0.7, linewidth=4, markersize=10, label=f'Attribute Outlier Score')
     
     # Plot 99th percentile line
-    plt.plot(outliers.columns, percentile_99, marker='s', linestyle='--', color='red', linewidth=2, label='99th percentile')
+    plt.plot(outliers.columns, percentile_99, marker='s', linestyle='--', color='red', linewidth=4, markersize=10, label='99th percentile')
     
-    plt.xlabel('Dimension')
-    plt.ylabel('Value')
-    plt.title(f'Observation {idx} vs 99th Percentile')
-    plt.legend()
+    plt.xlabel('Attribute', fontsize=30)
+    plt.ylabel('Univariate Geary\'s C Statistic', fontsize=30)
+    # plt.title(f'Observation {idx} vs 99th Percentile')
+    plt.legend(fontsize=25)
     plt.grid(True, alpha=0.3)
-    plt.xticks(rotation=45)
+    plt.xticks(fontsize=25, rotation=45)
+    plt.yticks(fontsize=25)
     plt.tight_layout()
-    plt.savefig(f"results/oos/interpretability/interpretability_Orchard_100_outlier_{idx}.png")
+    plt.savefig(f"results/oos/interpretability/interpretability_Orchard_61_outlier_{idx}.png")
     plt.show()
 
 
 # %%
 
+# XXX: Need to plot the individual outlier
+from utils.plotAnomaly import plot
+import geopandas as gpd
+
+images = joblib.load("results/training/images60_70.pkl")
+
+images = images[1]
+
+# Check which y_labels are equal to 1
+outlier_indices = np.where(y_labels == 1)[0]
+
+for i in outlier_indices:
+    plot(images, data_local, gpd.GeoDataFrame(pd.DataFrame(data_local.iloc[i]).T, geometry='geometry'), f"results/oos/interpretability/geary_{i}.png")
+    # img = images
+    # normal = data_local[y_labels == 0]
+    # anomaly = 
+    # fig, ax = plt.subplots(figsize=(20, 20))
+    # img.plot.imshow(ax=ax)
+    # ax.axis('off')
+    # normal.plot(ax=ax, edgecolor='red', label='Normal Regions') 
+    # anomaly.plot(ax=ax,label='Anomaly Regions')
+    # # custom_lines = [Line2D([0], [0], color='red', lw=2),
+    # #                 Line2D([0], [0], color='blue', lw=2)]
+    # # ax.legend(custom_lines, ['Normal', 'Outliers'], loc='upper right', fontsize=25)
+    # fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    # plt.title("")  # Data Geometries Colored by Y
+    # fig.savefig(f"results/oos/interpretability/geary_{i}.png")
+    # plt.show()
+
+plot(images, data_local[y_labels==0], data_local[y_labels==1], f"results/oos/interpretability/geary_full.png")
 
 
+# %%
     
 
 
