@@ -5,7 +5,7 @@ from pyod.models.abod import ABOD
 from pyod.models.ecod import ECOD
 from pyod.models.pca import PCA
 from pyod.models.lof import LOF
-from Model import EIF
+from pyod.models.iforest import IForest
 from Model import Geary
 from sklearn.metrics import average_precision_score
 from sklearn.metrics import roc_auc_score
@@ -15,7 +15,7 @@ from sklearn.preprocessing import RobustScaler
 import seaborn as sns
 
 def anomaly(data, num, group):
-    """Anomaly detection using the ABOD, ECOD, EIF, LOF, and Geary models.
+    """Anomaly detection using the ABOD, ECOD, IF, LOF, and Geary models.
     Parameters:
     data (dict): A dictionary containing the training and testing data.
     Returns:
@@ -38,7 +38,7 @@ def anomaly(data, num, group):
     models = {
         "ABOD": ABOD(contamination=outliers_fraction),
         "ECOD": ECOD(contamination=outliers_fraction),
-        "EIF": EIF(contamination=outliers_fraction, predictors=predictors),
+        "IForest": IForest(contamination=outliers_fraction),
         "LOF": LOF(contamination=outliers_fraction),
         "PCA": PCA(contamination=outliers_fraction),
         "Geary": Geary(contamination=outliers_fraction, 
@@ -51,19 +51,19 @@ def anomaly(data, num, group):
 
     for model_name, model in models.items():
         model.fit(X)
-        auc[model_name] = roc_auc_score(y, model.decision_scores_)
+        auc[model_name] = roc_auc_score(y, model.decision_scores_) if len(np.unique(y)) > 1 else 0
         ap[model_name] = average_precision_score(y, model.decision_scores_)
 
     return (pd.DataFrame.from_dict(auc, orient='index').T, pd.DataFrame.from_dict(ap, orient='index').T)
 
 if __name__ == "__main__":
-    data = joblib.load("results/training/data0_70.pkl")
+    data = joblib.load("results/training/datafull0_70.pkl")
 
     # using the feature set groupings, test the performance of each group
     # on default settings on each model!
 
     #    All
-    df_columns = ['Orchard', 'Group', 'ABOD', 'ECOD', 'EIF', 'LOF', 'PCA', 'Geary']
+    df_columns = ['Orchard', 'Group', 'ABOD', 'ECOD', 'IForest', 'LOF', 'PCA', 'Geary']
     output_auc = pd.DataFrame(columns=df_columns)
     output_ap = pd.DataFrame(columns=df_columns)
     rng = len(data)
@@ -142,7 +142,13 @@ if __name__ == "__main__":
     joblib.dump(output_auc, "results/ablation/auc.pkl")
     joblib.dump(output_ap, "results/ablation/ap.pkl")
 
-    output_melted = output_auc.melt(id_vars=['Orchard', 'Group'], var_name='Model', value_name='auc')
+    output_melted = output_auc.melt(id_vars=['Orchard', 'Group'], var_name='Model', value_name='auc')    
+    # output_melted['Model'] = output_melted['Model'].replace('IF', 'IForest')
+    # output_melted = output_melted[~((output_melted['Model'] == 'IForest') & (output_melted['auc'].isna()))]
+
+    # order = ['ABOD', 'ECOD', 'IForest', 'LOF', 'PCA', 'Geary']
+
+    # output_melted['Model'] = pd.Categorical(output_melted['Model'], categories=order, ordered=True)
     plt.figure(figsize=(20, 12))
     sns.boxplot(x='Model', y='auc', hue='Group', data=output_melted)
     # plt.title('Anomaly Detection Model Performance by Feature Group')
@@ -156,6 +162,14 @@ if __name__ == "__main__":
     plt.show()
 
     output_melted = output_ap.melt(id_vars=['Orchard', 'Group'], var_name='Model', value_name='ap')
+    # output_melted['Model'] = output_melted['Model'].replace('IF', 'IForest')
+    # output_melted = output_melted[~((output_melted['Model'] == 'IForest') & (output_melted['ap'].isna()))]
+
+
+    # order = ['ABOD', 'ECOD', 'IForest', 'LOF', 'PCA', 'Geary']
+
+    # output_melted['Model'] = pd.Categorical(output_melted['Model'], categories=order, ordered=True)
+
     plt.figure(figsize=(20, 12))
     sns.boxplot(x='Model', y='ap', hue='Group', data=output_melted)
     # plt.title('Anomaly Detection Model Performance by Feature Group')
@@ -167,3 +181,5 @@ if __name__ == "__main__":
     plt.legend(fontsize=25)
     plt.savefig('results/ablation/AP.png')
     plt.show()
+
+    
