@@ -185,6 +185,14 @@ print(ap_avg)
 print("\nAverage AUC scores:")
 print(auc_avg)
 
+sum_ap = ap_scores.loc[:,"LOF":].std(axis=0)
+sum_auc = auc_scores.loc[:, "LOF":].std(axis=0)
+print("Default std AP scores:")
+print(sum_ap)
+print("\n Default std AUC scores:")
+print(sum_auc)
+
+
 
 
 
@@ -316,6 +324,14 @@ ap_scores.reset_index(drop=True, inplace=True)
 def_ap_scores.reset_index(drop=True, inplace=True)
 
 # %%
+
+# Rename 'IF' to 'IForest' in the AP and AUC scores dataframes
+ap_scores.rename(columns={'IF': 'IForest'}, inplace=True)
+def_ap_scores.rename(columns={'IF': 'IForest'}, inplace=True)
+auc_scores.rename(columns={'IF': 'IForest'}, inplace=True)
+def_auc_scores.rename(columns={'IF': 'IForest'}, inplace=True)
+
+# %%
 # Melt the dataframes for easier plotting
 ap_scores_melted = ap_scores.melt(id_vars=['Orchard'], var_name='Estimator', value_name='AP Score')
 def_ap_scores_melted = def_ap_scores.melt(id_vars=['Orchard'], var_name='Estimator', value_name='AP Score')
@@ -371,3 +387,23 @@ plt.yticks(fontsize=20)
 plt.savefig("results/oos/auc_scores_boxplot.png")
 plt.show()
 # %%
+
+
+# Calculate column averages for AP scores and AUC scores
+def_ap_avg = def_ap_scores.loc[:,"LOF":].mean(axis=0)
+def_auc_avg = def_auc_scores.loc[:, "LOF":].mean(axis=0)
+
+# Print the averages
+print("Default Average AP scores:")
+print(def_ap_avg)
+print("\n Default Average AUC scores:")
+print(def_auc_avg)
+
+res_ap = pd.read_csv("C:/Users/balen/OneDrive/Desktop/Git/Dissertation-AnomalyDetection/Dissertation-AnomalyDetection/src/results/transductive/ap.csv")
+res_auc = pd.read_csv("C:/Users/balen/OneDrive/Desktop/Git/Dissertation-AnomalyDetection/Dissertation-AnomalyDetection/src/results/transductive/auc.csv")
+sum_ap = res_ap.loc[:,"ABOD":].std(axis=0)
+sum_auc = res_auc.loc[:, "ABOD":].std(axis=0)
+print("Default std AP scores:")
+print(sum_ap)
+print("\n Default std AUC scores:")
+print(sum_auc)

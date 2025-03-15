@@ -32,7 +32,7 @@ pr = pd.DataFrame()
 ap = pd.DataFrame()
 
 
-for i in range(0, 20):
+for i in range(0, 9):
     AUCROC, AUC, labels, P, R, AP = pickle.load(open(f"results/transductive/{i}.pkl", "rb"))
 
     AUCROC['Orchard'] = f'Orchard {i+1}'
@@ -48,14 +48,17 @@ for i in range(0, 20):
 roc.reset_index(drop=True, inplace=True)
 auc.reset_index(drop=True, inplace=True)
 
+# Replace "IF" with "IForest" in roc and auc dataframes
+roc['Estimator'] = roc['Estimator'].replace('IF', 'IForest')
+auc['Estimator'] = auc['Estimator'].replace('IF', 'IForest')
 
 # %%
 plt.style.use('seaborn-v0_8-darkgrid')
 # Define the desired estimator order
-desired_order = ["ABOD", "IF", "LOF", "ECOD", "PCA", "Geary"]
+desired_order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "Geary"]
 
 # Create subplots
-fig, axs = plt.subplots(4, 5, figsize=(30, 20))
+fig, axs = plt.subplots(3, 3, figsize=(30, 20))
 orchards = roc['Orchard'].unique()
 
 # Create a palette using the desired estimator order
@@ -107,7 +110,7 @@ for i, (ax, orchard) in enumerate(zip(axs.flat, orchards)):
         ax.set_xlabel("")
 
 plt.tight_layout()
-plt.savefig("results/transductive/AUCROC/ROC-Curve.png", dpi=300, bbox_inches='tight')
+plt.savefig("results/transductive/AUCROC/ROC-Curve_subset.png", dpi=300, bbox_inches='tight')
 plt.show()
 
 
@@ -118,11 +121,15 @@ data = joblib.load("results/training/data0_70.pkl")
 
 pr = pr[~((pr["Precision"] == 0) & (pr["Recall"] == 0))]
 
+# Replace "IF" with "IForest" in roc and auc dataframes
+pr['Estimator'] = pr['Estimator'].replace('IF', 'IForest')
+ap['Estimator'] = ap['Estimator'].replace('IF', 'IForest')
+
 plt.style.use('seaborn-v0_8-darkgrid')
 # Define the desired estimator order
-desired_order = ["ABOD", "IF", "LOF", "ECOD", "PCA", "Geary"]
+desired_order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "Geary"]
 # Create subplots
-fig, axs = plt.subplots(4, 5, figsize=(30, 20))
+fig, axs = plt.subplots(3, 3, figsize=(30, 20))
 orchards = pr['Orchard'].unique()
 # Create a palette using the desired estimator order
 
@@ -178,7 +185,7 @@ for i, (ax, orchard) in enumerate(zip(axs.flat, orchards)):
         ax.set_xlabel("")
         
 plt.tight_layout()
-plt.savefig("results/transductive/AP/PR-Curve.png", dpi=300, bbox_inches='tight')
+plt.savefig("results/transductive/AP/PR-Curve_subset.png", dpi=300, bbox_inches='tight')
 plt.show()
 
 
