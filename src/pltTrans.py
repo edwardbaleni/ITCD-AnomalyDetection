@@ -52,10 +52,13 @@ auc.reset_index(drop=True, inplace=True)
 roc['Estimator'] = roc['Estimator'].replace('IF', 'IForest')
 auc['Estimator'] = auc['Estimator'].replace('IF', 'IForest')
 
+roc['Estimator'] = roc['Estimator'].replace('Geary', 'GBOD')
+auc['Estimator'] = auc['Estimator'].replace('Geary', 'GBOD')
+
 # %%
 plt.style.use('seaborn-v0_8-darkgrid')
 # Define the desired estimator order
-desired_order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "Geary"]
+desired_order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "GBOD"]
 
 # Create subplots
 fig, axs = plt.subplots(3, 3, figsize=(30, 20))
@@ -125,9 +128,12 @@ pr = pr[~((pr["Precision"] == 0) & (pr["Recall"] == 0))]
 pr['Estimator'] = pr['Estimator'].replace('IF', 'IForest')
 ap['Estimator'] = ap['Estimator'].replace('IF', 'IForest')
 
+pr['Estimator'] = pr['Estimator'].replace('Geary', 'GBOD')
+ap['Estimator'] = ap['Estimator'].replace('Geary', 'GBOD')
+
 plt.style.use('seaborn-v0_8-darkgrid')
 # Define the desired estimator order
-desired_order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "Geary"]
+desired_order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "GBOD"]
 # Create subplots
 fig, axs = plt.subplots(3, 3, figsize=(30, 20))
 orchards = pr['Orchard'].unique()

@@ -78,16 +78,21 @@ time = pd.read_csv("results/transductive/time.csv")
 # aucroc.to_csv('results/transductive/auc.csv', index=False, float_format='%.3f')
 # ap.to_csv('results/transductive/ap.csv', index=False, float_format='%.3f')
 
+# Replace column name from 'Geary' to 'GBOD' in ap DataFrame
+ap.rename(columns={'Geary': 'GBOD'}, inplace=True)
+aucroc.rename(columns={'Geary': 'GBOD'}, inplace=True)
+time.rename(columns={'Geary': 'GBOD'}, inplace=True)
+
 # These dataframes need to be in long format for the CD diagram
 aucroc_long = pd.melt(aucroc, 
                         id_vars=["Data"], 
-                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'GBOD'])
 ap_long = pd.melt(ap, 
                         id_vars=["Data"], 
-                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'GBOD'])
 time_long = pd.melt(time,
                     id_vars=["Data", "# Samples"], 
-                    value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+                    value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'GBOD'])
 
 # Plot the CD diagram
 
@@ -163,11 +168,11 @@ aucroc_local = aucroc.iloc[local]
 
 ap_local_long = pd.melt(ap_local, 
                         id_vars=["Data"], 
-                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'GBOD'])
 
 aucroc_local_long = pd.melt(aucroc_local,
                         id_vars=["Data"], 
-                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'GBOD'])
 
 ap_local_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
 aucroc_local_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
@@ -190,10 +195,10 @@ aucroc_global = aucroc.iloc[glob]
 
 ap_global_long = pd.melt(ap_global, 
                         id_vars=["Data"], 
-                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'GBOD'])
 aucroc_global_long = pd.melt(aucroc_global,
                             id_vars=["Data"], 
-                            value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+                            value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'GBOD'])
 
 ap_global_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
 aucroc_global_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
@@ -214,10 +219,10 @@ aucroc_mix = aucroc.iloc[mix]
 
 ap_mix_long = pd.melt(ap_mix, 
                       id_vars=["Data"], 
-                      value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+                      value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'GBOD'])
 aucroc_mix_long = pd.melt(aucroc_mix,
                         id_vars=["Data"], 
-                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'Geary'])
+                        value_vars= ['ABOD', 'IForest','LOF', 'ECOD', 'PCA', 'GBOD'])
 
 ap_mix_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
 aucroc_mix_long.columns = ['dataset_name', 'classifier_name', 'accuracy']
@@ -256,7 +261,7 @@ plt.show()
 plt.figure(figsize=(20, 12))
 time_long_sorted = time_long.sort_values(by='Observations')
 # Order the colors according to the specified list
-palette = {"ABOD": "#ec1763", "IForest": "#A25C43", "LOF": "#FABE37", "ECOD": "#91c059", "PCA": "#118D92", "Geary": "#204ecf"}
+palette = {"ABOD": "#ec1763", "IForest": "#A25C43", "LOF": "#FABE37", "ECOD": "#91c059", "PCA": "#118D92", "GDOD": "#204ecf"}
 sns.scatterplot(x='Observations', y='time', hue='classifier_name', data=time_long_sorted,  s=500, alpha=0.6, palette=palette)
 
 plt.ylabel('Time (Seconds)', fontsize=30)
@@ -266,7 +271,7 @@ plt.yticks(fontsize=25)
 
 # Create a custom legend to ensure the order
 handles, labels = plt.gca().get_legend_handles_labels()
-order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "Geary"]
+order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "GBOD"]
 ordered_handles = [handles[labels.index(label)] for label in order]
 plt.legend(ordered_handles, order, title='Classifier', loc='best', prop={'size': 25}, title_fontsize=20)
 
@@ -278,7 +283,7 @@ plt.show()
 plt.figure(figsize=(20, 12))
 time_long_sorted = time_long.sort_values(by='Observations')
 # Order the colors according to the specified list
-palette = {"ABOD": "#ec1763", "IForest": "#A25C43", "LOF": "#FABE37", "ECOD": "#91c059", "PCA": "#118D92", "Geary": "#204ecf"}
+palette = {"ABOD": "#ec1763", "IForest": "#A25C43", "LOF": "#FABE37", "ECOD": "#91c059", "PCA": "#118D92", "GBOD": "#204ecf"}
 sns.scatterplot(x='Observations', y='time', hue='classifier_name', data=time_long_sorted,  s=500, alpha=0.6, palette=palette)
 
 plt.ylabel('Time (Seconds)', fontsize=30)
@@ -288,10 +293,12 @@ plt.yticks(fontsize=25)
 
 # Create a custom legend to ensure the order
 handles, labels = plt.gca().get_legend_handles_labels()
-order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "Geary"]
+order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "GBOD"]
 ordered_handles = [handles[labels.index(label)] for label in order]
 plt.legend(ordered_handles, order, title='Classifier', loc='best', prop={'size': 25}, title_fontsize=20)
 
 plt.tight_layout()
 plt.savefig('results/transductive/Time/Time_vs_Observations.png')
 plt.show()
+
+# %%
