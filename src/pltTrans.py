@@ -32,7 +32,7 @@ pr = pd.DataFrame()
 ap = pd.DataFrame()
 
 
-for i in range(0, 9):
+for i in range(0, 20):
     AUCROC, AUC, labels, P, R, AP = pickle.load(open(f"results/transductive/{i}.pkl", "rb"))
 
     AUCROC['Orchard'] = f'Orchard {i+1}'
@@ -61,7 +61,7 @@ plt.style.use('seaborn-v0_8-darkgrid')
 desired_order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "GBOD"]
 
 # Create subplots
-fig, axs = plt.subplots(3, 3, figsize=(30, 20))
+fig, axs = plt.subplots(4, 5, figsize=(30, 20))
 orchards = roc['Orchard'].unique()
 
 # Create a palette using the desired estimator order
@@ -135,7 +135,7 @@ plt.style.use('seaborn-v0_8-darkgrid')
 # Define the desired estimator order
 desired_order = ["ABOD", "IForest", "LOF", "ECOD", "PCA", "GBOD"]
 # Create subplots
-fig, axs = plt.subplots(3, 3, figsize=(30, 20))
+fig, axs = plt.subplots(4, 5, figsize=(30, 20))
 orchards = pr['Orchard'].unique()
 # Create a palette using the desired estimator order
 

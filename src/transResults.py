@@ -238,30 +238,10 @@ except:
 
 # %%
 
-
-plt.figure(figsize=(20, 12))
-sns.boxplot(x='classifier_name', y='accuracy', data=time_long, palette=colors)
-sns.stripplot(x='classifier_name', y='accuracy', data=time_long, 
-              size=10, color='.3', linewidth=0, alpha=0.6)
-
-import matplotlib.patches as mpatches
-classifiers = time_long['classifier_name'].unique()
-patches = [mpatches.Patch(color=colors[i], label=classifier) for i, classifier in enumerate(classifiers)]
-plt.legend(handles=patches, title='Classifier', loc='best', prop={'size': 25}, title_fontsize=20)
-
-plt.ylabel('Time (Seconds)', fontsize=30)
-plt.xlabel('', fontsize=30)
-plt.xticks(fontsize = 25)
-plt.yticks(fontsize = 25)
-plt.tight_layout()
-plt.savefig('results/transductive/Time/Time_Summary.png')
-plt.show()
-# %%
-
 plt.figure(figsize=(20, 12))
 time_long_sorted = time_long.sort_values(by='Observations')
 # Order the colors according to the specified list
-palette = {"ABOD": "#ec1763", "IForest": "#A25C43", "LOF": "#FABE37", "ECOD": "#91c059", "PCA": "#118D92", "GDOD": "#204ecf"}
+palette = {"ABOD": "#ec1763", "IForest": "#A25C43", "LOF": "#FABE37", "ECOD": "#91c059", "PCA": "#118D92", "GBOD": "#204ecf"}
 sns.scatterplot(x='Observations', y='time', hue='classifier_name', data=time_long_sorted,  s=500, alpha=0.6, palette=palette)
 
 plt.ylabel('Time (Seconds)', fontsize=30)
@@ -299,6 +279,25 @@ plt.legend(ordered_handles, order, title='Classifier', loc='best', prop={'size':
 
 plt.tight_layout()
 plt.savefig('results/transductive/Time/Time_vs_Observations.png')
+plt.show()
+
+# %%
+plt.figure(figsize=(20, 12))
+sns.boxplot(x='classifier_name', y='time', data=time_long, palette=colors)
+sns.stripplot(x='classifier_name', y='time', data=time_long, 
+              size=10, color='.3', linewidth=0, alpha=0.6)
+
+import matplotlib.patches as mpatches
+classifiers = time_long['classifier_name'].unique()
+patches = [mpatches.Patch(color=colors[i], label=classifier) for i, classifier in enumerate(classifiers)]
+plt.legend(handles=patches, title='Classifier', loc='best', prop={'size': 25}, title_fontsize=20)
+
+plt.ylabel('Time (Seconds)', fontsize=30)
+plt.xlabel('', fontsize=30)
+plt.xticks(fontsize = 25)
+plt.yticks(fontsize = 25)
+plt.tight_layout()
+plt.savefig('results/transductive/Time/Time_Summary.png')
 plt.show()
 
 # %%
