@@ -4,7 +4,9 @@ documentation/
 *.tif
 *.geojson
 Examples/
-Orchards/
+*.png
+*.jpg
+*.jpeg
 
 training/
 outliers/
