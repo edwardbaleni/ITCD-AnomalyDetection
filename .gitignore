@@ -4,11 +4,10 @@ documentation/
 *.tif
 *.geojson
 Examples/
-*.png
-*.jpg
-*.jpeg
+Orchards/
 
-results/
+training/
+testing/
 
 *.svg
 *.zip
