@@ -7,7 +7,12 @@ Examples/
 Orchards/
 
 training/
+outliers/
+out_scores/
 testing/
+inFull/
+Uncropped/
+interpretability/
 
 *.svg
 *.zip
