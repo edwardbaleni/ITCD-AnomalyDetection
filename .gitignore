@@ -16,6 +16,7 @@ testing/
 inFull/
 Uncropped/
 interpretability/
+src/results/extra/
 
 *.svg
 *.zip
