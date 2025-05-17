@@ -8,6 +8,7 @@ Examples/
 *.jpg
 *.jpeg
 
+Orchards/
 training/
 outliers/
 out_scores/
