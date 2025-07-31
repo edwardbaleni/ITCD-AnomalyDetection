@@ -6,4 +6,5 @@ Consequently, this suggests that the most critical component of the analysis is 
 ---
 
 [Paper link](https://doi.org/10.1007/978-3-031-96262-2_14)
+
 Baleni, E., Marais, P., Er, Ş. (2026). Autonomous Anomaly Detection of Orchard Tree Crown Delineations. In: Gerber, A. (eds) South African Computer Science and Information Systems Research Trends. SAICSIT 2025. Communications in Computer and Information Science, vol 2583. Springer, Cham. https://doi.org/10.1007/978-3-031-96262-2_14
